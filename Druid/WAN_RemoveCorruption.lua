@@ -1,0 +1,52 @@
+local _, wan = ...
+
+local frameRemoveCorruption = CreateFrame("Frame")
+local function OnEvent(self, event, addonName)
+    -- Early Exits
+    if addonName ~= "WhackANiffen" or wan.PlayerState.Class ~= "DRUID" then return end
+
+    -- Init data
+    local abilityActive = false
+    local nRemoveCorruption = 0
+    local dispelType = { Curse = true, Poison = true}
+
+    -- Ability value calculation
+    local function CheckAbilityValue()
+        if not wan.PlayerState.Status or not wan.CheckDispelBool(wan.auraData, "player", dispelType)
+        or not wan.IsSpellUsable(wan.spellData.RemoveCorruption.id)
+        then wan.UpdateMechanicData(wan.spellData.RemoveCorruption.basename) return end -- Early exits
+
+        local cRemoveCorruption = nRemoveCorruption -- Base values
+
+        local abilityValue = math.floor(cRemoveCorruption) -- Update AbilityData
+        if abilityValue == 0 then wan.UpdateMechanicData(wan.spellData.RemoveCorruption.basename) return end
+        wan.UpdateMechanicData(wan.spellData.RemoveCorruption.basename, abilityValue, wan.spellData.RemoveCorruption.icon, wan.spellData.RemoveCorruption.name)
+    end
+
+    -- Data update on events
+    self:SetScript("OnEvent", function(self, event, ...)
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+            local removeCorruptionValue = 25
+            nRemoveCorruption = wan.AbilityPercentageToValue(removeCorruptionValue)
+        end
+    end)
+
+    -- Set update rate based on settings
+    wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
+
+        if event == "SPELL_DATA_READY" then
+            abilityActive = wan.spellData.RemoveCorruption.known and wan.spellData.RemoveCorruption.id
+            wan.BlizzardEventHandler(frameRemoveCorruption, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
+            wan.SetUpdateRate(frameRemoveCorruption, CheckAbilityValue, abilityActive)
+        end
+
+        if event == "TRAIT_DATA_READY" then end
+
+        if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
+            wan.SetUpdateRate(frameRemoveCorruption, CheckAbilityValue, abilityActive)
+        end
+    end)
+end
+
+frameRemoveCorruption:RegisterEvent("ADDON_LOADED")
+frameRemoveCorruption:SetScript("OnEvent", OnEvent)

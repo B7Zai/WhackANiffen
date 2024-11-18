@@ -1,0 +1,15 @@
+            local tooltipC1 = "Enables you to drag the frame that displays Damage Priority Icons."
+            local settingC1 = Settings.RegisterAddOnSetting(
+                category,
+                "Unlock_Damage_Frame_Toggle",
+                "DamageFrameToggle",
+                wal.Options,
+                Settings.VarType.Boolean,
+                "Unlock Damage Frame",
+                Settings.Default.False
+            )
+            local initC1 = Settings.CreateCheckbox(category, settingC1, tooltipC1)
+            settingC1:SetValueChangedCallback(function(setting, value)
+                wal.Options.DamageFrameToggle = value
+                wal.CustomEvents("DAMAGE_FRAME_TOGGLE")
+            end)
