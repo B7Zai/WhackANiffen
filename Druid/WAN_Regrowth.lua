@@ -11,20 +11,27 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
-        if not wan.PlayerState.Status 
-        or (wan.auraData.player.buff_CatForm and not wan.auraData.player.buff_PredatorySwiftness)
-        or (wan.auraData.player.buff_BearForm and not wan.auraData.player.buff_DreamOfCenarius)
-        or wan.HealThreshold() <= nRegrowthHeal or not wan.IsSpellUsable(wan.spellData.Regrowth.id) 
-        then wan.UpdateMechanicData(wan.spellData.Regrowth.basename) return end -- Early exits
+        -- Early exits
+        if not wan.PlayerState.Status
+            or (wan.auraData.player.buff_CatForm and not wan.auraData.player.buff_PredatorySwiftness)
+            or (wan.auraData.player.buff_BearForm and not wan.auraData.player.buff_DreamofCenarius)
+            or wan.auraData.player.buff_FrenziedRegeneration or wan.HealThreshold() <= nRegrowthHeal
+            or not wan.IsSpellUsable(wan.spellData.Regrowth.id)
+        then
+            wan.UpdateMechanicData(wan.spellData.Regrowth.basename)
+            return
+        end
 
+        -- Base values
         local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Regrowth.id, wan.spellData.Regrowth.castTime)
         local cRegrowtHotHeal = (not wan.auraData.player.buff_Regrowth and nRegrowthHotHeal) or 0 -- Hot values
-        local cRegrowthHeal = (nRegrowthInstantHeal + cRegrowtHotHeal * castEfficiency) -- Base values
+        local cRegrowthHeal = (nRegrowthInstantHeal + cRegrowtHotHeal * castEfficiency)
 
-        cRegrowthHeal = cRegrowthHeal * wan.ValueFromCritical(wan.CritChance) -- Crit Mod
+        -- Crit layer
+        cRegrowthHeal = cRegrowthHeal * wan.ValueFromCritical(wan.CritChance)
 
-        local abilityValue = math.floor(cRegrowthHeal) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateMechanicData(wan.spellData.Regrowth.basename) return end
+        -- Update ability data
+        local abilityValue = math.floor(cRegrowthHeal) or 0
         wan.UpdateMechanicData(wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
     end
 

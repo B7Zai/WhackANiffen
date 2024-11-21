@@ -11,15 +11,20 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
+        -- Early exits
         if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or not wan.CheckPurgeBool(wan.auraData, wan.TargetUnitID)
-        or not wan.IsSpellUsable(wan.spellData.Soothe.id)
-        then wan.UpdateMechanicData(wan.spellData.Soothe.basename) return end -- Early exits
+            or not wan.CheckPurgeBool(wan.auraData, wan.TargetUnitID)
+            or not wan.IsSpellUsable(wan.spellData.Soothe.id)
+        then
+            wan.UpdateMechanicData(wan.spellData.Soothe.basename)
+            return
+        end
+        
+        -- Base values
+        local cSoothe = nSoothe
 
-        local cSoothe = nSoothe -- Base values
-
-        local abilityValue = math.floor(cSoothe) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateMechanicData(wan.spellData.Soothe.basename) return end
+        -- Update ability data
+        local abilityValue = math.floor(cSoothe)
         wan.UpdateMechanicData(wan.spellData.Soothe.basename, abilityValue, wan.spellData.Soothe.icon, wan.spellData.Soothe.name)
     end
 

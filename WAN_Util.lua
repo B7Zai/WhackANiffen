@@ -68,10 +68,16 @@ function wan.CustomEvents(event, ...)
     end
 end
 
--- Helper function to format string which used for keys
-function wan.FormatNameForKey(string)
-    return string:gsub("[%s:_%-,'?!%.]", "")
-end
+-- Helper function to format strings used for keys
+    function wan.FormatNameForKey(string)
+        string = string:gsub("|c%x%x%x%x%x%x%x%x", "") -- Remove color prefix
+        string = string:gsub("|r", "")                 -- Remove color reset
+        string = string:gsub("|[nt]", "")              -- Remove escape sequences
+        string = string:gsub("|T.-|t", "")             -- Remove texture tags
+        string = string:gsub("|H.-|h", "")             -- Remove hyperlinks
+        string = string:gsub("[%s:_%-,'?!%.]", "")     -- Remove special characters
+        return string
+    end
 
 -- Checks gcd value
 function wan.GetSpellGcdValue(spellID)

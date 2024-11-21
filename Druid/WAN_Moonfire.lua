@@ -16,34 +16,46 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
+        -- Early exits
         if not wan.PlayerState.Status or wan.auraData.player.buff_Prowl
-        or (wan.auraData.player.buff_CatForm and not wan.traitData.LunarInspiration.known)
-        or not wan.IsSpellUsable(wan.spellData.Moonfire.id)
-        then wan.UpdateAbilityData(wan.spellData.Moonfire.basename) return end -- Early exits
+            or (wan.auraData.player.buff_CatForm and not wan.traitData.LunarInspiration.known)
+            or not wan.IsSpellUsable(wan.spellData.Moonfire.id)
+        then
+            wan.UpdateAbilityData(wan.spellData.Moonfire.basename)
+            return
+        end
 
+        -- Check for valid unit
         local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.Moonfire.id)
-        if not isValidUnit then wan.UpdateAbilityData(wan.spellData.Moonfire.basename) return end -- Check for valid unit
+        if not isValidUnit then
+            wan.UpdateAbilityData(wan.spellData.Moonfire.basename)
+            return
+        end
 
+        -- Dot value
         local cMoonfireInstantDmg = nMoonfireInstantDmg * ((wan.auraData.player.buff_GalacticGuardian and nGalacticGuardian) or 1)
         local dotPotency = wan.CheckDotPotency(cMoonfireInstantDmg)
-        local cMoonfireDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Moonfire and (nMoonfireDotDmg * dotPotency)) or 0 -- Dot values
-        
+        local cMoonfireDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Moonfire and (nMoonfireDotDmg * dotPotency)) or 0
+
+        -- Base value
         local cMoonfireDmg = cMoonfireInstantDmg + cMoonfireDotDmg
 
-        if (wan.traitData.TwinMoonfire.known or wan.traitData.TwinMoons.known) and countValidUnit > 1 then -- DoubleClawedRake
+        -- Twin Moonfire or Twin Moons
+        if (wan.traitData.TwinMoonfire.known or wan.traitData.TwinMoons.known) and countValidUnit > 1 then
             local nTwinMoonfireInstantDmg = cMoonfireInstantDmg * math.min(countValidUnit, nTwinMoonfireAoeCap)
             local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Moonfire.name, nil, nTwinMoonfireInstantDmg)
             local unitMoonfireDebuffedAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Moonfire.name)
             local cTwinMoonfireRakeDotDmg = (unitMoonfireDebuffedAoE < countValidUnit and nMoonfireDotDmg * dotPotencyAoE) or 0
             if unitMoonfireDebuffedAoE > 0 and not wan.auraData[wan.TargetUnitID].debuff_Moonfire then cTwinMoonfireRakeDotDmg = 0 end
             local cTwinMoonfireDmg = cMoonfireInstantDmg + cTwinMoonfireRakeDotDmg
-                cMoonfireDmg = cMoonfireDmg + cTwinMoonfireDmg
+            cMoonfireDmg = cMoonfireDmg + cTwinMoonfireDmg
         end
 
-        cMoonfireDmg = cMoonfireDmg * wan.ValueFromCritical(wan.CritChance) -- Crit Mod
-       
-        local abilityValue = math.floor(cMoonfireDmg) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateAbilityData(wan.spellData.Moonfire.basename) return end
+        -- Crit layer
+        cMoonfireDmg = cMoonfireDmg * wan.ValueFromCritical(wan.CritChance)
+
+        -- Update ability data
+        local abilityValue = math.floor(cMoonfireDmg)
         wan.UpdateAbilityData(wan.spellData.Moonfire.basename, abilityValue, wan.spellData.Moonfire.icon, wan.spellData.Moonfire.name)
     end
 
@@ -69,7 +81,7 @@ local function OnEvent(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then 
-            nGalacticGuardian = wan.GetSpellDescriptionNumbers(wan.traitData.GalacticGuardian.id, {3}) / 100
+            nGalacticGuardian = wan.GetTraitDescriptionNumbers(wan.traitData.GalacticGuardian.entryid, {3}) / 100
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

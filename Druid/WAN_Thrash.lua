@@ -12,26 +12,37 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
+         -- Early exits
         if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.Thrash.id)
-        then wan.UpdateAbilityData(wan.spellData.Thrash.basename) return end -- Early exits
+        then
+            wan.UpdateAbilityData(wan.spellData.Thrash.basename)
+            return
+        end
 
+        -- Check for valid unit
         local _, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, wan.spellData.Thrash.maxRange)
-        if countValidUnit == 0 then wan.UpdateAbilityData(wan.spellData.Thrash.basename) return end -- Check for valid unit
+        if countValidUnit == 0 then
+            wan.UpdateAbilityData(wan.spellData.Thrash.basename)
+            return
+        end
 
-        local cThrashInstantDmg = nTrashInstantDmg * countValidUnit -- Base Values
+        -- Base Values
+        local cThrashInstantDmg = nTrashInstantDmg * countValidUnit
 
+         -- Dot Values
         local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Thrash.name, nThrashMaxStacks, cThrashInstantDmg)
         local thrashDebuffedUnitAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Thrash.name, nThrashMaxStacks)
         local missingThrashDebuffAoE = countValidUnit - thrashDebuffedUnitAoE
         local cThrashDotValue = nThrashDotDmg * missingThrashDebuffAoE * dotPotencyAoE
-        local cThrashDotDmg = (thrashDebuffedUnitAoE < countValidUnit and cThrashDotValue) or 0 -- Dot Values
+        local cThrashDotDmg = (thrashDebuffedUnitAoE < countValidUnit and cThrashDotValue) or 0
 
         local cThrashDmg = cThrashInstantDmg + cThrashDotDmg
- 
-        cThrashDmg = cThrashDmg * wan.ValueFromCritical(wan.CritChance) -- Crit Mod
 
-        local abilityValue = math.floor(cThrashDmg) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateAbilityData(wan.spellData.Thrash.basename) return end
+        -- Crit layer
+        cThrashDmg = cThrashDmg * wan.ValueFromCritical(wan.CritChance)
+
+         -- Update ability data
+        local abilityValue = math.floor(cThrashDmg)
         wan.UpdateAbilityData(wan.spellData.Thrash.basename, abilityValue, wan.spellData.Thrash.icon, wan.spellData.Thrash.name)
     end
 

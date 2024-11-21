@@ -16,30 +16,41 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
-        if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm 
-        or comboPercentage < 80 or wan.auraData.player.buff_Prowl 
-        or not wan.IsSpellUsable(wan.spellData.Rip.id)
-        then wan.UpdateAbilityData(wan.spellData.Rip.basename) return end -- Early exits
+        -- Early exits
+        if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
+            or comboPercentage < 80 or wan.auraData.player.buff_Prowl
+            or not wan.IsSpellUsable(wan.spellData.Rip.id)
+        then
+            wan.UpdateAbilityData(wan.spellData.Rip.basename)
+            return
+        end
 
+        -- Check for valid unit
         local isValidUnit = wan.ValidUnitBoolCounter(wan.spellData.Rip.id)
-        if not isValidUnit then wan.UpdateAbilityData(wan.spellData.Rip.basename) return end -- Check for valid unit
+        if not isValidUnit then
+            wan.UpdateAbilityData(wan.spellData.Rip.basename)
+            return
+        end
 
+        -- Dot values
         local dotPotency = wan.CheckDotPotency()
-        local cRipDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Rip and (nRipDotDmg * comboCorrection * dotPotency)) or 0 -- Dot values
+        local cRipDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Rip and (nRipDotDmg * comboCorrection * dotPotency)) or 0
 
         local cRipDmg = cRipDotDmg
 
-        if wan.traitData.RipandTear.known then -- Rip and Tear
+        -- Rip and Tear
+        if wan.traitData.RipandTear.known then
             local tearDebuffedUnit = wan.CheckForDebuff(wan.auraData, "Tear", wan.TargetUnitID)
             local cTearDotDmg = cRipDmg * currentCombo * nRipAndTear * dotPotency
             local cTearDmg = (not tearDebuffedUnit and (cTearDotDmg)) or 0
             cRipDmg = cRipDmg + cTearDmg
         end
 
-        cRipDmg = cRipDmg * wan.ValueFromCritical(wan.CritChance) -- Crit Mod
-        
-        local abilityValue = math.floor(cRipDmg) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateAbilityData(wan.spellData.Rip.basename) return end
+        -- Crit layer
+        cRipDmg = cRipDmg * wan.ValueFromCritical(wan.CritChance)
+
+        -- Update ability data
+        local abilityValue = math.floor(cRipDmg)
         wan.UpdateAbilityData(wan.spellData.Rip.basename, abilityValue, wan.spellData.Rip.icon, wan.spellData.Rip.name)
     end
 
@@ -77,7 +88,7 @@ local function OnEvent(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then
-            nRipAndTear = wan.GetSpellDescriptionNumbers(wan.traitData.RipandTear.id, { 1 }) / 100
+            nRipAndTear = wan.GetTraitDescriptionNumbers(wan.traitData.RipandTear.entryid, { 1 }) / 100
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

@@ -8,36 +8,54 @@ local function OnEvent(self, event, addonName)
     -- Init spell data
     local abilityActive = false
     local checkDebuffs = {"Rake", "Thrash", "Rip", "Feral Frenzy", "Tear", "Frenzied Assault"}
-    local nShredDmg, nPouncingStrikes, nMercilessClaws, nThrashingClaws, nThrashDotDmg = 0, 0, 0, 0, 0
+    local nShredDmg, nThrashDotDmg = 0, 0
+
+    -- Init trait data
+    local nPouncingStrikes = 0
+    local nMercilessClaws, nThrashingClaws = 0, 0
+    local nStrikeForTheHeart = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
+        -- Early exits
         if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
-        or not wan.IsSpellUsable(wan.spellData.Shred.id) 
-        then wan.UpdateAbilityData(wan.spellData.Shred.basename) return end -- Early exits
+            or not wan.IsSpellUsable(wan.spellData.Shred.id)
+        then
+            wan.UpdateAbilityData(wan.spellData.Shred.basename)
+            return
+        end
 
+        -- Check for valid unit
         local isValidUnit = wan.ValidUnitBoolCounter(wan.spellData.Shred.id)
-        if not isValidUnit then wan.UpdateAbilityData(wan.spellData.Shred.basename) return end -- Check for valid unit
+        if not isValidUnit then
+            wan.UpdateAbilityData(wan.spellData.Shred.basename)
+            return
+        end
 
-        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(wan.classificationData)
-        local cShredDmg = nShredDmg * checkPhysicalDR -- Base values
-
+        -- Base values
         local critChanceMod = 0
-        if wan.auraData.player.buff_SuddenAmbush or
-            (wan.traitData.PouncingStrikes.known and wan.auraData.player.buff_Prowl) then -- Pouncing Strikes
-            critChanceMod = wan.CritChance
-            local cPouncingStrikes = nShredDmg * nPouncingStrikes * checkPhysicalDR
+        local critDamageMod = 0
+        local cShredDmg = nShredDmg
+
+        -- Pouncing Strikes
+        if wan.auraData.player.buff_SuddenAmbush or (wan.traitData.PouncingStrikes.known and wan.auraData.player.buff_Prowl) then 
+            critChanceMod = critChanceMod + wan.CritChance
+            local cPouncingStrikes = nShredDmg * nPouncingStrikes
             cShredDmg = cShredDmg + cPouncingStrikes
         end
-        
-        if wan.traitData.MercilessClaws.known
-        and wan.CheckForAnyDebuff(wan.auraData, checkDebuffs, wan.TargetUnitID)
-        then -- Merciless Claws
+
+        -- Merciless Claws
+        if wan.traitData.MercilessClaws.known and wan.CheckForAnyDebuff(wan.auraData, checkDebuffs, wan.TargetUnitID) then
             local cMercilessClaws = nShredDmg * nMercilessClaws
             cShredDmg = cShredDmg + cMercilessClaws
         end
 
-        if wan.traitData.ThrashingClaws.known then --Thrashing Claws
+        -- Remove physical layer
+        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(wan.classificationData)
+        cShredDmg = cShredDmg * checkPhysicalDR
+
+        --Thrashing Claws
+        if wan.traitData.ThrashingClaws.known then                                    
             local bThrashingDebuffs = wan.CheckForAnyDebuff(wan.auraData, checkDebuffs, wan.TargetUnitID)
             local bThrashDebuff = wan.CheckForDebuff(wan.auraData, wan.spellData.Thrash.name, wan.TargetUnitID)
             local dotPotency = wan.CheckDotPotency(cShredDmg)
@@ -53,10 +71,17 @@ local function OnEvent(self, event, addonName)
             cShredDmg = cShredDmg + cThrashingClaws
         end
 
-        cShredDmg = cShredDmg * wan.ValueFromCritical(wan.CritChance, critChanceMod) -- Crit Mod
+        -- Strike for the Heart
+        if wan.traitData.StrikefortheHeart.known then
+            critChanceMod = critChanceMod + nStrikeForTheHeart
+            critDamageMod = critDamageMod + nStrikeForTheHeart
+        end
 
-        local abilityValue = math.floor(cShredDmg) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateAbilityData(wan.spellData.Shred.basename) return end
+        -- Crit layer
+        cShredDmg = cShredDmg * wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+
+        -- Update ability data
+        local abilityValue = math.floor(cShredDmg)                                                  
         wan.UpdateAbilityData(wan.spellData.Shred.basename, abilityValue, wan.spellData.Shred.icon, wan.spellData.Shred.name)
     end
 
@@ -79,9 +104,10 @@ local function OnEvent(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then
-            nPouncingStrikes = wan.GetSpellDescriptionNumbers(wan.traitData.PouncingStrikes.id, { 3 }) / 100
-            nMercilessClaws = wan.GetSpellDescriptionNumbers(wan.traitData.MercilessClaws.id, { 1 }) / 100
-            nThrashingClaws = wan.GetSpellDescriptionNumbers(wan.traitData.ThrashingClaws.id, { 1 }) / 100
+            nPouncingStrikes = wan.GetTraitDescriptionNumbers(wan.traitData.PouncingStrikes.entryid, { 3 }) / 100
+            nMercilessClaws = wan.GetTraitDescriptionNumbers(wan.traitData.MercilessClaws.entryid, { 1 }) / 100
+            nThrashingClaws = wan.GetTraitDescriptionNumbers(wan.traitData.ThrashingClaws.entryid, { 1 }) / 100
+            nStrikeForTheHeart = wan.GetTraitDescriptionNumbers(wan.traitData.StrikefortheHeart.entryid, { 1 })
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

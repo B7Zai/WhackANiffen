@@ -11,15 +11,20 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
-        if not wan.PlayerState.Status or wan.HealThreshold() 
-        <= nRenewalHeal or not wan.IsSpellUsable(wan.spellData.Renewal.id) 
-        then wan.UpdateMechanicData(wan.spellData.Renewal.basename) return end -- Early exits
+        -- Early exits
+        if not wan.PlayerState.Status or wan.auraData.player.buff_FrenziedRegeneration
+        or wan.HealThreshold() <= nRenewalHeal or not wan.IsSpellUsable(wan.spellData.Renewal.id)
+        then
+            wan.UpdateMechanicData(wan.spellData.Renewal.basename)
+            return
+        end
 
-        local cRenewalHeal = nRenewalHeal -- Base values
+        -- Base values
+        local cRenewalHeal = nRenewalHeal
 
-        local abilityValue = math.floor(cRenewalHeal) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateMechanicData(wan.spellData.Renewal.basename) return end
-        wan.UpdateMechanicData(wan.spellData.Renewal.basename, abilityValue, wan.spellData.Renewal.icon, wan.spellData.Renewal.name)
+        -- Update ability data
+        local healValue = math.floor(cRenewalHeal)
+        wan.UpdateMechanicData(wan.spellData.Renewal.basename, healValue, wan.spellData.Renewal.icon, wan.spellData.Renewal.name)
     end
 
     -- Data update on events

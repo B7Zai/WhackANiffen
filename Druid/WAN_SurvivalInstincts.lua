@@ -11,15 +11,20 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
+        -- Early exits
         if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or wan.auraData.player.buff_SurvivalInstincts or wan.HealThreshold() <= nSurvivalInstincts
-        or not wan.IsSpellUsable(wan.spellData.SurvivalInstincts.id)
-        then wan.UpdateMechanicData(wan.spellData.SurvivalInstincts.basename) return end -- Early exits
+            or wan.auraData.player.buff_SurvivalInstincts or wan.HealThreshold() <= nSurvivalInstincts
+            or not wan.IsSpellUsable(wan.spellData.SurvivalInstincts.id)
+        then
+            wan.UpdateMechanicData(wan.spellData.SurvivalInstincts.basename)
+            return
+        end
 
-        local cSurvivalInstincts = nSurvivalInstincts -- Base values
+        -- Base values
+        local cSurvivalInstincts = nSurvivalInstincts
 
-        local abilityValue = math.floor(cSurvivalInstincts) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateMechanicData(wan.spellData.SurvivalInstincts.basename) return end
+        -- Update ability data
+        local abilityValue = math.floor(cSurvivalInstincts)
         wan.UpdateMechanicData(wan.spellData.SurvivalInstincts.basename, abilityValue, wan.spellData.SurvivalInstincts.icon, wan.spellData.SurvivalInstincts.name)
     end
 

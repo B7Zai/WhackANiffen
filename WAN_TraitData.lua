@@ -5,7 +5,7 @@ setmetatable(wan.traitData, {
     __index = function(t, key)
         local default = {
             name = "Unknown",
-            id = 61304,
+            id = 0,
             entryid = 0,
             known = false,
             rank = 0
@@ -31,22 +31,24 @@ local function GetTraitData(dataArray)
                 local isSelectionType = nodeInfo.type == 2
                 local activeEntryID = nodeInfo.activeEntry and nodeInfo.activeEntry.entryID or nil
 
-                for _, entryID in pairs(nodeInfo.entryIDs) do
+                for _, entryID in ipairs(nodeInfo.entryIDs) do
                     local entryInfo = C_Traits.GetEntryInfo(configID, entryID)
 
                     if entryInfo and entryInfo.definitionID then
                         local definitionInfo = C_Traits.GetDefinitionInfo(entryInfo.definitionID)
-                        local spellInfo = C_Spell.GetSpellInfo(definitionInfo.spellID)
+                        local overriddenSpellID = definitionInfo.overriddenSpellID or definitionInfo.spellID or 0
+                        local spellName = C_Spell.GetSpellName(overriddenSpellID)
 
-                        if spellInfo then
-                            local keyName = wan.FormatNameForKey(spellInfo.name)
+                        if spellName then
+                            local keyReference = definitionInfo.overrideName or spellName
+                            local keyName = wan.FormatNameForKey(keyReference)
                             local isActive = nodeInfo.currentRank > 0
                             if isSelectionType then isActive = (entryID == activeEntryID) end
 
                             dataArray[keyName] = {
-                                name = spellInfo.name,
+                                name = spellName,
                                 id = definitionInfo.spellID,
-                                entryid = activeEntryID,
+                                entryid = entryID,
                                 known = isActive,
                                 rank = nodeInfo.currentRank,
                             }
@@ -68,6 +70,7 @@ wan.RegisterBlizzardEvents(traitFrame,
 
 traitFrame:SetScript("OnEvent", function(self, event, ...)
     if event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_ENTERING_WORLD" then
+        wan.WipeTable(wan.traitData)
         GetTraitData(wan.traitData)
     end
 

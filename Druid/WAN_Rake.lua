@@ -16,38 +16,52 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
-        if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm 
-        or not wan.IsSpellUsable(wan.spellData.Rake.id)
-        then wan.UpdateAbilityData(wan.spellData.Rake.basename) return end -- Early exits
+        -- Early exits
+        if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
+            or not wan.IsSpellUsable(wan.spellData.Rake.id)
+        then
+            wan.UpdateAbilityData(wan.spellData.Rake.basename)
+            return
+        end
 
+        -- Check for valid unit
         local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.Rake.id)
-        if not isValidUnit then wan.UpdateAbilityData(wan.spellData.Rake.basename) return end -- Check for valid unit
+        if not isValidUnit then
+            wan.UpdateAbilityData(wan.spellData.Rake.basename)
+            return
+        end
 
+        -- Dot value
         local dotPotency = wan.CheckDotPotency(nRakeInstantDmg)
-        local cRakeDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Rake and (nRakeDotDmg * dotPotency)) or 0 -- Dot values
-        
+        local cRakeDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Rake and (nRakeDotDmg * dotPotency)) or 0
+
+        -- Base values
         local cRakeDmg = nRakeInstantDmg + cRakeDotDmg
 
-        if wan.traitData.DoubleClawedRake.known and countValidUnit > 1 then -- DoubleClawedRake
+        -- Double-Clawed Rake
+        if wan.traitData.DoubleClawedRake.known and countValidUnit > 1 then
             local nDoubleClawedInstantDmg = nRakeInstantDmg * math.min(countValidUnit, nDoubleClawedRakeAoeCap)
-            local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Rake.name, nil, nDoubleClawedInstantDmg)
+            local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Rake.name, nil,
+                nDoubleClawedInstantDmg)
             local rakeDebuffedUnitAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Rake.name)
             local cDoubleClawedRakeDotDmg = (rakeDebuffedUnitAoE < countValidUnit and nRakeDotDmg * dotPotencyAoE) or 0
             if rakeDebuffedUnitAoE > 0 and not wan.auraData[wan.TargetUnitID].debuff_Rake then cDoubleClawedRakeDotDmg = 0 end
             local cDoubleClawedRakeDmg = nRakeInstantDmg + cDoubleClawedRakeDotDmg
-                cRakeDmg = cRakeDmg + cDoubleClawedRakeDmg
+            cRakeDmg = cRakeDmg + cDoubleClawedRakeDmg
         end
 
-        if wan.auraData.player.buff_SuddenAmbush or -- PouncingStrikes
+        -- Pouncing Strikes
+        if wan.auraData.player.buff_SuddenAmbush or
             (wan.traitData.PouncingStrikes.known and wan.auraData.player.buff_Prowl) then
             local cPouncingStrikes = cRakeDmg * nPouncingStrikes
             cRakeDmg = cRakeDmg + cPouncingStrikes
         end
 
-        cRakeDmg = cRakeDmg * wan.ValueFromCritical(wan.CritChance) -- Crit Mod
-       
-        local abilityValue = math.floor(cRakeDmg) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateAbilityData(wan.spellData.Rake.basename) return end
+        -- Crit value
+        cRakeDmg = cRakeDmg * wan.ValueFromCritical(wan.CritChance)
+
+        -- Update ability data
+        local abilityValue = math.floor(cRakeDmg)
         wan.UpdateAbilityData(wan.spellData.Rake.basename, abilityValue, wan.spellData.Rake.icon, wan.spellData.Rake.name)
     end
 
@@ -73,8 +87,8 @@ local function OnEvent(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then
-            nPouncingStrikes = wan.GetSpellDescriptionNumbers(wan.traitData.PouncingStrikes.id, { 3 }) / 100
-            nDoubleClawedRakeAoeCap = wan.GetSpellDescriptionNumbers(wan.traitData.DoubleClawedRake.id, { 1 }) + 1
+            nPouncingStrikes = wan.GetTraitDescriptionNumbers(wan.traitData.PouncingStrikes.entryid, { 3 }) / 100
+            nDoubleClawedRakeAoeCap = wan.GetTraitDescriptionNumbers(wan.traitData.DoubleClawedRake.entryid, { 1 }) + 1
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

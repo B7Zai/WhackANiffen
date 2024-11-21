@@ -21,33 +21,49 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
-        if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm 
-        or wan.auraData.player.buff_Prowl or not wan.IsSpellUsable(wan.spellData.FerociousBite.id)
-        then wan.UpdateAbilityData(wan.spellData.FerociousBite.basename) return end -- Early exits
+        -- Early exits
+        if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
+            or wan.auraData.player.buff_Prowl or not wan.IsSpellUsable(wan.spellData.FerociousBite.id)
+        then
+            wan.UpdateAbilityData(wan.spellData.FerociousBite.basename)
+            return
+        end
 
+        -- Check for valid unit
         local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.FerociousBite.id)
-        if not isValidUnit then wan.UpdateAbilityData(wan.spellData.FerociousBite.basename) return end -- Check for valid unit
+        if not isValidUnit then
+            wan.UpdateAbilityData(wan.spellData.FerociousBite.basename)
+            return
+        end
 
+        -- Combo checkers and early exit
         currentCombo = math.max(checkCombo, ((wan.auraData.player.buff_ApexPredatorsCraving and comboMax) or 0))
         comboPercentage = (currentCombo / comboMax) * 100
-        if comboPercentage < 80 then wan.UpdateAbilityData(wan.spellData.FerociousBite.basename) return end -- Combo checkers and early exit
+        if comboPercentage < 80 then
+            wan.UpdateAbilityData(wan.spellData.FerociousBite.basename)
+            return
+        end
 
+        -- Energy and damage value scaling with energy
         checkEnergy = UnitPower("player", 3) or 0
         currentEnergy = math.max(checkEnergy, ((wan.auraData.player.buff_ApexPredatorsCraving and nFerociousBiteFullCost) or 0))
         local energyMod = math.min(currentEnergy, nFerociousBiteFullCost)
         local bonusDmgPerEnergy = ((nFerociousBiteFullCost / nFerociousBiteCost) * energyMod) / (nFerociousBiteFullCost * 2)
-        local bonusDmgFromEnergy = nFerociousBiteDmg * currentCombo * bonusDmgPerEnergy -- Energy and damage value scaling with energy
+        local bonusDmgFromEnergy = nFerociousBiteDmg * currentCombo * bonusDmgPerEnergy
 
+        -- Set icon desaturation below full cost
         local bFerociousBiteDesat = false
-        if currentEnergy < nFerociousBiteFullCost then bFerociousBiteDesat = true end -- Set icon desaturation below full cost
+        if currentEnergy < nFerociousBiteFullCost then bFerociousBiteDesat = true end
 
+        -- Remove physical layer
         local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(wan.classificationData)
         local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, wan.spellData.FerociousBite.id)
+        local cFerociousBiteDmg = ((nFerociousBiteDmg * currentCombo) + bonusDmgFromEnergy) * checkPhysicalDR                                                                                       -- Base value
 
-        local cFerociousBiteDmg = ((nFerociousBiteDmg * currentCombo) + bonusDmgFromEnergy) * checkPhysicalDR -- Base value
-
-        if wan.traitData.RampantFerocity.known and countValidUnit > 1 then -- Rampant Ferocity
+        -- Rampant Ferocity
+        if wan.traitData.RampantFerocity.known and countValidUnit > 1 then
             local ripDebuffedUnitAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Rip.name)
+
             if wan.auraData[wan.TargetUnitID].debuff_Rip then ripDebuffedUnitAoE = ripDebuffedUnitAoE - 1 end
 
             local validUnitSoftCappedAoE = wan.AdjustSoftCapUnitOverFlow(nRampantFerocitySoftCap, ripDebuffedUnitAoE)
@@ -55,27 +71,31 @@ local function OnEvent(self, event, addonName)
             cFerociousBiteDmg = cFerociousBiteDmg + cRampantFerocityDmg
         end
 
-        if wan.traitData.SaberJaws.rank > 0 then -- Saber Jaws
+         -- Saber Jaws
+        if wan.traitData.SaberJaws.rank > 0 then
             local cSaberJawsDmg = bonusDmgFromEnergy * nSaberJaws * checkPhysicalDR
 
             cFerociousBiteDmg = cFerociousBiteDmg + cSaberJawsDmg
         end
 
-        if wan.traitData.Ravage.known and wan.auraData.player.buff_Ravage and countValidUnit > 1 then --Ravage AoE
+        --Ravage AoE
+        if wan.traitData.Ravage.known and wan.auraData.player.buff_Ravage and countValidUnit > 1 then
             local ravageUnitAoE = countValidUnit - 1
             local cleaveRavageDmg = nFerociousBiteDmgAoE * ravageUnitAoE * checkPhysicalDRAoE
 
             cFerociousBiteDmg = cFerociousBiteDmg + cleaveRavageDmg
         end
 
-        if wan.traitData.DreadfulWound.known and wan.auraData.player.buff_Ravage then -- Dreadful Wound
+        -- Dreadful Wound
+        if wan.traitData.DreadfulWound.known and wan.auraData.player.buff_Ravage then
             local cDreadfulWoundDmg = nDreadfulWound * countValidUnit
 
             cFerociousBiteDmg = cFerociousBiteDmg + cDreadfulWoundDmg
         end
 
+        -- Bursting Growth
         if wan.traitData.BurstingGrowth.known and wan.auraData[wan.TargetUnitID].debuff_BloodseekerVines
-        and countValidUnit > 1 then -- Bursting Growth
+            and countValidUnit > 1 then
             local burstingGrowthUnitAoE = countValidUnit - 1
             local validUnitSoftCappedAoE = wan.AdjustSoftCapUnitOverFlow(nBurstingGrowthSoftCap, burstingGrowthUnitAoE)
             local cBurstingGrowthDmg = nBurstingGrowth * validUnitSoftCappedAoE * checkPhysicalDRAoE
@@ -83,13 +103,13 @@ local function OnEvent(self, event, addonName)
             cFerociousBiteDmg = cFerociousBiteDmg + cBurstingGrowthDmg
         end
 
-        cFerociousBiteDmg = cFerociousBiteDmg * wan.ValueFromCritical(wan.CritChance) -- Crit Mod
+        -- Crit layer
+        cFerociousBiteDmg = cFerociousBiteDmg * wan.ValueFromCritical(wan.CritChance)
 
-        local abilityValue = math.floor(cFerociousBiteDmg) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateAbilityData(wan.spellData.FerociousBite.basename) return end
+        -- Update ability data
+        local abilityValue = math.floor(cFerociousBiteDmg)
         wan.UpdateAbilityData(wan.spellData.FerociousBite.basename, abilityValue, wan.spellData.FerociousBite.icon, wan.spellData.FerociousBite.name, bFerociousBiteDesat)
     end
-
 
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
@@ -122,7 +142,7 @@ local function OnEvent(self, event, addonName)
 
             nDreadfulWound = wan.GetSpellDescriptionNumbers(wan.traitData.DreadfulWound.id, { 1 })
 
-            local burstingGrowthValues = wan.GetSpellDescriptionNumbers(wan.traitData.BurstingGrowth.id, { 1, 2 })
+            local burstingGrowthValues = wan.GetTraitDescriptionNumbers(wan.traitData.BurstingGrowth.entryid, { 1, 2 })
             nBurstingGrowth = burstingGrowthValues[1]
             nBurstingGrowthSoftCap = burstingGrowthValues[2]
 
@@ -139,8 +159,8 @@ local function OnEvent(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then
-            nRampantFerocitySoftCap = wan.GetSpellDescriptionNumbers(wan.traitData.RampantFerocity.id, { 3 })
-            nSaberJaws = (wan.GetSpellDescriptionNumbers(wan.traitData.SaberJaws.id, { 1 }) * wan.traitData.SaberJaws.rank) / 100
+            nRampantFerocitySoftCap = wan.GetTraitDescriptionNumbers(wan.traitData.RampantFerocity.entryid, { 3 })
+            nSaberJaws = wan.GetTraitDescriptionNumbers(wan.traitData.SaberJaws.entryid, { 1 }, wan.traitData.SaberJaws.rank) / 100
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

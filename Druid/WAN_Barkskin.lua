@@ -11,15 +11,20 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
+        -- Early exits
         if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or wan.auraData.player.buff_Barkskin or wan.HealThreshold() <= nBarkskin
-        or not wan.IsSpellUsable(wan.spellData.Barkskin.id)
-        then wan.UpdateMechanicData(wan.spellData.Barkskin.basename) return end -- Early exits
+            or wan.auraData.player.buff_Barkskin or wan.HealThreshold() <= nBarkskin
+            or not wan.IsSpellUsable(wan.spellData.Barkskin.id)
+        then
+            wan.UpdateMechanicData(wan.spellData.Barkskin.basename)
+            return
+        end
 
-        local cBarkskin = nBarkskin -- Base values
+        -- Base values
+        local cBarkskin = nBarkskin
 
-        local abilityValue = math.floor(cBarkskin) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateMechanicData(wan.spellData.Barkskin.basename) return end
+        -- Update ability data
+        local abilityValue = math.floor(cBarkskin)
         wan.UpdateMechanicData(wan.spellData.Barkskin.basename, abilityValue, wan.spellData.Barkskin.icon, wan.spellData.Barkskin.name)
     end
 

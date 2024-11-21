@@ -11,25 +11,37 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
-        if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.FeralFrenzy.id) 
-        then wan.UpdateMechanicData(wan.spellData.FeralFrenzy.basename) return end -- Early exits
+        -- Early exits
+        if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.FeralFrenzy.id)
+        then
+            wan.UpdateMechanicData(wan.spellData.FeralFrenzy.basename)
+            return
+        end
 
-        local isValidUnit = wan.ValidUnitBoolCounter(wan.spellData.FeralFrenzy.id) -- Valid units
-        if not isValidUnit then wan.UpdateMechanicData(wan.spellData.FeralFrenzy.basename) return end
+        -- Check for valid unit
+        local isValidUnit = wan.ValidUnitBoolCounter(wan.spellData.FeralFrenzy.id)
+        if not isValidUnit then
+            wan.UpdateMechanicData(wan.spellData.FeralFrenzy.basename)
+            return
+        end
 
+        -- Remove physical layer
         local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(wan.classificationData)
         local cFeralFrenzyInstantDmg = nFeralFrenzyInstantDmg * checkPhysicalDR
 
+        -- Dot value
         local dotPotency = wan.CheckDotPotency(cFeralFrenzyInstantDmg)
         local cFeralFrenzyDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_FeralFrenzy and (nFeralFrenzyDotDmg * dotPotency)) or 0
 
-        local cFeralFrenzy = cFeralFrenzyInstantDmg + cFeralFrenzyDotDmg -- Base values
+        -- Base value
+        local cFeralFrenzy = cFeralFrenzyInstantDmg + cFeralFrenzyDotDmg
+        local cdPotency = wan.CheckOffensiveCooldownPotency(cFeralFrenzy, isValidUnit)
 
-        if not wan.CheckOffensiveCooldownPotency(cFeralFrenzy, isValidUnit)
-        then wan.UpdateMechanicData(wan.spellData.FeralFrenzy.basename) return end
+        -- Crit layer
+        cFeralFrenzy = cFeralFrenzy * wan.ValueFromCritical(wan.CritChance)
 
-        local abilityValue = math.floor(cFeralFrenzy) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateMechanicData(wan.spellData.FeralFrenzy.basename) return end
+        -- Update ability data
+        local abilityValue = cdPotency and math.floor(cFeralFrenzy) or 0
         wan.UpdateMechanicData(wan.spellData.FeralFrenzy.basename, abilityValue, wan.spellData.FeralFrenzy.icon, wan.spellData.FeralFrenzy.name)
     end
 

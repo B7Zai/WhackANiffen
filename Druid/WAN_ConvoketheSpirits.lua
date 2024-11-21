@@ -7,48 +7,35 @@ local function OnEvent(self, event, addonName)
 
     -- Init data
     local abilityActive = false
-    local maxRange = 0
-    local nConvoketheSpiritsDmg, nConvoketheSpiritsHeal = 0, 0
+    local nConvoketheSpiritsDmg, nConvoketheSpiritsHeal, nConvokeTheSpiritsMaxRange = 0, 0, 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
+        -- Early exits
         if not wan.PlayerState.Status or wan.auraData.player.buff_Prowl
             or not wan.IsSpellUsable(wan.spellData.ConvoketheSpirits.id)
         then
             wan.UpdateAbilityData(wan.spellData.ConvoketheSpirits.basename)
             wan.UpdateMechanicData(wan.spellData.ConvoketheSpirits.basename)
             return
-        end -- Early exits
+        end
 
-        local isValidUnit, _, idValidUnit = wan.ValidUnitBoolCounter(nil, maxRange)
-        local cConvoketheSpiritsDmg = nConvoketheSpiritsDmg  -- Base values
+        -- Base offensive value
+        local isValidUnit, _, idValidUnit = wan.ValidUnitBoolCounter(nil, nConvokeTheSpiritsMaxRange)
+        local cConvoketheSpiritsDmg = nConvoketheSpiritsDmg
         local cdPotency = wan.CheckOffensiveCooldownPotency(cConvoketheSpiritsDmg, isValidUnit, idValidUnit)
-        local damageValue = cdPotency and math.floor(cConvoketheSpiritsDmg) -- Update AbilityData
 
-        if damageValue then
-            wan.UpdateAbilityData(
-            wan.spellData.ConvoketheSpirits.basename,
-            damageValue,
-            wan.spellData.ConvoketheSpirits.icon,
-            wan.spellData.ConvoketheSpirits.name
-        )
-        else
-            wan.UpdateAbilityData(wan.spellData.ConvoketheSpirits.basename)
-        end
-
+        -- Update ability data
+        local damageValue = cdPotency and math.floor(cConvoketheSpiritsDmg) or 0
+        wan.UpdateAbilityData(wan.spellData.ConvoketheSpirits.basename, damageValue, wan.spellData.ConvoketheSpirits.icon, wan.spellData.ConvoketheSpirits.name)
+ 
+        -- Base defensive value
         local cConvoketheSpiritsHeal = nConvoketheSpiritsHeal
-        local healValue = wan.HealThreshold() > cConvoketheSpiritsHeal and cConvoketheSpiritsHeal
+        local healThreshold = wan.HealThreshold() > cConvoketheSpiritsHeal
 
-        if healValue then
-            wan.UpdateMechanicData(
-            wan.spellData.ConvoketheSpirits.basename,
-            healValue,
-            wan.spellData.ConvoketheSpirits.icon,
-            wan.spellData.ConvoketheSpirits.name
-        )
-        else
-            wan.UpdateMechanicData(wan.spellData.ConvoketheSpirits.basename)
-        end
+        -- Update ability data
+        local healValue = healThreshold and cConvoketheSpiritsHeal or 0
+        wan.UpdateMechanicData(wan.spellData.ConvoketheSpirits.basename, healValue, wan.spellData.ConvoketheSpirits.icon, wan.spellData.ConvoketheSpirits.name)
     end
 
     -- Data update on events
@@ -58,11 +45,11 @@ local function OnEvent(self, event, addonName)
             nConvoketheSpiritsHeal = wan.DefensiveCooldownToValue(wan.spellData.ConvoketheSpirits.id)
             local formID = GetShapeshiftForm()
             if formID == 0 or formID == 4 then
-                maxRange = 40
+                nConvokeTheSpiritsMaxRange = 40
             elseif formID == 1 or formID == 2 then
-                maxRange = 5
+                nConvokeTheSpiritsMaxRange = 5
             else
-                maxRange = 0
+                nConvokeTheSpiritsMaxRange = 0
             end
         end
     end)
@@ -72,11 +59,13 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.ConvoketheSpirits.known and wan.spellData.ConvoketheSpirits.id
-            wan.BlizzardEventHandler(frameConvokeTheSpirits, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
             wan.SetUpdateRate(frameConvokeTheSpirits, CheckAbilityValue, abilityActive)
+            wan.BlizzardEventHandler(frameConvokeTheSpirits, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
         end
 
-        if event == "TRAIT_DATA_READY" then end
+        if event == "TRAIT_DATA_READY" then
+            abilityActive = wan.spellData.ConvoketheSpirits.known and wan.spellData.ConvoketheSpirits.id
+         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
             wan.SetUpdateRate(frameConvokeTheSpirits, CheckAbilityValue, abilityActive)

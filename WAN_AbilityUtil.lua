@@ -14,6 +14,7 @@ wan.classificationData = {
 }
 
 function wan.UpdateAbilityData(abilityName, value, icon, name, desaturation)
+    if value == 0 then value, icon, name, desaturation = nil, nil, nil, nil end
     wan.AbilityData[abilityName] = {
         value = value,
         icon = icon,
@@ -23,6 +24,7 @@ function wan.UpdateAbilityData(abilityName, value, icon, name, desaturation)
 end
 
 function wan.UpdateMechanicData(abilityName, value, icon, name, desaturation)
+    if value == 0 then value, icon, name, desaturation = nil, nil, nil, nil end
     wan.MechanicData[abilityName] = {
         value = value,
         icon = icon,
@@ -77,8 +79,8 @@ function wan.ValidUnitInRangeAoE(unit, spellIdentifier, maxRange)
     local spellID = spellIdentifier or 61304
     local maxSpellRange = maxRange or 0
 
-    local inCombat = UnitAffectingCombat(unit)
-    if inCombat or not C_QuestLog.UnitIsRelatedToActiveQuest(unit) then
+    local unitInCombat = UnitAffectingCombat(unit)
+    if unitInCombat or not C_QuestLog.UnitIsRelatedToActiveQuest(unit) then
         return C_Spell.IsSpellInRange(spellID, unit)
             or wan.CheckRange(unit, maxSpellRange, "<=")
     end
@@ -144,9 +146,7 @@ function wan.GetSpellDescriptionNumbers(spellIdentifier, indexes)
         end
     end
 
-    if #abilityValues == 0 then
-        abilityValues = { 0 }
-    end
+    if #abilityValues == 0 then abilityValues = { 0 } end
 
     local selectedNumbers = {}
     for _, index in ipairs(indexes) do
@@ -157,43 +157,29 @@ function wan.GetSpellDescriptionNumbers(spellIdentifier, indexes)
     return #indexes == 1 and selectedNumbers[1] or selectedNumbers
 end
 
--- Parses trait description and converts string numbers to numeric values.
--- Returns specified numbers indexed by `indexes`
--- Returns 0 if no valid numbers are found for the specified indexes.
-function wan.GetTraitDescriptionNumbers(entryID, rank, indexes)
-    local traitRank = rank or 1
+function wan.GetTraitDescriptionNumbers(entryID, indexes, rank)
+    local traitRank = rank or 0
     local traitDesc = C_Traits.GetTraitDescription(entryID, traitRank)
+
     if not traitDesc then
-        return 0
+        return #indexes == 1 and 0 or setmetatable({}, { __index = function() return 0 end })
     end
 
-    local suffixMultipliers = {
-        ["thousand"] = 1e3,
-        ["million"]  = 1e6,
-        ["billion"]  = 1e9,
-    }
     local traitValues = {}
-
+    local suffixMultipliers = { thousand = 1e3, million = 1e6, billion = 1e9 }
     for number, suffix in traitDesc:gmatch("(%d+[%.,]?%d*)%s*(%a*)") do
-        local cleanNumber = tonumber((number:gsub("[,%%]", "")))
-        if cleanNumber then
-            cleanNumber = cleanNumber * (suffixMultipliers[suffix:lower()] or 1)
-            table.insert(traitValues, cleanNumber)
-        end
+        local cleanNumber = tonumber((number:gsub("[,%%]", ""))) or 0
+        traitValues[#traitValues + 1] = cleanNumber * (suffixMultipliers[suffix:lower()] or 1)
     end
 
-    if #traitValues == 0 then
-        traitValues = { 0 }
-    end
-
-    local selectedNumbers = {}
+    local results = {}
     for _, index in ipairs(indexes) do
-        local num = traitValues[index] or 0
-        table.insert(selectedNumbers, num)
+        results[#results + 1] = traitValues[index]
     end
 
-    return #indexes == 1 and selectedNumbers[1] or selectedNumbers
+    return #indexes == 1 and results[1] or results
 end
+
 
 -- Checks if a spell is usable and not on cooldown
 function wan.IsSpellUsable(spellIdentifier)
@@ -211,7 +197,7 @@ function wan.ValueFromCritical(critChance, critMod, critDamageMod)
     local critChance = critChance or GetCritChance()
     local critMod = critMod or 0
     local critDamageMod = critDamageMod or 0
-    local critValue = (critChance / 100 + 1) + (critMod / 100)
+    local critValue = 1 + (critChance / 100) + (critMod / 100)
     local critDamageValue = (critDamageMod / 100) + 1
     return critValue * critDamageValue
 end
@@ -262,6 +248,42 @@ function wan.CheckUnitPhysicalDamageReductionAoE(classificationDataArray, spellI
     else
         return 1
     end
+end
+
+---- checks if any valid unit is targeting the player
+function wan.IsTanking()
+    local isTanking = UnitDetailedThreatSituation("player", wan.TargetUnitID) or false
+    if isTanking then
+        return true  
+    end
+
+    for i = 1, 40 do
+        local unit = "nameplate" .. i
+
+        if UnitExists(unit) and UnitCanAttack("player", unit) then
+            local inCombat = UnitAffectingCombat(unit)
+
+            if inCombat or not C_QuestLog.UnitIsRelatedToActiveQuest(unit) 
+            and wan.CheckRange(unit, 40, "<=")
+            then
+                isTanking = UnitDetailedThreatSituation("player", unit) or false
+                return isTanking
+            end
+        end
+    end
+    
+    return false
+end
+
+-- Checks damage reduction from armor gain
+function wan.GetArmorDamageReductionFromSpell(armorValue)
+    local targetLevel = math.max(UnitLevel(wan.TargetUnitID), UnitLevel("player"))
+    local _, _, armor = UnitArmor("player")
+    local buffedArmor = armor + armorValue
+    local currentEffectiveness = C_PaperDollInfo.GetArmorEffectivenessAgainstTarget(armor) or C_PaperDollInfo.GetArmorEffectiveness(armor, targetLevel)
+    local buffedEffectiveness = C_PaperDollInfo.GetArmorEffectivenessAgainstTarget(buffedArmor) or C_PaperDollInfo.GetArmorEffectiveness(buffedArmor, targetLevel)
+    
+    return (buffedEffectiveness - currentEffectiveness) * 100
 end
 
 -- Reduce damage for "beyond x target abilities"

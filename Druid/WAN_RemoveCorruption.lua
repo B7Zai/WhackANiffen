@@ -12,14 +12,19 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
+        -- Early exits
         if not wan.PlayerState.Status or not wan.CheckDispelBool(wan.auraData, "player", dispelType)
-        or not wan.IsSpellUsable(wan.spellData.RemoveCorruption.id)
-        then wan.UpdateMechanicData(wan.spellData.RemoveCorruption.basename) return end -- Early exits
+            or not wan.IsSpellUsable(wan.spellData.RemoveCorruption.id)
+        then
+            wan.UpdateMechanicData(wan.spellData.RemoveCorruption.basename)
+            return
+        end
 
-        local cRemoveCorruption = nRemoveCorruption -- Base values
+        -- Base values
+        local cRemoveCorruption = nRemoveCorruption
 
-        local abilityValue = math.floor(cRemoveCorruption) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateMechanicData(wan.spellData.RemoveCorruption.basename) return end
+        -- Update ability data
+        local abilityValue = math.floor(cRemoveCorruption)
         wan.UpdateMechanicData(wan.spellData.RemoveCorruption.basename, abilityValue, wan.spellData.RemoveCorruption.icon, wan.spellData.RemoveCorruption.name)
     end
 

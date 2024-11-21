@@ -12,19 +12,28 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
-        if  not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
-        or not wan.IsSpellUsable(wan.spellData.TigersFury.id)
-        then wan.UpdateMechanicData(wan.spellData.TigersFury.basename) return end -- Early exits
+        -- Early exits
+        if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
+            or not wan.IsSpellUsable(wan.spellData.TigersFury.id)
+        then
+            wan.UpdateMechanicData(wan.spellData.TigersFury.basename)
+            return
+        end
 
+        -- Energy check and early exit
         currentEnergy = UnitPower("player", 3) or 0
         energyPercentage = (currentEnergy / energyMax) * 100
-        if energyPercentage >= (100 - eTigersFuryPercentage) 
-        then wan.UpdateMechanicData(wan.spellData.TigersFury.basename) return end -- Energy check and early exit
+        if energyPercentage >= (100 - eTigersFuryPercentage)
+        then
+            wan.UpdateMechanicData(wan.spellData.TigersFury.basename)
+            return
+        end
 
+        -- Base value
         local cTigersFury = nTigersFury
 
-        local abilityValue = math.floor(cTigersFury) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateMechanicData(wan.spellData.TigersFury.basename) return end
+         -- Update AbilityData
+        local abilityValue = math.floor(cTigersFury)
         wan.UpdateMechanicData(wan.spellData.TigersFury.basename, abilityValue, wan.spellData.TigersFury.icon, wan.spellData.TigersFury.name)
     end
 

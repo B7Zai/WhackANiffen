@@ -9,37 +9,66 @@ local function OnEvent(self, event, addonName)
     -- Init spell data
     local abilityActive = false
     local checkDebuffs = { "Rake", "Thrash", "Rip", "Feral Frenzy", "Tear", "Frenzied Assault" }
-    local nSwipeDmg, nMercilessClaws, nThrashDotDmg, nThrashMaxStacks, nSoftCap = 0, 0, 0, 0, 0
+    local nSwipeDmg, nSoftCap = 0, 0
+    local nThrashDotDmg, nThrashMaxStacks = 0, 0
+
+    -- Init trait data
+    local nStrikeForTheHeart = 0
+    local nMercilessClaws = 0
+
 
     -- Ability value calculation
     local function CheckAbilityValue()
-        if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.Swipe.id) 
-        then wan.UpdateAbilityData(wan.spellData.Swipe.basename) return end -- Early exits
+        -- Early exits
+        if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.Swipe.id)
+        then
+            wan.UpdateAbilityData(wan.spellData.Swipe.basename)
+            return
+        end
 
+        -- Check for valid unit
         local _, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, wan.spellData.Swipe.maxRange)
-        if countValidUnit == 0 then wan.UpdateAbilityData(wan.spellData.Swipe.basename) return end -- Check for valid unit
+        if countValidUnit == 0 then
+            wan.UpdateAbilityData(wan.spellData.Swipe.basename)
+            return
+        end
 
+        -- Base values
+        local critChanceMod = 0
+        local critDamageMod = 0
         local softCappedValidUnit = wan.AdjustSoftCapUnitOverFlow(nSoftCap, countValidUnit) -- Adjust unit overflow to soft cap
-        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, nil, wan.spellData.Swipe.maxRange) -- Physical DR
-        local cSwipeDmg = nSwipeDmg * softCappedValidUnit * checkPhysicalDRAoE -- Base values
+        local cSwipeDmg = nSwipeDmg * softCappedValidUnit
 
-        if wan.traitData.MercilessClaws.known then -- Merciless Claws
+        -- Merciless Claws
+        if wan.traitData.MercilessClaws.known then
             local countDebuffed = wan.CheckForAnyDebuffAoE(wan.auraData, checkDebuffs, idValidUnit)
-            local cMercilessClaws = nSwipeDmg * nMercilessClaws * countDebuffed * checkPhysicalDRAoE
+            local cMercilessClaws = nSwipeDmg * nMercilessClaws * countDebuffed
             cSwipeDmg = cSwipeDmg + cMercilessClaws
         end
 
-        if wan.traitData.ThrashingClaws.known then -- Thrashing Claws
+        -- Remove physical layer
+        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, nil, wan.spellData.Swipe.maxRange)                                                                                             -- Remove physical layer
+        cSwipeDmg = cSwipeDmg * checkPhysicalDRAoE
+
+         -- Thrashing Claws
+        if wan.traitData.ThrashingClaws.known then
             local countThrashDebuff = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Thrash.name, nThrashMaxStacks)
             local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Thrash.name, nThrashMaxStacks, cSwipeDmg)
             local cThrashingClaws = nThrashDotDmg * (countValidUnit - countThrashDebuff) * dotPotencyAoE
             cSwipeDmg = cSwipeDmg + cThrashingClaws
         end
 
-        cSwipeDmg = cSwipeDmg * wan.ValueFromCritical(wan.CritChance) -- Crit Mod
+        -- Strike for the Heart
+        if wan.traitData.StrikefortheHeart.known then
+            critChanceMod = critChanceMod + nStrikeForTheHeart
+            critDamageMod = critDamageMod + nStrikeForTheHeart
+        end
 
-        local abilityValue = math.floor(cSwipeDmg) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateAbilityData(wan.spellData.Swipe.basename) return end
+        -- Crit layer
+        cSwipeDmg = cSwipeDmg * wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+
+        -- Update ability data
+        local abilityValue = math.floor(cSwipeDmg)
         wan.UpdateAbilityData(wan.spellData.Swipe.basename, abilityValue, wan.spellData.Swipe.icon, wan.spellData.Swipe.name)
     end
 
@@ -80,7 +109,8 @@ local function OnEvent(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then
-            nMercilessClaws = wan.GetSpellDescriptionNumbers(wan.traitData.MercilessClaws.id, { 2 }) / 100
+            nMercilessClaws = wan.GetTraitDescriptionNumbers(wan.traitData.MercilessClaws.entryid, { 2 }) / 100
+            nStrikeForTheHeart = wan.GetTraitDescriptionNumbers(wan.traitData.StrikefortheHeart.entryid, { 1 })
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

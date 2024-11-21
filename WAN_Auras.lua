@@ -53,7 +53,6 @@ local function UpdateAuras(auraDataArray, unitID, updateInfo)
                 local spellName = wan.FormatNameForKey(aura.name)
                 if spellName then
                     local key = aura.isHelpful and "buff_" .. spellName or "debuff_" .. spellName
- 
                     if aura.isHelpful or (unitID == "player" or aura.sourceUnit == "player") then
                         auraDataArray[unitID][key] = aura
                         wan.instanceIDMap[unitID][aura.auraInstanceID] = key

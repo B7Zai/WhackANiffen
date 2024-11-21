@@ -14,21 +14,34 @@ local function OnEvent(self, event, addonName)
 
     -- Ability value calculation
     local function CheckAbilityValue()
+        -- Early exits
         if not wan.PlayerState.Status or wan.auraData.player.buff_Prowl
-        or not wan.IsSpellUsable(wan.spellData.AdaptiveSwarm.id) 
-        then wan.UpdateAbilityData(wan.spellData.AdaptiveSwarm.basename) return end -- Early exits
+            or not wan.IsSpellUsable(wan.spellData.AdaptiveSwarm.id)
+        then
+            wan.UpdateAbilityData(wan.spellData.AdaptiveSwarm.basename)
+            return
+        end
 
+        -- Check for valid unit
         local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.AdaptiveSwarm.id)
-        if not isValidUnit then wan.UpdateAbilityData(wan.spellData.AdaptiveSwarm.basename) return end -- Valid units
+        if not isValidUnit then
+            wan.UpdateAbilityData(wan.spellData.AdaptiveSwarm.basename)
+            return
+        end
 
+        -- Dot value
         local dotPotency = wan.CheckDotPotency()
         local cAdaptiveSwarmSpreadMod = (countValidUnit * nAdaptiveSwarmSpreadChance) / 2
         local cAdaptiveSwarmDotDmg = nAdaptiveSwarmDotDmg * dotPotency * cAdaptiveSwarmSpreadMod
 
-        local cAdaptiveSwarmDmg = cAdaptiveSwarmDotDmg -- Base values
+        -- Base value
+        local cAdaptiveSwarmDmg = cAdaptiveSwarmDotDmg
 
-        local abilityValue = math.floor(cAdaptiveSwarmDmg) -- Update AbilityData
-        if abilityValue == 0 then wan.UpdateAbilityData(wan.spellData.AdaptiveSwarm.basename) return end
+        -- Crit layer
+        cAdaptiveSwarmDmg = cAdaptiveSwarmDmg * wan.ValueFromCritical(wan.CritChance)
+
+        -- Update ability data
+        local abilityValue = math.floor(cAdaptiveSwarmDmg)
         wan.UpdateAbilityData(wan.spellData.AdaptiveSwarm.basename, abilityValue, wan.spellData.AdaptiveSwarm.icon, wan.spellData.AdaptiveSwarm.name)
     end
 
@@ -52,7 +65,7 @@ local function OnEvent(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then 
-            nUnbridledSwarm = wan.GetSpellDescriptionNumbers(wan.traitData.UnbridledSwarm.id, {1}) / 100
+            nUnbridledSwarm = wan.GetTraitDescriptionNumbers(wan.traitData.UnbridledSwarm.entryid, {1}) / 100
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
