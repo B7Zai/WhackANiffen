@@ -160,25 +160,27 @@ end
 function wan.GetTraitDescriptionNumbers(entryID, indexes, rank)
     local traitRank = rank or 0
     local traitDesc = C_Traits.GetTraitDescription(entryID, traitRank)
-
     if not traitDesc then
-        return #indexes == 1 and 0 or setmetatable({}, { __index = function() return 0 end })
+        return #indexes == 1 and 0 or { [1] = 0 }
     end
 
-    local traitValues = {}
     local suffixMultipliers = { thousand = 1e3, million = 1e6, billion = 1e9 }
-    for number, suffix in traitDesc:gmatch("(%d+[%.,]?%d*)%s*(%a*)") do
-        local cleanNumber = tonumber((number:gsub("[,%%]", ""))) or 0
+    local traitValues = {}
+
+    for number, suffix in traitDesc:gmatch("([%d%.]+)%s*(%a*)") do
+        local cleanNumber = tonumber(number) or 0
         traitValues[#traitValues + 1] = cleanNumber * (suffixMultipliers[suffix:lower()] or 1)
     end
 
     local results = {}
     for _, index in ipairs(indexes) do
-        results[#results + 1] = traitValues[index]
+        results[#results + 1] = traitValues[index] or 0 
     end
 
     return #indexes == 1 and results[1] or results
 end
+
+
 
 
 -- Checks if a spell is usable and not on cooldown
