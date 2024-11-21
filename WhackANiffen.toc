@@ -5,7 +5,7 @@
 ## Version: 0.1.0
 ## SavedVariables: WhackANiffenDB
 ## SavedVariablesPerCharacter:
-## X-Curse-Project-ID: 999999
+## X-Curse-Project-ID: 1143530
 
 # Libraries
 libs\LibRangeCheck-3.0\LibStub-1.0\LibStub.lua

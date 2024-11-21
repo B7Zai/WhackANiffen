@@ -12,7 +12,7 @@ local function OnEvent(self, event, addonName)
     -- Ability value calculation
     local function CheckAbilityValue()
         -- Early exits
-        if not wan.PlayerState.Status
+        if not wan.PlayerState.Status or wan.auraData.player.buff_Prowl
             or (wan.auraData.player.buff_CatForm and not wan.auraData.player.buff_PredatorySwiftness)
             or (wan.auraData.player.buff_BearForm and not wan.auraData.player.buff_DreamofCenarius)
             or wan.auraData.player.buff_FrenziedRegeneration or wan.HealThreshold() <= nRegrowthHeal
