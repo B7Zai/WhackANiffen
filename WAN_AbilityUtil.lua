@@ -33,6 +33,16 @@ function wan.UpdateMechanicData(abilityName, value, icon, name, desaturation)
     }
 end
 
+-- Reduce damage for "beyond x target abilities"
+function wan.AdjustSoftCapUnitOverFlow(capStart, numTargets)
+    local maxTargets = math.min(numTargets, 20)
+    if numTargets > capStart then
+        return numTargets * math.sqrt(capStart / maxTargets) 
+    end
+
+    return numTargets
+end
+
 local LibRangeCheck = LibStub("LibRangeCheck-3.0")
 function wan.CheckRange(unit, range, operator)
     local min, max = LibRangeCheck:GetRange(unit, true);
@@ -88,7 +98,6 @@ function wan.ValidUnitInRangeAoE(unit, spellIdentifier, maxRange)
     return false
 end
 
-
 -- Checking, counting and returning UnitIDs that are in range
 function wan.ValidUnitBoolCounter(spellIdentifier, maxRange)
     local count = 0
@@ -102,7 +111,11 @@ function wan.ValidUnitBoolCounter(spellIdentifier, maxRange)
         end
     end
 
-    return wan.ValidUnitInRange(spellIdentifier, maxRange), count, inRangeUnits
+    if count == 0 and wan.ValidUnitInRange(spellIdentifier, maxRange) then
+        count = 1
+    end
+
+    return count > 0, count, inRangeUnits
 end
 
 -- Counts the number of group members in range
@@ -118,6 +131,10 @@ function wan.ValidGroupMembers()
             and UnitInRange(unit) then
             count = count + 1
         end
+    end
+
+    if count > 5 then
+        count = wan.AdjustSoftCapUnitOverFlow(5, count)
     end
 
     return count
@@ -179,9 +196,6 @@ function wan.GetTraitDescriptionNumbers(entryID, indexes, rank)
 
     return #indexes == 1 and results[1] or results
 end
-
-
-
 
 -- Checks if a spell is usable and not on cooldown
 function wan.IsSpellUsable(spellIdentifier)
@@ -286,16 +300,6 @@ function wan.GetArmorDamageReductionFromSpell(armorValue)
     local buffedEffectiveness = C_PaperDollInfo.GetArmorEffectivenessAgainstTarget(buffedArmor) or C_PaperDollInfo.GetArmorEffectiveness(buffedArmor, targetLevel)
     
     return (buffedEffectiveness - currentEffectiveness) * 100
-end
-
--- Reduce damage for "beyond x target abilities"
-function wan.AdjustSoftCapUnitOverFlow(capStart, numTargets)
-    local maxTargets = math.min(numTargets, 20)
-    if numTargets > capStart then
-        return numTargets * math.sqrt(capStart / maxTargets) 
-    end
-
-    return numTargets
 end
 
 ---- Checks if player is missing enough health

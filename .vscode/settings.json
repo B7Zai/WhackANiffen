@@ -16,6 +16,8 @@
     ],
     "Lua.diagnostics.globals": [
         "SlashCmdList",
-        "UISpecialFrames"
+        "UISpecialFrames",
+        "Settings",
+        "MinimalSliderWithSteppersMixin"
     ]
 }
