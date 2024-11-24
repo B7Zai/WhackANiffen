@@ -32,7 +32,7 @@ local function OnEvent(self, event, addonName)
         if wan.traitData.ThornsofIron.known then
             local _, countValidUnit = wan.ValidUnitBoolCounter(nil, nThornsOfIronMaxRange)
             local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, nil, nThornsOfIronMaxRange) -- Remove physical layer
-            local softCappedValidUnit = wan.AdjustSoftCapUnitOverFlow(nThornsOfIronSoftCap, countValidUnit)
+            local softCappedValidUnit = wan.AdjustSoftCapUnitOverflow(nThornsOfIronSoftCap, countValidUnit)
             local cThornsOfIron = (nThornsOfIron / countValidUnit) * checkPhysicalDRAoE * softCappedValidUnit
             cIronfurDmg = cIronfurDmg + cThornsOfIron
             -- Crit layer
@@ -51,7 +51,7 @@ local function OnEvent(self, event, addonName)
 
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED"then
             nIronfur = wan.GetSpellDescriptionNumbers(wan.spellData.Ironfur.id, { 1 })
             drIronfur = wan.GetArmorDamageReductionFromSpell(nIronfur)
             nIronfurHeal = wan.AbilityPercentageToValue(drIronfur)
@@ -66,7 +66,7 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.Ironfur.known and wan.spellData.Ironfur.id
-            wan.BlizzardEventHandler(frameIronfur, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
+            wan.BlizzardEventHandler(frameIronfur, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(frameIronfur, CheckAbilityValue, abilityActive)
         end
 

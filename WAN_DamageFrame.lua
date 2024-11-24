@@ -59,6 +59,10 @@ local function OnEvent(self, event, addonName)
             wan.SetTesterAlpha(damageFrame, wan.Options.Damage.Toggle, wan.Options.Damage.AlphaSlider)
         end
 
+        if event == "TRAIT_DATA_READY" then
+            wan.IconUpdater(damageFrame, nil, nil, nil)
+        end
+
         if event == "DAMAGE_FRAME_HORIZONTAL_SLIDER" or event == "DAMAGE_FRAME_VERTICAL_SLIDER" then
             damageFrame:SetPoint("CENTER", wan.Options.Damage.HorizontalPosition, wan.Options.Damage.VerticalPosition)
         end

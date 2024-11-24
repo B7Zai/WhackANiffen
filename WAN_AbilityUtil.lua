@@ -34,7 +34,7 @@ function wan.UpdateMechanicData(abilityName, value, icon, name, desaturation)
 end
 
 -- Reduce damage for "beyond x target abilities"
-function wan.AdjustSoftCapUnitOverFlow(capStart, numTargets)
+function wan.AdjustSoftCapUnitOverflow(capStart, numTargets)
     local maxTargets = math.min(numTargets, 20)
     if numTargets > capStart then
         return numTargets * math.sqrt(capStart / maxTargets) 
@@ -134,7 +134,7 @@ function wan.ValidGroupMembers()
     end
 
     if count > 5 then
-        count = wan.AdjustSoftCapUnitOverFlow(5, count)
+        count = wan.AdjustSoftCapUnitOverflow(5, count)
     end
 
     return count
@@ -177,13 +177,17 @@ end
 function wan.GetTraitDescriptionNumbers(entryID, indexes, rank)
     local traitRank = rank or 0
     local traitDesc = C_Traits.GetTraitDescription(entryID, traitRank)
+
     if not traitDesc then
-        return #indexes == 1 and 0 or { [1] = 0 }
+        local result = {}
+        for _, index in ipairs(indexes) do
+            result[#result + 1] = 0
+        end
+        return #indexes == 1 and result[1] or result
     end
 
     local suffixMultipliers = { thousand = 1e3, million = 1e6, billion = 1e9 }
     local traitValues = {}
-
     for number, suffix in traitDesc:gmatch("([%d%.]+)%s*(%a*)") do
         local cleanNumber = tonumber(number) or 0
         traitValues[#traitValues + 1] = cleanNumber * (suffixMultipliers[suffix:lower()] or 1)
@@ -191,7 +195,7 @@ function wan.GetTraitDescriptionNumbers(entryID, indexes, rank)
 
     local results = {}
     for _, index in ipairs(indexes) do
-        results[#results + 1] = traitValues[index] or 0 
+        results[#results + 1] = traitValues[index] or 0
     end
 
     return #indexes == 1 and results[1] or results
@@ -331,8 +335,10 @@ end
 
 -- Check and convert cooldown to values
 function wan.OffensiveCooldownToValue(spellIndentifier)
-    local cooldownMS, _ = GetSpellBaseCooldown(spellIndentifier)
-    local maxCooldown = math.ceil(cooldownMS / 1000 / 60)
+    local cooldownMS, gcdMS = GetSpellBaseCooldown(spellIndentifier)
+    if cooldownMS <= 1000 then cooldownMS = cooldownMS * 100 end
+    if cooldownMS == 0 then cooldownMS = 120000 end
+    local maxCooldown = cooldownMS / 1000 / 60
     local maxHealth = UnitHealthMax("player")
     return (maxHealth * maxCooldown) or math.huge
 end
@@ -346,7 +352,7 @@ function wan.CheckOffensiveCooldownPotency(spellDamage, validUnit, unitIDAoE)
 
     if validUnit and (
             targetHealth >= damagePotency
-            or UnitIsBossMob(wan.TargetUnitID)
+            or (UnitInRaid("player") and UnitIsBossMob(wan.TargetUnitID))
             or UnitIsPlayer(wan.TargetUnitID)
         ) then
         return true
@@ -356,7 +362,9 @@ function wan.CheckOffensiveCooldownPotency(spellDamage, validUnit, unitIDAoE)
     for nameplates, _ in pairs(unitIDAoE or {}) do
         local nameplateHealth = UnitHealth(nameplates) or 0
         totalNameplateHealth = totalNameplateHealth + nameplateHealth
-        if totalNameplateHealth >= damagePotency or UnitIsBossMob(nameplates) or UnitIsPlayer(nameplates) then
+        if totalNameplateHealth >= damagePotency 
+        or (UnitInRaid("player") and UnitIsBossMob(nameplates))
+        or UnitIsPlayer(nameplates) then
             return true
         end
     end
@@ -383,10 +391,15 @@ function wan.CheckDotPotencyAoE(auraData, validUnitIDs, debuffName, maxStacks, i
     local setMaxStacks = (maxStacks and maxStacks > 0) and maxStacks or 1
 
     for unitID, _ in pairs(validUnitIDs) do
-        local auras = auraData[unitID]
-        local debuff = auras and auras["debuff_" .. debuffName]
+        if debuffName then
+            local auras = auraData[unitID]
+            local debuff = auras and auras["debuff_" .. debuffName]
 
-        if not debuff or debuff.applications < setMaxStacks then
+            if not debuff or debuff.applications < setMaxStacks then
+                local targetHealth = math.max((UnitHealth(unitID) - baseValue), 0)
+                totalNameplateHealth = totalNameplateHealth + targetHealth
+            end
+        else
             local targetHealth = math.max((UnitHealth(unitID) - baseValue), 0)
             totalNameplateHealth = totalNameplateHealth + targetHealth
         end

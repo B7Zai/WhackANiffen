@@ -66,7 +66,7 @@ local function OnEvent(self, event, addonName)
 
             if wan.auraData[wan.TargetUnitID].debuff_Rip then ripDebuffedUnitAoE = ripDebuffedUnitAoE - 1 end
 
-            local validUnitSoftCappedAoE = wan.AdjustSoftCapUnitOverFlow(nRampantFerocitySoftCap, ripDebuffedUnitAoE)
+            local validUnitSoftCappedAoE = wan.AdjustSoftCapUnitOverflow(nRampantFerocitySoftCap, ripDebuffedUnitAoE)
             local cRampantFerocityDmg = nRampantFerocity * currentCombo * bonusDmgPerEnergy * validUnitSoftCappedAoE * checkPhysicalDRAoE
             cFerociousBiteDmg = cFerociousBiteDmg + cRampantFerocityDmg
         end
@@ -97,7 +97,7 @@ local function OnEvent(self, event, addonName)
         if wan.traitData.BurstingGrowth.known and wan.auraData[wan.TargetUnitID].debuff_BloodseekerVines
             and countValidUnit > 1 then
             local burstingGrowthUnitAoE = countValidUnit - 1
-            local validUnitSoftCappedAoE = wan.AdjustSoftCapUnitOverFlow(nBurstingGrowthSoftCap, burstingGrowthUnitAoE)
+            local validUnitSoftCappedAoE = wan.AdjustSoftCapUnitOverflow(nBurstingGrowthSoftCap, burstingGrowthUnitAoE)
             local cBurstingGrowthDmg = nBurstingGrowth * validUnitSoftCappedAoE * checkPhysicalDRAoE
 
             cFerociousBiteDmg = cFerociousBiteDmg + cBurstingGrowthDmg
@@ -129,7 +129,7 @@ local function OnEvent(self, event, addonName)
             end
         end
 
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED"  then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local ferociousBiteValues = wan.GetSpellDescriptionNumbers(wan.spellData.FerociousBite.id, { 4, 5 })
             nFerociousBiteDmg = ferociousBiteValues[1]
             nFerociousBiteDmgAoE = ferociousBiteValues[2]
@@ -154,7 +154,7 @@ local function OnEvent(self, event, addonName)
         
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.FerociousBite.known and wan.spellData.FerociousBite.id
-            wan.BlizzardEventHandler(frameFerociousBite, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "UNIT_POWER_UPDATE")
+            wan.BlizzardEventHandler(frameFerociousBite, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "UNIT_POWER_UPDATE", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(frameFerociousBite, CheckAbilityValue, abilityActive)
         end
 

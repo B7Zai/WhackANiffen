@@ -45,9 +45,9 @@ local function OnEvent(self, event, addonName)
             local nTwinMoonfireInstantDmg = cMoonfireInstantDmg * math.min(countValidUnit, nTwinMoonfireAoeCap)
             local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Moonfire.name, nil, nTwinMoonfireInstantDmg)
             local unitMoonfireDebuffedAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Moonfire.name)
-            local cTwinMoonfireRakeDotDmg = (unitMoonfireDebuffedAoE < countValidUnit and nMoonfireDotDmg * dotPotencyAoE) or 0
-            if unitMoonfireDebuffedAoE > 0 and not wan.auraData[wan.TargetUnitID].debuff_Moonfire then cTwinMoonfireRakeDotDmg = 0 end
-            local cTwinMoonfireDmg = cMoonfireInstantDmg + cTwinMoonfireRakeDotDmg
+            local cTwinMoonfireDotDmg = (unitMoonfireDebuffedAoE < countValidUnit and nMoonfireDotDmg * dotPotencyAoE) or 0
+            if unitMoonfireDebuffedAoE > 0 and not wan.auraData[wan.TargetUnitID].debuff_Moonfire then cTwinMoonfireDotDmg = 0 end
+            local cTwinMoonfireDmg = cMoonfireInstantDmg + cTwinMoonfireDotDmg
             cMoonfireDmg = cMoonfireDmg + cTwinMoonfireDmg
         end
 
@@ -62,7 +62,7 @@ local function OnEvent(self, event, addonName)
 
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local moonfireValues = wan.GetSpellDescriptionNumbers(wan.spellData.Moonfire.id, { 1, 2, 3 })
             nMoonfireInstantDmg = moonfireValues[1]
             nMoonfireDotDmg = moonfireValues[2]
@@ -76,7 +76,7 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.Moonfire.known and wan.spellData.Moonfire.id
-            wan.BlizzardEventHandler(frameMoonfire, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
+            wan.BlizzardEventHandler(frameMoonfire, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(frameMoonfire, CheckAbilityValue, abilityActive)
         end
 

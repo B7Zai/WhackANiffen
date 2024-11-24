@@ -50,7 +50,7 @@ local function OnEvent(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
 
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local thrashValues = wan.GetSpellDescriptionNumbers(wan.spellData.Thrash.id, { 1, 2, 3, 4 })
             nTrashInstantDmg = thrashValues[1]
             nThrashDotDmg = thrashValues[2]
@@ -69,7 +69,7 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.Thrash.known and wan.spellData.Thrash.id
-            wan.BlizzardEventHandler(frameThrash, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
+            wan.BlizzardEventHandler(frameThrash, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(frameThrash, CheckAbilityValue, abilityActive)
         end
 

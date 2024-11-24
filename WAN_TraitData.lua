@@ -36,14 +36,14 @@ local function GetTraitData(dataArray)
 
                     if entryInfo and entryInfo.definitionID then
                         local definitionInfo = C_Traits.GetDefinitionInfo(entryInfo.definitionID)
-                        local overriddenSpellID = definitionInfo.overriddenSpellID or definitionInfo.spellID or 0
-                        local spellName = C_Spell.GetSpellName(overriddenSpellID)
+                        local overriddenSpellID = definitionInfo.overriddenSpellID or definitionInfo.spellID
+                        local spellName = overriddenSpellID and C_Spell.GetSpellName(overriddenSpellID)
 
                         if spellName then
                             local keyReference = definitionInfo.overrideName or spellName
                             local keyName = wan.FormatNameForKey(keyReference)
                             local isActive = nodeInfo.currentRank > 0
-                            if isSelectionType then isActive = (entryID == activeEntryID) end
+                            if isSelectionType then isActive = (entryID == activeEntryID) and (nodeInfo.subTreeActive ~= false) end
 
                             dataArray[keyName] = {
                                 name = spellName,
@@ -70,6 +70,8 @@ wan.RegisterBlizzardEvents(traitFrame,
 
 traitFrame:SetScript("OnEvent", function(self, event, ...)
     if event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_ENTERING_WORLD" then
+        wan.WipeTable(wan.AbilityData)
+        wan.WipeTable(wan.MechanicData)
         wan.WipeTable(wan.traitData)
         GetTraitData(wan.traitData)
     end

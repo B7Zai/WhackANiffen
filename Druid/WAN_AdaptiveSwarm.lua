@@ -47,7 +47,7 @@ local function OnEvent(self, event, addonName)
 
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local adaptiveSwarmValues = wan.GetSpellDescriptionNumbers(wan.spellData.AdaptiveSwarm.id, { 1, 2 })
             nAdaptiveSwarmHotHeal = adaptiveSwarmValues[1]
             nAdaptiveSwarmDotDmg = adaptiveSwarmValues[2]
@@ -60,7 +60,7 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.AdaptiveSwarm.known and wan.spellData.AdaptiveSwarm.id
-            wan.BlizzardEventHandler(frameAdaptiveSwarm, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
+            wan.BlizzardEventHandler(frameAdaptiveSwarm, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(frameAdaptiveSwarm, CheckAbilityValue, abilityActive)
         end
 

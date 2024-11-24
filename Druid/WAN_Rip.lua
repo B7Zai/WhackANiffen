@@ -73,7 +73,7 @@ local function OnEvent(self, event, addonName)
             end
         end
 
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED"then
             local ripValues = wan.GetSpellDescriptionNumbers(wan.spellData.Rip.id, { 2 })
             nRipDotDmg = ripValues / 2
         end
@@ -83,7 +83,7 @@ local function OnEvent(self, event, addonName)
     wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.Rip.known and wan.spellData.Rip.id
-            wan.BlizzardEventHandler(frameRip, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "UNIT_POWER_UPDATE")
+            wan.BlizzardEventHandler(frameRip, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "UNIT_POWER_UPDATE", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(frameRip, CheckAbilityValue, abilityActive)
         end
 

@@ -32,7 +32,7 @@ local function OnEvent(self, event, addonName)
 
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nRageOfTheSleeperDR = wan.GetSpellDescriptionNumbers(wan.spellData.RageoftheSleeper.id, { 1 })
             nRageOfTheSleeperHeal = wan.AbilityPercentageToValue(nRageOfTheSleeperDR)
         end
@@ -43,7 +43,7 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.RageoftheSleeper.known and wan.spellData.RageoftheSleeper.id
-            wan.BlizzardEventHandler(frameRageOfTheSleeper, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
+            wan.BlizzardEventHandler(frameRageOfTheSleeper, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(frameRageOfTheSleeper, CheckAbilityValue, abilityActive)
         end
 

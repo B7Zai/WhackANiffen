@@ -14,14 +14,14 @@ local function OnEvent(self, event, addonName)
         -- Early exits
         if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.FeralFrenzy.id)
         then
-            wan.UpdateMechanicData(wan.spellData.FeralFrenzy.basename)
+            wan.UpdateAbilityData(wan.spellData.FeralFrenzy.basename)
             return
         end
 
         -- Check for valid unit
         local isValidUnit = wan.ValidUnitBoolCounter(wan.spellData.FeralFrenzy.id)
         if not isValidUnit then
-            wan.UpdateMechanicData(wan.spellData.FeralFrenzy.basename)
+            wan.UpdateAbilityData(wan.spellData.FeralFrenzy.basename)
             return
         end
 
@@ -42,12 +42,12 @@ local function OnEvent(self, event, addonName)
 
         -- Update ability data
         local abilityValue = cdPotency and math.floor(cFeralFrenzy) or 0
-        wan.UpdateMechanicData(wan.spellData.FeralFrenzy.basename, abilityValue, wan.spellData.FeralFrenzy.icon, wan.spellData.FeralFrenzy.name)
+        wan.UpdateAbilityData(wan.spellData.FeralFrenzy.basename, abilityValue, wan.spellData.FeralFrenzy.icon, wan.spellData.FeralFrenzy.name)
     end
 
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local feralFrenzyValues = wan.GetSpellDescriptionNumbers(wan.spellData.FeralFrenzy.id, { 2, 3 })
             nFeralFrenzyInstantDmg = feralFrenzyValues[1]
             nFeralFrenzyDotDmg = feralFrenzyValues[2]
@@ -59,7 +59,7 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.FeralFrenzy.known and wan.spellData.FeralFrenzy.id
-            wan.BlizzardEventHandler(frameFeralFrenzy, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
+            wan.BlizzardEventHandler(frameFeralFrenzy, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(frameFeralFrenzy, CheckAbilityValue, abilityActive)
         end
 

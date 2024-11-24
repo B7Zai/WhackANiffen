@@ -83,7 +83,7 @@ local function OnEvent(self, event, addonName)
             end
         end
 
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nPrimalWrathInstantDmg = wan.GetSpellDescriptionNumbers(wan.spellData.PrimalWrath.id, {3}) / 2
             nRipDotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Rip.id, {2}) / 2
         end
@@ -94,7 +94,7 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.PrimalWrath.known and wan.spellData.PrimalWrath.id
-            wan.BlizzardEventHandler(framePrimalWrath, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "UNIT_POWER_UPDATE")
+            wan.BlizzardEventHandler(framePrimalWrath, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "UNIT_POWER_UPDATE", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(framePrimalWrath, CheckAbilityValue, abilityActive)
         end
 

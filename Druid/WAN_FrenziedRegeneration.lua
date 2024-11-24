@@ -41,7 +41,7 @@ local function OnEvent(self, event, addonName)
 
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local nFrenziedRegeneration = wan.GetSpellDescriptionNumbers(wan.spellData.FrenziedRegeneration.id, { 1 })
             nFrenziedRegenerationHeal = wan.AbilityPercentageToValue(nFrenziedRegeneration)
 
@@ -54,7 +54,7 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.FrenziedRegeneration.known and wan.spellData.FrenziedRegeneration.id
-            wan.BlizzardEventHandler(frameFrenziedRegeneration, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
+            wan.BlizzardEventHandler(frameFrenziedRegeneration, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(frameFrenziedRegeneration, CheckAbilityValue, abilityActive)
         end
 

@@ -59,6 +59,10 @@ local function OnEvent(self, event, addonName)
             wan.SetTesterAlpha(mechanicFrame, wan.Options.Mechanic.Toggle, wan.Options.Mechanic.AlphaSlider)
         end
 
+        if event == "TRAIT_DATA_READY" then
+            wan.IconUpdater(mechanicFrame, nil, nil, nil)
+        end
+
         if event == "MECHANIC_FRAME_HORIZONTAL_SLIDER" or event == "MECHANIC_FRAME_VERTICAL_SLIDER" then
             mechanicFrame:SetPoint("CENTER", wan.Options.Mechanic.HorizontalPosition, wan.Options.Mechanic.VerticalPosition)
         end

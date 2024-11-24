@@ -63,9 +63,7 @@ local function OnEvent(self, event, addonName)
             wan.BlizzardEventHandler(frameConvokeTheSpirits, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
         end
 
-        if event == "TRAIT_DATA_READY" then
-            abilityActive = wan.spellData.ConvoketheSpirits.known and wan.spellData.ConvoketheSpirits.id
-         end
+        if event == "TRAIT_DATA_READY" then end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
             wan.SetUpdateRate(frameConvokeTheSpirits, CheckAbilityValue, abilityActive)

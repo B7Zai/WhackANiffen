@@ -36,7 +36,7 @@ local function OnEvent(self, event, addonName)
         -- Base values
         local critChanceMod = 0
         local critDamageMod = 0
-        local softCappedValidUnit = wan.AdjustSoftCapUnitOverFlow(nSoftCap, countValidUnit) -- Adjust unit overflow to soft cap
+        local softCappedValidUnit = wan.AdjustSoftCapUnitOverflow(nSoftCap, countValidUnit) -- Adjust unit overflow to soft cap
         local cSwipeDmg = nSwipeDmg * softCappedValidUnit
 
         -- Merciless Claws
@@ -86,7 +86,7 @@ local function OnEvent(self, event, addonName)
             end
         end
 
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nSwipeDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Swipe.id, { 1 })
             local thrashValues = wan.GetSpellDescriptionNumbers(wan.spellData.Thrash.id, { 2, 4 })
             nThrashDotDmg = thrashValues[1]
@@ -104,7 +104,7 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.Swipe.known and wan.spellData.Swipe.id
-            wan.BlizzardEventHandler(frameSwipe, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
+            wan.BlizzardEventHandler(frameSwipe, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(frameSwipe, CheckAbilityValue, abilityActive)
         end
 

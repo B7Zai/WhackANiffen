@@ -88,7 +88,7 @@ local function OnEvent(self, event, addonName)
 
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local nMaulValues = wan.GetSpellDescriptionNumbers(wan.spellData.Maul.id, { 1, 2 })
             nMaulDmg = nMaulValues[1]
             nMaulDmgAoE = nMaulValues[2]
@@ -105,7 +105,7 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.Maul.known and wan.spellData.Maul.id
-            wan.BlizzardEventHandler(frameMaul, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
+            wan.BlizzardEventHandler(frameMaul, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
             wan.SetUpdateRate(frameMaul, CheckAbilityValue, abilityActive)
         end
 
