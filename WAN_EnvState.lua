@@ -17,13 +17,7 @@ local function OnEvent(self, event, ...)
 
     if event == "PLAYER_ENTERING_WORLD" or (event == "CVAR_UPDATE" and ... == "SoftTargetEnemy") then
         local targetSetting = C_CVar.GetCVar("SoftTargetEnemy")
-        if tonumber(targetSetting) then
-            if targetSetting == 3 then
-                wan.TargetUnitID = "softenemy"
-            else
-                wan.TargetUnitID = "target"
-            end
-        end
+        wan.TargetUnitID = tonumber(targetSetting) == 3 and "softenemy" or "target"
     end
 
     if event == "PLAYER_ALIVE" or event == "PLAYER_DEAD" or event == "PLAYER_ENTERING_WORLD" then

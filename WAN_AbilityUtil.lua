@@ -132,10 +132,8 @@ function wan.ValidGroupMembers()
             count = count + 1
         end
     end
+    count = wan.AdjustSoftCapUnitOverflow(1, count)
 
-    if count > 5 then
-        count = wan.AdjustSoftCapUnitOverflow(5, count)
-    end
 
     return count
 end
@@ -376,7 +374,7 @@ end
 function wan.CheckDotPotency(initialValue)
     local baseValue = initialValue or 0
     local maxHealth = UnitHealthMax("player")
-    local targetHealth = math.max(UnitHealth(wan.TargetUnitID) - baseValue, 0)
+    local targetHealth = math.max((UnitCanAttack("player", wan.TargetUnitID) and UnitHealth(wan.TargetUnitID) or 0)- baseValue, 0)
     local damagePotency = (targetHealth / maxHealth)
     local validGroupMembers = wan.ValidGroupMembers()
     local calcPotency = damagePotency / validGroupMembers

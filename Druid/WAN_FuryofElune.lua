@@ -29,11 +29,18 @@ local function OnEvent(self, event, addonName)
             return
         end
 
-        -- Base values
+        -- Base value
         local critChanceMod = 0
         local critDamageMod = 0
-        local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit)
-        local cFuryOfEluneDmg = nFuryOfEluneDmg * countValidUnit * dotPotencyAoE
+        local cFuryOfEluneDmg = nFuryOfEluneDmg
+
+        -- AoE values
+        if countValidUnit > 1 then
+            local furyOFEluneUnitAoE = countValidUnit - 1
+            local softCappedValidUnit = math.sqrt(1 / countValidUnit)
+            local cFuryOfEluneAoEDmg = (nFuryOfEluneDmg * softCappedValidUnit) * furyOFEluneUnitAoE
+            cFuryOfEluneDmg = cFuryOfEluneDmg + cFuryOfEluneAoEDmg
+        end
 
         -- Astronomical Impact
         if wan.traitData.AstronomicalImpact.known then

@@ -29,7 +29,6 @@ local function OnEvent(self, event, addonName)
         -- Base value
         local cCelestialAlignment = nCelestialAlignment
         local cdPotency = wan.CheckOffensiveCooldownPotency(cCelestialAlignment, isValidUnit, idValidUnit)
-        print(cCelestialAlignment)
 
 
         -- Update ability data
