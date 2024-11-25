@@ -95,7 +95,6 @@ function wan.GetSpellGcdValue(spellID)
     return gcdValue
 end
 
-
 -- Sets the update rate for tickers or throttles
 function wan.SetUpdateRate(frame, callback, spellID)
     if wan.UpdateRate[frame] then
@@ -123,7 +122,6 @@ function wan.SetUpdateRate(frame, callback, spellID)
         end)
     end
 end
-
 
 -- Sets the update rate of the displays
 function wan.UpdateFrameThrottle()

@@ -33,8 +33,8 @@ local function OnEvent(self, event, addonName)
         -- Base values
         local critChanceMod = 0
         local critDamageMod = 0
-        local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit)
-        local cStarfallDmg = nStarfallDmg * countValidUnit * dotPotencyAoE
+        local checkPotencyAoE = wan.CheckAoEPotency(idValidUnit)
+        local cStarfallDmg = nStarfallDmg * countValidUnit * checkPotencyAoE
 
         -- Astronomical Impact
         if wan.traitData.AstronomicalImpact.known then

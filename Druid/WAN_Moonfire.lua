@@ -8,11 +8,13 @@ local function OnEvent(self, event, addonName)
 
     -- Init data
     local abilityActive = false
-    local nMoonfireInstantDmg, nMoonfireDotDmg, nMoonfireDotDuration, nMoonfireDotDps = 0, 0, 0, 0
+    local nMoonfireInstantDmg, nMoonfireDotDmg, nMoonfireDotDuration, nMoonfireDotDps, nMoonfireDotTickRate = 0, 0, 0, 0, 2
 
     -- Init trait
     local nGalacticGuardian = 0
     local nTwinMoonfireAoeCap = 2
+    local nCosmicRapidity = 0
+    local nShootingStarsDmg, nShootingStarsProcChance = 0, 0.1
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -32,24 +34,34 @@ local function OnEvent(self, event, addonName)
             return
         end
 
-        -- Dot value
-        local cMoonfireInstantDmg = nMoonfireInstantDmg * ((wan.auraData.player.buff_GalacticGuardian and nGalacticGuardian) or 1)
-        local dotPotency = wan.CheckDotPotency(cMoonfireInstantDmg)
-        local cMoonfireDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Moonfire and (nMoonfireDotDmg * dotPotency)) or 0
-
         -- Base value
-        local cMoonfireDmg = cMoonfireInstantDmg + cMoonfireDotDmg
+        local cMoonfireDotDmg = nMoonfireDotDmg
+        local cMoonfireInstantDmg = nMoonfireInstantDmg * ((wan.auraData.player.buff_GalacticGuardian and nGalacticGuardian) or 1)
+
+        -- Shooting Stars
+        if wan.traitData.ShootingStars.known then
+            local cosmicRapidityMod = wan.traitData.CosmicRapidity.rank > 0 and nCosmicRapidity or 0
+            local nMoonfireDotTickModifier = (wan.Haste + cosmicRapidityMod) * 0.01
+            local nMoonfireDotTickRateMod = nMoonfireDotTickRate / (1 + nMoonfireDotTickModifier)
+            local nSunfireDotTickNumber = nMoonfireDotDuration / nMoonfireDotTickRateMod
+            local cShootingStarsDmg = nSunfireDotTickNumber * nShootingStarsProcChance * nShootingStarsDmg
+            cMoonfireDotDmg = cMoonfireDotDmg + cShootingStarsDmg
+        end
 
         -- Twin Moonfire or Twin Moons
-        if (wan.traitData.TwinMoonfire.known or wan.traitData.TwinMoons.known) and countValidUnit > 1 then
-            local nTwinMoonfireInstantDmg = cMoonfireInstantDmg * math.min(countValidUnit, nTwinMoonfireAoeCap)
-            local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Moonfire.name, nil, nTwinMoonfireInstantDmg)
-            local unitMoonfireDebuffedAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Moonfire.name)
-            local cTwinMoonfireDotDmg = (unitMoonfireDebuffedAoE < countValidUnit and nMoonfireDotDmg * dotPotencyAoE) or 0
-            if unitMoonfireDebuffedAoE > 0 and not wan.auraData[wan.TargetUnitID].debuff_Moonfire then cTwinMoonfireDotDmg = 0 end
-            local cTwinMoonfireDmg = cMoonfireInstantDmg + cTwinMoonfireDotDmg
-            cMoonfireDmg = cMoonfireDmg + cTwinMoonfireDmg
+        if wan.traitData.TwinMoonfire.known or wan.traitData.TwinMoons.known then
+            cMoonfireInstantDmg = cMoonfireInstantDmg * math.min(countValidUnit, nTwinMoonfireAoeCap)
+            local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Moonfire.name, nil, cMoonfireInstantDmg)
+            local nMoonfireDebuffedAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Moonfire.name)
+            local nMissingMoonfireDebuffAoE = math.min(countValidUnit - nMoonfireDebuffedAoE, nTwinMoonfireAoeCap)
+            local cMoonfireDotDmgAoE = cMoonfireDotDmg * dotPotencyAoE * nMissingMoonfireDebuffAoE
+            cMoonfireDotDmg = cMoonfireDotDmgAoE
+        else
+            local dotPotency = wan.CheckDotPotency(cMoonfireInstantDmg)
+            cMoonfireDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Moonfire and (cMoonfireDotDmg * dotPotency)) or 0
         end
+
+        local cMoonfireDmg = cMoonfireInstantDmg + cMoonfireDotDmg
 
         -- Crit layer
         cMoonfireDmg = cMoonfireDmg * wan.ValueFromCritical(wan.CritChance)
@@ -68,6 +80,8 @@ local function OnEvent(self, event, addonName)
             nMoonfireDotDmg = moonfireValues[2]
             nMoonfireDotDuration = moonfireValues[3]
             nMoonfireDotDps = moonfireValues[2] / moonfireValues[3]
+
+            nShootingStarsDmg = wan.GetTraitDescriptionNumbers(wan.traitData.ShootingStars.entryid, { 1 })
         end
     end)
 
@@ -82,6 +96,7 @@ local function OnEvent(self, event, addonName)
 
         if event == "TRAIT_DATA_READY" then 
             nGalacticGuardian = wan.GetTraitDescriptionNumbers(wan.traitData.GalacticGuardian.entryid, {3}) / 100
+            nCosmicRapidity = wan.GetTraitDescriptionNumbers(wan.traitData.CosmicRapidity.entryid, {1}, wan.traitData.CosmicRapidity.rank)
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

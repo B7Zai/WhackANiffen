@@ -3,6 +3,19 @@ local _, wan = ...
 wan.AbilityData = wan.AbilityData or {}
 wan.MechanicData = wan.MechanicData or {}
 
+setmetatable(wan.AbilityData, {
+    __index = function(t, key)
+        local default = {
+            value = 0,
+            icon = nil,
+            name = nil,
+            desat = nil,
+        }
+        t[key] = default
+        return default
+    end
+})
+
 wan.classificationData = {
     WorldBoss = { classification = "worldboss", dmgreduc = 0.68 },
     RareElite = { classification = "rareelite", dmgreduc = 0.70 },
@@ -79,7 +92,6 @@ function wan.ValidUnitInRange(spellIdentifier, maxRange)
         or wan.CheckRange(wan.TargetUnitID, maxSpellRange, "<=")
 end
 
-
 -- Checks for valid units
 function wan.ValidUnitInRangeAoE(unit, spellIdentifier, maxRange)
     if not UnitExists(unit) or not UnitCanAttack("player", unit) then
@@ -90,7 +102,7 @@ function wan.ValidUnitInRangeAoE(unit, spellIdentifier, maxRange)
     local maxSpellRange = maxRange or 0
 
     local unitInCombat = UnitAffectingCombat(unit)
-    if unitInCombat or not C_QuestLog.UnitIsRelatedToActiveQuest(unit) then
+    if unitInCombat or (UnitReaction("player", unit) == 4 and not C_QuestLog.UnitIsRelatedToActiveQuest(unit)) then
         return C_Spell.IsSpellInRange(spellID, unit)
             or wan.CheckRange(unit, maxSpellRange, "<=")
     end
@@ -128,18 +140,17 @@ function wan.ValidGroupMembers()
         local unit = groupType .. i
         if not UnitIsDeadOrGhost(unit)
             and UnitIsConnected(unit)
-            and UnitInRange(unit) then
+            and UnitInRange(unit)
+        then
             count = count + 1
         end
     end
-    count = wan.AdjustSoftCapUnitOverflow(1, count)
-
-
+    count = wan.AdjustSoftCapUnitOverflow(5, count)
     return count
 end
 
 -- Parses spell description and converts string numbers to numeric values.
--- Returns specified numbers indexed by `indexes` (1st number, 2nd number, etc.).
+-- Returns specified numbers indexed by `indexes`.
 -- Returns 0 if no valid numbers are found for the specified indexes.
 function wan.GetSpellDescriptionNumbers(spellIdentifier, indexes)
     local spellDesc = C_Spell.GetSpellDescription(spellIdentifier)
@@ -172,6 +183,9 @@ function wan.GetSpellDescriptionNumbers(spellIdentifier, indexes)
     return #indexes == 1 and selectedNumbers[1] or selectedNumbers
 end
 
+-- Parses trait description and converts string numbers to numeric values.
+-- Returns specified numbers indexed by `indexes`.
+-- Returns 0 if no valid numbers are found for the specified indexes.
 function wan.GetTraitDescriptionNumbers(entryID, indexes, rank)
     local traitRank = rank or 0
     local traitDesc = C_Traits.GetTraitDescription(entryID, traitRank)
@@ -186,8 +200,8 @@ function wan.GetTraitDescriptionNumbers(entryID, indexes, rank)
 
     local suffixMultipliers = { thousand = 1e3, million = 1e6, billion = 1e9 }
     local traitValues = {}
-    for number, suffix in traitDesc:gmatch("([%d%.]+)%s*(%a*)") do
-        local cleanNumber = tonumber(number) or 0
+    for number, suffix in traitDesc:gmatch("(%d+[%.,]?%d*)%s*(%a*)") do
+        local cleanNumber = tonumber((number:gsub("[,%%]", ""))) or 0
         traitValues[#traitValues + 1] = cleanNumber * (suffixMultipliers[suffix:lower()] or 1)
     end
 
@@ -206,8 +220,7 @@ function wan.IsSpellUsable(spellIdentifier)
     local _, gcdMS = GetSpellBaseCooldown(spellIdentifier)
     local getGCD = gcdMS and gcdMS / 1000 or 0
     local getCooldown = C_Spell.GetSpellCooldown(spellIdentifier)
-    local cooldownMod = (getCooldown.duration + getCooldown.startTime) - GetTime()
-    return (cooldownMod <= getGCD)
+    return (getCooldown.duration <= getGCD)
 end
 
 -- Checks critical chance and critical damage weights for ability values
@@ -370,6 +383,23 @@ function wan.CheckOffensiveCooldownPotency(spellDamage, validUnit, unitIDAoE)
     return false
 end
 
+-- Adjust ability dot value to non debuffed unit healths
+function wan.CheckAoEPotency(validUnitIDs)
+    local totalNameplateHealth = 0
+
+    for unitID, _ in pairs(validUnitIDs) do
+        local targetHealth = UnitHealth(unitID)
+        totalNameplateHealth = totalNameplateHealth + targetHealth
+    end
+
+    local maxHealth = UnitHealthMax("player")
+    local damagePotency = (totalNameplateHealth / maxHealth)
+    local validGroupMembers = wan.ValidGroupMembers()
+    local calcPotency = damagePotency / validGroupMembers
+
+    return math.min(calcPotency, 1)
+end
+
 -- Adjust ability dot value to unit health
 function wan.CheckDotPotency(initialValue)
     local baseValue = initialValue or 0
@@ -397,9 +427,6 @@ function wan.CheckDotPotencyAoE(auraData, validUnitIDs, debuffName, maxStacks, i
                 local targetHealth = math.max((UnitHealth(unitID) - baseValue), 0)
                 totalNameplateHealth = totalNameplateHealth + targetHealth
             end
-        else
-            local targetHealth = math.max((UnitHealth(unitID) - baseValue), 0)
-            totalNameplateHealth = totalNameplateHealth + targetHealth
         end
     end
 

@@ -6,6 +6,7 @@ wan.PlayerState.Class = UnitClassBase("player")
 wan.PlayerState.Status = false
 wan.PlayerState.Combat = false
 wan.CritChance = GetCritChance() or 0
+wan.Haste = GetHaste() or 0
 
 local isDeadOrGhost, isMounted, inVehicle
 local function UpdatePlayerStatus()
@@ -44,11 +45,13 @@ local function OnEvent(self, event, ...)
 
     if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
         wan.CritChance = GetCritChance()
+        wan.Haste = GetHaste()
     end
 
     if event == "PLAYER_LOGOUT" then
         wan.PlayerState.Status = false
         wan.CritChance = 0
+        wan.Haste = 0
     end
 end
 

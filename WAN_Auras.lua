@@ -35,13 +35,10 @@ local function UpdateAuras(auraDataArray, unitID, updateInfo)
         for i = 1, 40 do
             local debuffData = C_UnitAuras.GetAuraDataByIndex(unitID, i, "HARMFUL")
             if not debuffData then break end
-            if debuffData.auraInstanceID then
+            if debuffData.sourceUnit == "player" then
                 local spellName = wan.FormatNameForKey(debuffData.name)
                 local key = "debuff_" .. spellName
-                if unitID == "player" or debuffData.sourceUnit == "player" then
-                    auraDataArray[unitID][key] = debuffData
-                    wan.instanceIDMap[unitID][debuffData.auraInstanceID] = key
-                end
+                auraDataArray[unitID][key] = debuffData
             end
         end
         return
@@ -49,14 +46,12 @@ local function UpdateAuras(auraDataArray, unitID, updateInfo)
 
     if updateInfo.addedAuras then -- Aura update when auras get added
         for _, aura in pairs(updateInfo.addedAuras) do
-            if aura.auraInstanceID then
+            if aura.isHelpful or aura.sourceUnit == "player" then
                 local spellName = wan.FormatNameForKey(aura.name)
                 if spellName then
                     local key = aura.isHelpful and "buff_" .. spellName or "debuff_" .. spellName
-                    if aura.isHelpful or (unitID == "player" or aura.sourceUnit == "player") then
-                        auraDataArray[unitID][key] = aura
-                        wan.instanceIDMap[unitID][aura.auraInstanceID] = key
-                    end
+                    auraDataArray[unitID][key] = aura
+                    wan.instanceIDMap[unitID][aura.auraInstanceID] = key
                 end
             end
         end
@@ -65,15 +60,12 @@ local function UpdateAuras(auraDataArray, unitID, updateInfo)
     if updateInfo.updatedAuraInstanceIDs then -- Aura update when auras change
         for _, instanceID in pairs(updateInfo.updatedAuraInstanceIDs) do
             local aura = C_UnitAuras.GetAuraDataByAuraInstanceID(unitID, instanceID)
-            if aura and aura.name then
+            if aura and (aura.isHelpful or aura.sourceUnit == "player") then
                 local spellName = wan.FormatNameForKey(aura.name)
                 if spellName then
                     local key = aura.isHelpful and "buff_" .. spellName or "debuff_" .. spellName
-
-                    if aura.isHelpful or (unitID == "player" or aura.sourceUnit == "player") then
-                        auraDataArray[unitID][key] = aura
-                        wan.instanceIDMap[unitID][aura.auraInstanceID] = key
-                    end
+                    auraDataArray[unitID][key] = aura
+                    wan.instanceIDMap[unitID][aura.auraInstanceID] = key
                 end
             end
         end
@@ -130,10 +122,11 @@ local function OnEvent(self, event, unitID, updateInfo)
     if event == "NAME_PLATE_UNIT_ADDED" then
         nameplate[unitID] = unitID
     elseif event == "NAME_PLATE_UNIT_REMOVED" then
+        wan.WipeTable(wan.auraData[unitID])
         nameplate[unitID] = nil
     end
 
-    if nameplate[unitID] then
+    if unitID == nameplate[unitID] then
         UpdateAuras(wan.auraData, unitID, updateInfo)
     end
 end

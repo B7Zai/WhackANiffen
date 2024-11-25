@@ -8,7 +8,11 @@ local function OnEvent(self, event, addonName)
 
     -- Init data
     local abilityActive = false
-    local nSunfireInstantDmg, nSunfireDotDmg, nSunfireDotDuration = 0, 0, 0
+    local nSunfireInstantDmg, nSunfireDotDmg, nSunfireDotDuration, nSunfireDotTickRate = 0, 0, 0, 2
+
+    -- Init trait data
+    local nShootingStarsDmg, nShootingStarsProcChance = 0, 0.1
+    local nCosmicRapidity = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -29,19 +33,31 @@ local function OnEvent(self, event, addonName)
 
         -- Base value
         local cSunfireDmg = nSunfireInstantDmg
+        local cSunfireDotDmg = nSunfireDotDmg
+
+        -- Shooting Stars
+        if wan.traitData.ShootingStars.known then
+            local cosmicRapidityMod = wan.traitData.CosmicRapidity.rank > 0 and nCosmicRapidity or 0
+            local nSunfireDotTickModifier = (wan.Haste + cosmicRapidityMod) * 0.01
+            local nSunfireDotTickRateMod = nSunfireDotTickRate / (1 + nSunfireDotTickModifier)
+            local nSunfireDotTickNumber = nSunfireDotDuration / nSunfireDotTickRateMod
+            local cShootingStarsDmg = nSunfireDotTickNumber * nShootingStarsProcChance * nShootingStarsDmg
+            cSunfireDotDmg = cSunfireDotDmg + cShootingStarsDmg
+        end
 
         -- Improved Sunfire & Dot value
         if wan.traitData.ImprovedSunfire.known then
             local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Sunfire.name, nil, nSunfireInstantDmg)
             local sunfireDebuffedUnitAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Sunfire.name)
             local missingSunfireDebuffAoE = countValidUnit - sunfireDebuffedUnitAoE
-            local cImprovedSunfireDotDmg = nSunfireDotDmg * dotPotencyAoE * missingSunfireDebuffAoE
-            cSunfireDmg = cSunfireDmg + cImprovedSunfireDotDmg
+            local cImprovedSunfireDotDmg = cSunfireDotDmg * dotPotencyAoE * missingSunfireDebuffAoE
+            cSunfireDotDmg = cImprovedSunfireDotDmg
         else
             local dotPotency = wan.CheckDotPotency(nSunfireInstantDmg)
-            local cSunfireDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Sunfire and (nSunfireDotDmg * dotPotency)) or 0
-            cSunfireDmg = cSunfireDmg + cSunfireDotDmg
+            cSunfireDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Sunfire and (nSunfireDotDmg * dotPotency)) or 0
         end
+
+        cSunfireDmg = cSunfireDmg + cSunfireDotDmg
 
         -- Crit layer
         cSunfireDmg = cSunfireDmg * wan.ValueFromCritical(wan.CritChance)
@@ -58,6 +74,8 @@ local function OnEvent(self, event, addonName)
             nSunfireInstantDmg = sunfireValues[1]
             nSunfireDotDmg = sunfireValues[2]
             nSunfireDotDuration = sunfireValues[3]
+
+            nShootingStarsDmg = wan.GetTraitDescriptionNumbers(wan.traitData.ShootingStars.entryid, { 1 })
         end
     end)
 
@@ -70,7 +88,9 @@ local function OnEvent(self, event, addonName)
             wan.SetUpdateRate(frameSunfire, CheckAbilityValue, abilityActive)
         end
 
-        if event == "TRAIT_DATA_READY" then end
+        if event == "TRAIT_DATA_READY" then 
+            nCosmicRapidity = wan.GetTraitDescriptionNumbers(wan.traitData.CosmicRapidity.entryid, {1}, wan.traitData.CosmicRapidity.rank)
+        end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
             wan.SetUpdateRate(frameSunfire, CheckAbilityValue, abilityActive)
