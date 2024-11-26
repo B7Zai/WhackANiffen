@@ -1,9 +1,13 @@
 local _, wan = ...
 
+-- Exit early if player class doesn't match
+if wan.PlayerState.Class ~= "DRUID" then return end
+
+-- Init frame 
 local frameStarsurge = CreateFrame("Frame")
-local function OnEvent(self, event, addonName)
-    -- Early Exits
-    if addonName ~= "WhackANiffen" or wan.PlayerState.Class ~= "DRUID" then return end
+local function AddonLoad(self, event, addonName)
+    -- Early Exit
+    if addonName ~= "WhackANiffen" then return end
 
     -- Init spell data
     local abilityActive = false
@@ -12,7 +16,6 @@ local function OnEvent(self, event, addonName)
     -- Init trait data
     local nAstronomicalImpact = 0
     local nPowerOfGoldrinn, nPowerOfGoldrinnProcChance = 0, 0.33
-
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -86,4 +89,4 @@ local function OnEvent(self, event, addonName)
 end
 
 frameStarsurge:RegisterEvent("ADDON_LOADED")
-frameStarsurge:SetScript("OnEvent", OnEvent)
+frameStarsurge:SetScript("OnEvent", AddonLoad)

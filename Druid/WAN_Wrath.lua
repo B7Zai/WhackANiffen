@@ -1,9 +1,13 @@
 local _, wan = ...
 
+-- Exit early if player class doesn't match
+if wan.PlayerState.Class ~= "DRUID" then return end
+
+-- Init frame 
 local frameWrath = CreateFrame("Frame")
-local function OnEvent(self, event, addonName)
-    -- Early Exits
-    if addonName ~= "WhackANiffen" or wan.PlayerState.Class ~= "DRUID" then return end
+local function AddonLoad(self, event, addonName)
+    -- Early Exit
+    if addonName ~= "WhackANiffen" then return end
 
     -- Init spell data
     local abilityActive = false
@@ -126,4 +130,4 @@ local function OnEvent(self, event, addonName)
 end
 
 frameWrath:RegisterEvent("ADDON_LOADED")
-frameWrath:SetScript("OnEvent", OnEvent)
+frameWrath:SetScript("OnEvent", AddonLoad)

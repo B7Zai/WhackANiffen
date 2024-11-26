@@ -28,8 +28,10 @@ WAN_MechanicFrame.lua
 # Druid
 Druid\WAN_AdaptiveSwarm.lua
 Druid\WAN_Barkskin.lua
+Druid\WAN_BearForm.lua
 Druid\WAN_Berserk.lua
 Druid\WAN_BristlingFur.lua
+Druid\WAN_CatForm.lua
 Druid\WAN_CelestialAlignment.lua
 Druid\WAN_ConvoketheSpirits.lua
 Druid\WAN_FeralFrenzy.lua
@@ -40,10 +42,13 @@ Druid\WAN_FuryofElune.lua
 Druid\WAN_Ironfur.lua
 Druid\WAN_LunarBeam.lua
 Druid\WAN_Mangle.lua
+Druid\WAN_MarkoftheWild.lua
 Druid\WAN_Maul.lua
 Druid\WAN_Moonfire.lua
+Druid\WAN_MoonkinForm.lua
 Druid\WAN_MoonMoon.lua
 Druid\WAN_PrimalWrath.lua
+Druid\WAN_Prowl.lua
 Druid\WAN_Pulverize.lua
 Druid\WAN_RageoftheSleeper.lua
 Druid\WAN_Rake.lua

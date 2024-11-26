@@ -1,10 +1,13 @@
 local _, wan = ...
 
--- Init data
+-- Exit early if player class doesn't match
+if wan.PlayerState.Class ~= "DRUID" then return end
+
+-- Init frame 
 local frameRip = CreateFrame("Frame")
-local function OnEvent(self, event, addonName)
-    -- Early Exits
-    if addonName ~= "WhackANiffen" or wan.PlayerState.Class ~= "DRUID" then return end
+local function AddonLoad(self, event, addonName)
+    -- Early Exit
+    if addonName ~= "WhackANiffen" then return end
 
     -- Init spell data
     local abilityActive = false
@@ -98,4 +101,4 @@ local function OnEvent(self, event, addonName)
 end
 
 frameRip:RegisterEvent("ADDON_LOADED")
-frameRip:SetScript("OnEvent", OnEvent)
+frameRip:SetScript("OnEvent", AddonLoad)

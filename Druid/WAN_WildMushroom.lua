@@ -1,9 +1,12 @@
 local _, wan = ...
 
--- Init data
+-- Exit early if player class doesn't match
+if wan.PlayerState.Class ~= "DRUID" then return end
+
+-- Init frame 
 local frameWildMushroom = CreateFrame("Frame")
-local function OnEvent(self, event, addonName)
-    -- Early Exits
+local function AddonLoad(self, event, addonName)
+    -- Early Exit
     if addonName ~= "WhackANiffen" or wan.PlayerState.Class ~= "DRUID" then return end
 
     -- Init data
@@ -76,4 +79,4 @@ local function OnEvent(self, event, addonName)
 end
 
 frameWildMushroom:RegisterEvent("ADDON_LOADED")
-frameWildMushroom:SetScript("OnEvent", OnEvent)
+frameWildMushroom:SetScript("OnEvent", AddonLoad)

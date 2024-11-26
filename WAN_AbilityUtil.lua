@@ -133,20 +133,25 @@ end
 -- Counts the number of group members in range
 function wan.ValidGroupMembers()
     local groupType = UnitInRaid("player") and "raid" or UnitInParty("player") and "party"
-    if not groupType then return 1 end
+    if not groupType then return 1, 1, {} end
 
-    local count = 1
+    local inRangeUnits = {}
+    local nDamageScaler = 1
     for i = 1, 40 do
         local unit = groupType .. i
         if not UnitIsDeadOrGhost(unit)
             and UnitIsConnected(unit)
             and UnitInRange(unit)
         then
-            count = count + 1
+            nDamageScaler = nDamageScaler + 1
+            inRangeUnits[unit] = true
         end
     end
-    count = wan.AdjustSoftCapUnitOverflow(5, count)
-    return count
+
+    local nGroupMembersInRange = nDamageScaler
+    nDamageScaler = wan.AdjustSoftCapUnitOverflow(5, nDamageScaler)
+
+    return nDamageScaler, nGroupMembersInRange, inRangeUnits
 end
 
 -- Parses spell description and converts string numbers to numeric values.
@@ -211,6 +216,12 @@ function wan.GetTraitDescriptionNumbers(entryID, indexes, rank)
     end
 
     return #indexes == 1 and results[1] or results
+end
+
+function wan.GetTraitInfo()
+    local currentSpec = GetSpecialization()
+    local id, name, description, icon, role, primaryStat = GetSpecializationInfo(currentSpec)
+    return id, name, description, icon, role, primaryStat 
 end
 
 -- Checks if a spell is usable and not on cooldown
@@ -398,6 +409,42 @@ function wan.CheckAoEPotency(validUnitIDs)
     local calcPotency = damagePotency / validGroupMembers
 
     return math.min(calcPotency, 1)
+end
+
+-- Counts units that have a specific debuff
+function wan.CheckClassBuff(buffName)
+    if not IsInGroup() then
+        return wan.auraData.player["buff_" ..buffName] == nil
+    end
+    
+    local groupType = UnitInRaid("player") and "raid" or UnitInParty("player") and "party"
+    local nGroupUnits = GetNumGroupMembers(groupType)
+    local _, nGroupMembersInRange, idValidGroupMember = wan.ValidGroupMembers()
+    local countBuffed = wan.auraData.player["buff_" .. buffName] and 1 or 0
+    local nDisconnected = 0
+
+    for i = 1, nGroupUnits do
+        local unit = groupType .. i
+        local isOnline = UnitIsConnected(unit)
+        if not isOnline then
+            nDisconnected = nDisconnected + 1
+        end
+    end
+
+    local nGroupSize = (nGroupUnits - nDisconnected) + 1
+
+    if nGroupSize == nGroupMembersInRange then
+        for unitID, _ in pairs(idValidGroupMember or {}) do
+            local buffed = wan.auraData[unitID]["buff_" .. buffName]
+            if buffed then
+                countBuffed = countBuffed + 1
+            end
+        end
+    end
+
+    print(countBuffed)
+
+    return nGroupMembersInRange > countBuffed
 end
 
 -- Adjust ability dot value to unit health

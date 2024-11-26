@@ -1,9 +1,13 @@
 local _, wan = ...
 
-local frameCalaestialAlignment = CreateFrame("Frame")
-local function OnEvent(self, event, addonName)
-    -- Early Exits
-    if addonName ~= "WhackANiffen" or wan.PlayerState.Class ~= "DRUID" then return end
+-- Exit early if player class doesn't match
+if wan.PlayerState.Class ~= "DRUID" then return end
+
+-- Init frame 
+local frameCelestialAlignment = CreateFrame("Frame")
+local function AddonLoad(self, event, addonName)
+    -- Early Exit
+    if addonName ~= "WhackANiffen" then return end
 
     -- Init data
     local abilityActive = false
@@ -49,17 +53,17 @@ local function OnEvent(self, event, addonName)
 
         if event == "SPELL_DATA_READY" then
             abilityActive = wan.spellData.CelestialAlignment.known and wan.spellData.CelestialAlignment.id
-            wan.SetUpdateRate(frameCalaestialAlignment, CheckAbilityValue, abilityActive)
-            wan.BlizzardEventHandler(frameCalaestialAlignment, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
+            wan.SetUpdateRate(frameCelestialAlignment, CheckAbilityValue, abilityActive)
+            wan.BlizzardEventHandler(frameCelestialAlignment, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
         end
 
         if event == "TRAIT_DATA_READY" then  end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
-            wan.SetUpdateRate(frameCalaestialAlignment, CheckAbilityValue, abilityActive)
+            wan.SetUpdateRate(frameCelestialAlignment, CheckAbilityValue, abilityActive)
         end
     end)
 end
 
-frameCalaestialAlignment:RegisterEvent("ADDON_LOADED")
-frameCalaestialAlignment:SetScript("OnEvent", OnEvent)
+frameCelestialAlignment:RegisterEvent("ADDON_LOADED")
+frameCelestialAlignment:SetScript("OnEvent", AddonLoad)

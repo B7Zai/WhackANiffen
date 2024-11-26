@@ -2,7 +2,7 @@ local _, wan = ...
 
 wan.TargetUnitID = wan.TargetUnitID or "target"
 wan.PlayerState = wan.PlayerState or {}
-wan.PlayerState.Class = UnitClassBase("player")
+wan.PlayerState.Class, wan.PlayerState.ClassID = UnitClassBase("player")
 wan.PlayerState.Status = false
 wan.PlayerState.Combat = false
 wan.CritChance = GetCritChance() or 0

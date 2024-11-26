@@ -1,10 +1,13 @@
 local _, wan = ...
 
--- Init data
+-- Exit early if player class doesn't match
+if wan.PlayerState.Class ~= "DRUID" then return end
+
+-- Init frame 
 local frameFerociousBite = CreateFrame("Frame")
-local function OnEvent(self, event, addonName)
-    -- Early Exits
-    if addonName ~= "WhackANiffen" or wan.PlayerState.Class ~= "DRUID" then return end
+local function AddonLoad(self, event, addonName)
+    -- Early Exit
+    if addonName ~= "WhackANiffen" then return end
 
     -- Init spell data
     local abilityActive = false
@@ -170,4 +173,4 @@ local function OnEvent(self, event, addonName)
 end
 
 frameFerociousBite:RegisterEvent("ADDON_LOADED")
-frameFerociousBite:SetScript("OnEvent", OnEvent)
+frameFerociousBite:SetScript("OnEvent", AddonLoad)

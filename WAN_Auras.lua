@@ -93,40 +93,72 @@ local function UpdateAuras(auraDataArray, unitID, updateInfo)
 end
 
 
-local nameplate = {}
-local function OnEvent(self, event, unitID, updateInfo)
+local nameplateUnitToken = {}
+local groupUnitToken = {} 
+local function AuraUpdate(self, event, unitID, updateInfo)
 
+    -- wipe aura data on player logout
     if event == "PLAYER_LOGOUT" then
         wan.WipeTable(wan.auraData)
         wan.WipeTable(wan.instanceIDMap)
     end
 
+    -- wipe aura data on a loading screen and perform a full aura update for player
     if event == "PLAYER_ENTERING_WORLD" then
         wan.WipeTable(wan.auraData)
         wan.WipeTable(wan.instanceIDMap)
         UpdateAuras(wan.auraData, "player", { isFullUpdate = true })
     end
 
-    if event == "PLAYER_TARGET_CHANGED" then
-        UpdateAuras(wan.auraData, wan.TargetUnitID, { isFullUpdate = true })
-    end
-
+    -- update aura data for the player
     if unitID == "player" then
         UpdateAuras(wan.auraData, "player", updateInfo)
     end
 
+    -- update aura data on target when switching targets
+    if event == "PLAYER_TARGET_CHANGED" then
+        UpdateAuras(wan.auraData, wan.TargetUnitID, { isFullUpdate = true })
+    end
+
+    -- update aura data on the target
     if unitID == wan.TargetUnitID then
         UpdateAuras(wan.auraData, wan.TargetUnitID, updateInfo)
     end
 
+    -- adds and removes nameplate unit tokens for the function to use
     if event == "NAME_PLATE_UNIT_ADDED" then
-        nameplate[unitID] = unitID
+        nameplateUnitToken[unitID] = unitID
     elseif event == "NAME_PLATE_UNIT_REMOVED" then
-        wan.WipeTable(wan.auraData[unitID])
-        nameplate[unitID] = nil
+        wan.WipeTable(wan.auraData[unitID]) -- wipes aura data on removed unit tokens
+        wan.WipeTable(wan.instanceIDMap[unitID])
+        nameplateUnitToken[unitID] = nil
     end
 
-    if unitID == nameplate[unitID] then
+    -- update aura data on nameplates
+    if unitID == nameplateUnitToken[unitID] then
+        UpdateAuras(wan.auraData, unitID, updateInfo)
+    end
+
+    -- assigns group unit tokens for the function to use and perform a full aura data update on them
+    if event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
+        wan.WipeTable(groupUnitToken)
+        local groupType = UnitInRaid("player") and "raid" or UnitInParty("player") and "party"
+        local nGroupUnits = GetNumGroupMembers(groupType)
+        if nGroupUnits and nGroupUnits > 0 then
+            for i = 1, (nGroupUnits) do
+                local unit = groupType .. i
+                local partyGUID = UnitGUID(unit)
+                local unitToken = partyGUID and UnitTokenFromGUID(partyGUID)
+                if unitToken and unitToken ~= "player" then
+                    groupUnitToken[unitToken] = unitToken
+                    UpdateAuras(wan.auraData, unitToken, { isFullUpdate = true })
+                end
+            end
+        end
+    end
+
+    -- update aura data on group members
+    if unitID == groupUnitToken[unitID] then
         UpdateAuras(wan.auraData, unitID, updateInfo)
     end
 end
@@ -139,6 +171,7 @@ wan.RegisterBlizzardEvents(
     "PLAYER_ENTERING_WORLD",
     "NAME_PLATE_UNIT_ADDED",
     "NAME_PLATE_UNIT_REMOVED",
+    "GROUP_ROSTER_UPDATE",
     "PLAYER_LOGOUT"
 )
-auraFrame:SetScript("OnEvent", OnEvent)
+auraFrame:SetScript("OnEvent", AuraUpdate)
