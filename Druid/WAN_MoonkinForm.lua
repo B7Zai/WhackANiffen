@@ -13,7 +13,7 @@ local function AddonLoad(self, event, addonName)
     local abilityActive = false
     local currentSpecName = "Unknown"
     local specName = "Balance"
-    local nMoonkinForm = 0
+    local nMoonkinForm, nMoonkinFormMaxRange = 0, 70
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -21,6 +21,13 @@ local function AddonLoad(self, event, addonName)
         if not wan.PlayerState.Status or wan.auraData.player.buff_MoonkinForm
             or specName ~= currentSpecName or not wan.IsSpellUsable(wan.spellData.MoonkinForm.id)
         then
+            wan.UpdateMechanicData(wan.spellData.MoonkinForm.basename)
+            return
+        end
+
+        -- Check for valid unit
+        local isValidUnit = wan.ValidUnitBoolCounter(nil, nMoonkinFormMaxRange)
+        if not isValidUnit then
             wan.UpdateMechanicData(wan.spellData.MoonkinForm.basename)
             return
         end

@@ -1,6 +1,11 @@
 local _, wan = ...
 
-wan.TargetUnitID = wan.TargetUnitID or "target"
+-- Init unitID arrays
+wan.TargetUnitID = {}
+wan.NameplateUnitID = {}
+wan.GroupUnitID = {}
+
+-- Init player status arrays
 wan.PlayerState = wan.PlayerState or {}
 wan.PlayerState.Class, wan.PlayerState.ClassID = UnitClassBase("player")
 wan.PlayerState.Status = false
@@ -16,9 +21,44 @@ end
 local function OnEvent(self, event, ...)
     local unit = "player"
 
+    -- sets unit token for targeting
     if event == "PLAYER_ENTERING_WORLD" or (event == "CVAR_UPDATE" and ... == "SoftTargetEnemy") then
         local targetSetting = C_CVar.GetCVar("SoftTargetEnemy")
         wan.TargetUnitID = tonumber(targetSetting) == 3 and "softenemy" or "target"
+    end
+
+    -- adds and removes nameplate unit tokens
+    if event == "NAME_PLATE_UNIT_ADDED" then
+        local unitID = ...
+        wan.NameplateUnitID[unitID] = unitID
+    elseif event == "NAME_PLATE_UNIT_REMOVED" then
+        local unitID = ...
+        wan.NameplateUnitID[unitID] = nil
+    end
+
+    -- assigns group unit tokens for group
+    if event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
+        local groupType = UnitInRaid("player") and "raid" or UnitInParty("player") and "party"
+        local nGroupUnits = GetNumGroupMembers()
+        local activeUnits = {}
+
+        if nGroupUnits > 0 and groupType then
+            for i = 1, nGroupUnits do
+                local unit = groupType .. i
+                local partyGUID = UnitGUID(unit)
+                local unitToken = partyGUID and UnitTokenFromGUID(partyGUID)
+                if unitToken and unitToken ~= "player" then
+                    wan.GroupUnitID[unitToken] = unitToken
+                    activeUnits[unitToken] = true
+                end
+            end
+        end
+
+        for unitToken in pairs(wan.GroupUnitID) do
+            if not activeUnits[unitToken] then
+                wan.GroupUnitID[unitToken] = nil
+            end
+        end
     end
 
     if event == "PLAYER_ALIVE" or event == "PLAYER_DEAD" or event == "PLAYER_ENTERING_WORLD" then
@@ -66,6 +106,9 @@ wan.RegisterBlizzardEvents(stateFrame,
     "PLAYER_ENTERING_WORLD",
     "CVAR_UPDATE",
     "PLAYER_REGEN_DISABLED",
-    "PLAYER_REGEN_ENABLED"
+    "PLAYER_REGEN_ENABLED",
+    "NAME_PLATE_UNIT_ADDED",
+    "NAME_PLATE_UNIT_REMOVED",
+    "GROUP_ROSTER_UPDATE"
 )
 stateFrame:SetScript("OnEvent", OnEvent)

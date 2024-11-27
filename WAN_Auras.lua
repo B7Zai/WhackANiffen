@@ -11,6 +11,8 @@ setmetatable(wan.auraData, {
     end
 }) -- Set default values if data doesnt exists
 
+local auraInstanceThrottler = {}
+
 local function UpdateAuras(auraDataArray, unitID, updateInfo)
     if not updateInfo then return end
 
@@ -39,6 +41,7 @@ local function UpdateAuras(auraDataArray, unitID, updateInfo)
                 local spellName = wan.FormatNameForKey(debuffData.name)
                 local key = "debuff_" .. spellName
                 auraDataArray[unitID][key] = debuffData
+                wan.instanceIDMap[unitID][debuffData.auraInstanceID] = key
             end
         end
         return
@@ -46,10 +49,14 @@ local function UpdateAuras(auraDataArray, unitID, updateInfo)
 
     if updateInfo.addedAuras then -- Aura update when auras get added
         for _, aura in pairs(updateInfo.addedAuras) do
-            if aura.isHelpful or aura.sourceUnit == "player" then
+            if unitID == "player"
+            or (unitID == wan.TargetUnitID and (aura.isHelpful or aura.sourceUnit == "player"))
+            or (unitID == wan.NameplateUnitID[unitID] and (aura.isHelpful or aura.sourceUnit == "player"))
+            or (unitID == wan.GroupUnitID[unitID] and (aura.isHelpful and aura.canApplyAura or aura.isHarmful))
+             then
                 local spellName = wan.FormatNameForKey(aura.name)
                 if spellName then
-                    local key = aura.isHelpful and "buff_" .. spellName or "debuff_" .. spellName
+                    local key = aura.isHelpful and "buff_" .. spellName or aura.isHarmful and "debuff_" .. spellName
                     auraDataArray[unitID][key] = aura
                     wan.instanceIDMap[unitID][aura.auraInstanceID] = key
                 end
@@ -59,11 +66,10 @@ local function UpdateAuras(auraDataArray, unitID, updateInfo)
 
     if updateInfo.updatedAuraInstanceIDs then -- Aura update when auras change
         for _, instanceID in pairs(updateInfo.updatedAuraInstanceIDs) do
-            local aura = C_UnitAuras.GetAuraDataByAuraInstanceID(unitID, instanceID)
-            if aura and (aura.isHelpful or aura.sourceUnit == "player") then
-                local spellName = wan.FormatNameForKey(aura.name)
-                if spellName then
-                    local key = aura.isHelpful and "buff_" .. spellName or "debuff_" .. spellName
+            if wan.instanceIDMap[unitID][instanceID] then
+                local aura = C_UnitAuras.GetAuraDataByAuraInstanceID(unitID, instanceID)
+                if aura then
+                    local key = wan.instanceIDMap[unitID][aura.auraInstanceID]
                     auraDataArray[unitID][key] = aura
                     wan.instanceIDMap[unitID][aura.auraInstanceID] = key
                 end
@@ -92,9 +98,6 @@ local function UpdateAuras(auraDataArray, unitID, updateInfo)
     end
 end
 
-
-local nameplateUnitToken = {}
-local groupUnitToken = {} 
 local function AuraUpdate(self, event, unitID, updateInfo)
 
     -- wipe aura data on player logout
@@ -108,6 +111,9 @@ local function AuraUpdate(self, event, unitID, updateInfo)
         wan.WipeTable(wan.auraData)
         wan.WipeTable(wan.instanceIDMap)
         UpdateAuras(wan.auraData, "player", { isFullUpdate = true })
+        for groupUnitID, _ in pairs(wan.GroupUnitID) do
+            UpdateAuras(wan.auraData, groupUnitID, { isFullUpdate = true })
+        end
     end
 
     -- update aura data for the player
@@ -125,41 +131,33 @@ local function AuraUpdate(self, event, unitID, updateInfo)
         UpdateAuras(wan.auraData, wan.TargetUnitID, updateInfo)
     end
 
-    -- adds and removes nameplate unit tokens for the function to use
-    if event == "NAME_PLATE_UNIT_ADDED" then
-        nameplateUnitToken[unitID] = unitID
-    elseif event == "NAME_PLATE_UNIT_REMOVED" then
-        wan.WipeTable(wan.auraData[unitID]) -- wipes aura data on removed unit tokens
+    -- removes aura data on nameplate unit tokens
+    if event == "NAME_PLATE_UNIT_REMOVED" then
+        wan.WipeTable(wan.auraData[unitID])
         wan.WipeTable(wan.instanceIDMap[unitID])
-        nameplateUnitToken[unitID] = nil
     end
 
     -- update aura data on nameplates
-    if unitID == nameplateUnitToken[unitID] then
+    if unitID == wan.NameplateUnitID[unitID] then
         UpdateAuras(wan.auraData, unitID, updateInfo)
-    end
-
-    -- assigns group unit tokens for the function to use and perform a full aura data update on them
-    if event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
-        wan.WipeTable(groupUnitToken)
-        local groupType = UnitInRaid("player") and "raid" or UnitInParty("player") and "party"
-        local nGroupUnits = GetNumGroupMembers(groupType)
-        if nGroupUnits and nGroupUnits > 0 then
-            for i = 1, (nGroupUnits) do
-                local unit = groupType .. i
-                local partyGUID = UnitGUID(unit)
-                local unitToken = partyGUID and UnitTokenFromGUID(partyGUID)
-                if unitToken and unitToken ~= "player" then
-                    groupUnitToken[unitToken] = unitToken
-                    UpdateAuras(wan.auraData, unitToken, { isFullUpdate = true })
-                end
-            end
-        end
     end
 
     -- update aura data on group members
-    if unitID == groupUnitToken[unitID] then
-        UpdateAuras(wan.auraData, unitID, updateInfo)
+    if unitID == wan.GroupUnitID[unitID] then
+        if updateInfo and updateInfo.updatedAuraInstanceIDs then
+            local lastUpdate = auraInstanceThrottler[unitID]
+            if not lastUpdate or lastUpdate < GetTime() - 0.5 then
+                lastUpdate = GetTime()
+
+                print("Updating instanceID aura for:", unitID)
+                auraInstanceThrottler[unitID] = GetTime()
+
+                UpdateAuras(wan.auraData, unitID, updateInfo)
+
+            end
+        else
+            UpdateAuras(wan.auraData, unitID, updateInfo)
+        end
     end
 end
 

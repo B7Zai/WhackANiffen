@@ -115,11 +115,10 @@ function wan.ValidUnitBoolCounter(spellIdentifier, maxRange)
     local count = 0
     local inRangeUnits = {}
 
-    for i = 1, 40 do
-        local unit = "nameplate" .. i
-        if wan.ValidUnitInRangeAoE(unit, spellIdentifier, maxRange) then
+    for nameplateUnitID, _ in pairs(wan.NameplateUnitID) do
+        if wan.ValidUnitInRangeAoE(nameplateUnitID, spellIdentifier, maxRange) then
             count = count + 1
-            inRangeUnits[unit] = true
+            inRangeUnits[nameplateUnitID] = true
         end
     end
 
@@ -132,19 +131,17 @@ end
 
 -- Counts the number of group members in range
 function wan.ValidGroupMembers()
-    local groupType = UnitInRaid("player") and "raid" or UnitInParty("player") and "party"
-    if not groupType then return 1, 1, {} end
+    if not IsInGroup() then return 1, 1, {} end
 
     local inRangeUnits = {}
     local nDamageScaler = 1
-    for i = 1, 40 do
-        local unit = groupType .. i
-        if not UnitIsDeadOrGhost(unit)
-            and UnitIsConnected(unit)
-            and UnitInRange(unit)
+    for groupUnitID, _ in pairs(wan.GroupUnitID) do
+        if not UnitIsDeadOrGhost(groupUnitID)
+            and UnitIsConnected(groupUnitID)
+            and UnitInRange(groupUnitID)
         then
             nDamageScaler = nDamageScaler + 1
-            inRangeUnits[unit] = true
+            inRangeUnits[groupUnitID] = true
         end
     end
 
@@ -416,22 +413,21 @@ function wan.CheckClassBuff(buffName)
     if not IsInGroup() then
         return wan.auraData.player["buff_" ..buffName] == nil
     end
-    
+
     local groupType = UnitInRaid("player") and "raid" or UnitInParty("player") and "party"
     local nGroupUnits = GetNumGroupMembers(groupType)
     local _, nGroupMembersInRange, idValidGroupMember = wan.ValidGroupMembers()
     local countBuffed = wan.auraData.player["buff_" .. buffName] and 1 or 0
     local nDisconnected = 0
 
-    for i = 1, nGroupUnits do
-        local unit = groupType .. i
-        local isOnline = UnitIsConnected(unit)
+    for groupUnitID, _ in pairs(wan.GroupUnitID) do
+        local isOnline = UnitIsConnected(groupUnitID)
         if not isOnline then
             nDisconnected = nDisconnected + 1
         end
     end
 
-    local nGroupSize = (nGroupUnits - nDisconnected) + 1
+    local nGroupSize = (nGroupUnits - nDisconnected)
 
     if nGroupSize == nGroupMembersInRange then
         for unitID, _ in pairs(idValidGroupMember or {}) do
@@ -440,11 +436,10 @@ function wan.CheckClassBuff(buffName)
                 countBuffed = countBuffed + 1
             end
         end
+        return nGroupMembersInRange > countBuffed
     end
 
-    print(countBuffed)
-
-    return nGroupMembersInRange > countBuffed
+    return false
 end
 
 -- Adjust ability dot value to unit health

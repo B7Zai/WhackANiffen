@@ -16,7 +16,8 @@ local function AddonLoad(self, event, addonName)
     -- Ability value calculation
     local function CheckAbilityValue()
         -- Early exits
-        if not wan.PlayerState.Status or not wan.CheckClassBuff(wan.spellData.MarkoftheWild.basename)
+        if not wan.PlayerState.Status or wan.PlayerState.Combat
+        or not wan.CheckClassBuff(wan.spellData.MarkoftheWild.basename)
              or not wan.IsSpellUsable(wan.spellData.MarkoftheWild.id)
         then
             wan.UpdateMechanicData(wan.spellData.MarkoftheWild.basename)
