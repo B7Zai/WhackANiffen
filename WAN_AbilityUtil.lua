@@ -498,8 +498,8 @@ function wan.CheckForDebuffAoE(auraData, validUnitIDs, debuffName, maxStacks)
     local setMaxStacks = (maxStacks and maxStacks > 0) and maxStacks or 1
     
     for unitID, _ in pairs(validUnitIDs) do
-        local auras = auraData[unitID]
-        local debuff = auras and auras["debuff_" .. debuffName]
+        local aura = auraData[unitID]
+        local debuff = aura and aura["debuff_" .. debuffName]
 
         if debuff and debuff.applications < setMaxStacks then
             debuffCount = debuffCount + 1

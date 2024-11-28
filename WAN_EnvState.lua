@@ -4,6 +4,7 @@ local _, wan = ...
 wan.TargetUnitID = {}
 wan.NameplateUnitID = {}
 wan.GroupUnitID = {}
+wan.GUIDMap = {}
 
 -- Init player status arrays
 wan.PlayerState = wan.PlayerState or {}
@@ -38,25 +39,36 @@ local function OnEvent(self, event, ...)
 
     -- assigns group unit tokens for group
     if event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
-        local groupType = UnitInRaid("player") and "raid" or UnitInParty("player") and "party"
-        local nGroupUnits = GetNumGroupMembers()
+        local groupType = UnitInRaid("player") and "raid" or "party"
+        local nGroupUnits = GetNumGroupMembers() - 1
         local activeUnits = {}
 
+        -- noticable performance drop when the game assigns group unit tokens en masse
+        -- haven't found a way to go around this yet...
         if nGroupUnits > 0 and groupType then
             for i = 1, nGroupUnits do
                 local unit = groupType .. i
-                local partyGUID = UnitGUID(unit)
-                local unitToken = partyGUID and UnitTokenFromGUID(partyGUID)
-                if unitToken and unitToken ~= "player" then
-                    wan.GroupUnitID[unitToken] = unitToken
-                    activeUnits[unitToken] = true
+                local groupGUID = UnitGUID(unit)
+                if groupGUID then
+                    local validToken = wan.GUIDMap[groupGUID]
+                    if not validToken or validToken ~= unit then
+                        local unitToken = groupGUID and UnitTokenFromGUID(groupGUID)
+                        if groupGUID and unitToken and unitToken ~= "player" and unitToken:find("^" .. groupType) then
+                            print("Creating unit token: " .. unitToken)
+                            wan.GroupUnitID[unitToken] = unitToken
+                            wan.GUIDMap[groupGUID] = unitToken
+                            activeUnits[groupGUID] = unitToken
+                        end
+                    end
                 end
             end
         end
 
-        for unitToken in pairs(wan.GroupUnitID) do
-            if not activeUnits[unitToken] then
+        for guid, unitToken in pairs(activeUnits) do
+            if not wan.GroupUnitID[unitToken] then
+                print("Deleting unit token: " .. unitToken)
                 wan.GroupUnitID[unitToken] = nil
+                wan.GUIDMap[guid] = nil
             end
         end
     end
