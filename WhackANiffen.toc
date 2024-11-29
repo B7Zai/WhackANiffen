@@ -2,7 +2,7 @@
 ## Title: Whack-A-Niffen
 ## Notes: Not much yet.
 ## Author: 7Banzai
-## Version: 0.1.0
+## Version: 0.1.2c
 ## SavedVariables: WhackANiffenDB
 ## SavedVariablesPerCharacter:
 ## X-Curse-Project-ID: 1143530
@@ -15,10 +15,10 @@ libs\LibRangeCheck-3.0\LibRangeCheck-3.0\LibRangeCheck-3.0.lua
 WAN_Settings.lua
 WAN_Util.lua
 WAN_EnvState.lua
-WAN_Auras.lua
 WAN_AbilityUtil.lua
-WAN_AbilityData.lua
+WAN_Auras.lua
 WAN_TraitData.lua
+WAN_AbilityData.lua
 
 # Display
 WAN_FrameUtil.lua

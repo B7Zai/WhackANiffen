@@ -19,6 +19,7 @@ local function AddonLoad(self, event, addonName)
     local function CheckAbilityValue()
         -- Early exits
         if not wan.PlayerState.Status or wan.auraData.player.buff_MoonkinForm
+            or (wan.auraData.player.buff_CatForm and not wan.PlayerState.Combat)
             or specName ~= currentSpecName or not wan.IsSpellUsable(wan.spellData.MoonkinForm.id)
         then
             wan.UpdateMechanicData(wan.spellData.MoonkinForm.basename)

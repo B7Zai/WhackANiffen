@@ -7,8 +7,10 @@ wan.GroupUnitID = {}
 wan.GUIDMap = {}
 
 -- Init player status arrays
-wan.PlayerState = wan.PlayerState or {}
-wan.PlayerState.Class, wan.PlayerState.ClassID = UnitClassBase("player")
+wan.PlayerState = {}
+wan.PlayerState.InHealerMode = false
+wan.PlayerState.Class = UnitClassBase("player") or "UNKNOWN"
+wan.PlayerState.InGroup = false
 wan.PlayerState.Status = false
 wan.PlayerState.Combat = false
 wan.CritChance = GetCritChance() or 0
@@ -20,7 +22,6 @@ local function UpdatePlayerStatus()
 end
 
 local function OnEvent(self, event, ...)
-    local unit = "player"
 
     -- sets unit token for targeting
     if event == "PLAYER_ENTERING_WORLD" or (event == "CVAR_UPDATE" and ... == "SoftTargetEnemy") then
@@ -37,15 +38,24 @@ local function OnEvent(self, event, ...)
         wan.NameplateUnitID[unitID] = nil
     end
 
+    -- sets in group status or wipes tokens and GUIDs for the group units
+    if event == "GROUP_FORMED" or event == "GROUP_JOINED" then
+        wan.PlayerState.InGroup = true
+    elseif event == "GROUP_LEFT" then
+        wan.PlayerState.InGroup = false
+        wan.GroupUnitID = {}
+        wan.GUIDMap = {}
+    end
+
     -- assigns group unit tokens for group
     if event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
         local groupType = UnitInRaid("player") and "raid" or "party"
-        local nGroupUnits = GetNumGroupMembers() - 1
+        local nGroupUnits = GetNumGroupMembers()
         local activeUnits = {}
 
         -- noticable performance drop when the game assigns group unit tokens en masse
         -- haven't found a way to go around this yet...
-        if nGroupUnits > 0 and groupType then
+        if wan.PlayerState.InHealerMode and nGroupUnits > 0 then
             for i = 1, nGroupUnits do
                 local unit = groupType .. i
                 local groupGUID = UnitGUID(unit)
@@ -53,8 +63,11 @@ local function OnEvent(self, event, ...)
                     local validToken = wan.GUIDMap[groupGUID]
                     if not validToken or validToken ~= unit then
                         local unitToken = groupGUID and UnitTokenFromGUID(groupGUID)
-                        if groupGUID and unitToken and unitToken ~= "player" and unitToken:find("^" .. groupType) then
-                            print("Creating unit token: " .. unitToken)
+                        if unitToken and not unitToken:find("^" .. groupType) then
+                            local unitNumber = unitToken:match("%d+")
+                                unitToken = unitNumber and groupType .. unitNumber
+                        end
+                        if groupGUID and unitToken and unitToken ~= "player" then
                             wan.GroupUnitID[unitToken] = unitToken
                             wan.GUIDMap[groupGUID] = unitToken
                             activeUnits[groupGUID] = unitToken
@@ -64,17 +77,19 @@ local function OnEvent(self, event, ...)
             end
         end
 
+        -- wipe data on removed units
         for guid, unitToken in pairs(activeUnits) do
             if not wan.GroupUnitID[unitToken] then
-                print("Deleting unit token: " .. unitToken)
                 wan.GroupUnitID[unitToken] = nil
                 wan.GUIDMap[guid] = nil
+                wan.auraData[unitToken] = nil
+                wan.instanceIDMap[unitToken] = nil
             end
         end
     end
 
     if event == "PLAYER_ALIVE" or event == "PLAYER_DEAD" or event == "PLAYER_ENTERING_WORLD" then
-        isDeadOrGhost = UnitIsDeadOrGhost(unit)
+        isDeadOrGhost = UnitIsDeadOrGhost("player")
         UpdatePlayerStatus()
     end
 
@@ -85,7 +100,7 @@ local function OnEvent(self, event, ...)
     end
 
     if event == "VEHICLE_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
-        inVehicle = UnitInVehicle(unit) or UnitHasVehicleUI(unit)
+        inVehicle = UnitInVehicle("player") or UnitHasVehicleUI("player")
         UpdatePlayerStatus()
     end
 
@@ -101,9 +116,18 @@ local function OnEvent(self, event, ...)
     end
 
     if event == "PLAYER_LOGOUT" then
-        wan.PlayerState.Status = false
-        wan.CritChance = 0
-        wan.Haste = 0
+        wan.TargetUnitID = nil
+        wan.NameplateUnitID = nil
+        wan.GroupUnitID = nil
+        wan.GUIDMap = nil
+
+        wan.PlayerState.Class = nil
+        wan.PlayerState.InHealerMode = nil
+        wan.PlayerState.Status = nil
+        wan.PlayerState.Combat = nil
+        wan.PlayerState.InGroup = nil
+        wan.CritChance = nil
+        wan.Haste = nil
     end
 end
 
@@ -121,6 +145,9 @@ wan.RegisterBlizzardEvents(stateFrame,
     "PLAYER_REGEN_ENABLED",
     "NAME_PLATE_UNIT_ADDED",
     "NAME_PLATE_UNIT_REMOVED",
-    "GROUP_ROSTER_UPDATE"
+    "GROUP_ROSTER_UPDATE",
+    "GROUP_FORMED",
+    "GROUP_JOINED",
+    "GROUP_LEFT"
 )
 stateFrame:SetScript("OnEvent", OnEvent)

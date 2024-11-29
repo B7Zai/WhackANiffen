@@ -2,6 +2,7 @@ local _, wan = ...
 
 wan.AbilityData = wan.AbilityData or {}
 wan.MechanicData = wan.MechanicData or {}
+wan.HealingData = wan.HealingData or {}
 
 setmetatable(wan.AbilityData, {
     __index = function(t, key)
@@ -39,6 +40,16 @@ end
 function wan.UpdateMechanicData(abilityName, value, icon, name, desaturation)
     if value == 0 then value, icon, name, desaturation = nil, nil, nil, nil end
     wan.MechanicData[abilityName] = {
+        value = value,
+        icon = icon,
+        name = name,
+        desat = desaturation,
+    }
+end
+
+function wan.UpdateHealingData(abilityName, value, icon, name, desaturation)
+    if value == 0 then value, icon, name, desaturation = nil, nil, nil, nil end
+    wan.AbilityData[abilityName] = {
         value = value,
         icon = icon,
         name = name,
@@ -136,6 +147,7 @@ function wan.ValidGroupMembers()
     local inRangeUnits = {}
     local nDamageScaler = 1
     for groupUnitID, _ in pairs(wan.GroupUnitID) do
+        print(groupUnitID)
         if not UnitIsDeadOrGhost(groupUnitID)
             and UnitIsConnected(groupUnitID)
             and UnitInRange(groupUnitID)
@@ -144,6 +156,7 @@ function wan.ValidGroupMembers()
             inRangeUnits[groupUnitID] = true
         end
     end
+
 
     local nGroupMembersInRange = nDamageScaler
     nDamageScaler = wan.AdjustSoftCapUnitOverflow(5, nDamageScaler)
@@ -414,8 +427,8 @@ function wan.CheckClassBuff(buffName)
         return wan.auraData.player["buff_" ..buffName] == nil
     end
 
-    local groupType = UnitInRaid("player") and "raid" or UnitInParty("player") and "party"
-    local nGroupUnits = GetNumGroupMembers(groupType)
+    local groupType = UnitInRaid("player") and "raid" or "party"
+    local nGroupUnits = GetNumGroupMembers()
     local _, nGroupMembersInRange, idValidGroupMember = wan.ValidGroupMembers()
     local countBuffed = wan.auraData.player["buff_" .. buffName] and 1 or 0
     local nDisconnected = 0

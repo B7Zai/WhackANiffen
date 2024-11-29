@@ -36,7 +36,11 @@ local function AddonLoad(self, event, addonName)
 
         -- Update ability data
         local abilityValue = math.floor(cRegrowthHeal) or 0
-        wan.UpdateMechanicData(wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
+        if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
+            wan.UpdateHealingData(wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
+        else
+            wan.UpdateMechanicData(wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
+        end
     end
 
     -- Data update on events

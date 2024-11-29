@@ -321,6 +321,25 @@ local function OnEvent(self, event, addonname)
             local initC4 = Settings.CreateCheckbox(category, settingC4, tooltipC4)
         end
 
+        wan.Options.HealerMode = wan.Options.HealerMode or {}
+        wan.Options.HealerMode.Toggle = wan.Options.HealerMode.Toggle or false
+        local function GetValueC5() return wan.Options.HealerMode.Toggle end
+        local function SetValueC5(value)
+            wan.Options.HealerMode.Toggle = value
+            wan.CustomEvents("HEALERMODE_FRAME_TOGGLE")
+        end
+        local tooltipC5 = "Enables healing frames for non healer specializations."
+        local settingC5 = Settings.RegisterProxySetting(
+            category,
+            "Healer_Mode_Frame_Toggle",
+            Settings.VarType.Boolean,
+            "Healer Mode",
+            wan.Options.HealerMode.Toggle,
+            GetValueC5,
+            SetValueC5
+        )
+        local initC5 = Settings.CreateCheckbox(category, settingC5, tooltipC5)
+
         Settings.RegisterAddOnCategory(category)
 
         SLASH_WANOPTIONS1 = "/wan"

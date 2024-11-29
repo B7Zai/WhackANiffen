@@ -23,7 +23,7 @@ local function AddonLoad(self, event, addonName)
             wan.UpdateMechanicData(wan.spellData.Soothe.basename)
             return
         end
-        
+       
         -- Base values
         local cSoothe = nSoothe
 

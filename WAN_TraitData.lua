@@ -1,6 +1,6 @@
 local _, wan = ...
 
-wan.traitData = wan.traitData or {}
+wan.traitData = {}
 setmetatable(wan.traitData, {
     __index = function(t, key)
         local default = {
@@ -72,8 +72,11 @@ traitFrame:SetScript("OnEvent", function(self, event, ...)
     if event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_ENTERING_WORLD" then
         wan.WipeTable(wan.AbilityData)
         wan.WipeTable(wan.MechanicData)
+        wan.WipeTable(wan.HealingData)
         wan.WipeTable(wan.traitData)
         GetTraitData(wan.traitData)
+        local _, _, _, _, role = wan.GetTraitInfo()
+        wan.PlayerState.InHealerMode = role == "HEALER" or wan.Options.HealerMode.Toggle
     end
 
     if event == "PLAYER_LOGOUT" then
