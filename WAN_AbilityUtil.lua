@@ -28,7 +28,7 @@ wan.classificationData = {
 }
 
 function wan.UpdateAbilityData(abilityName, value, icon, name, desaturation)
-    if value == 0 then value, icon, name, desaturation = nil, nil, nil, nil end
+    if value == 0 then wan.AbilityData[abilityName] = nil return end
     wan.AbilityData[abilityName] = {
         value = value,
         icon = icon,
@@ -38,7 +38,7 @@ function wan.UpdateAbilityData(abilityName, value, icon, name, desaturation)
 end
 
 function wan.UpdateMechanicData(abilityName, value, icon, name, desaturation)
-    if value == 0 then value, icon, name, desaturation = nil, nil, nil, nil end
+    if value == 0 then wan.MechanicData[abilityName] = nil return end
     wan.MechanicData[abilityName] = {
         value = value,
         icon = icon,
@@ -47,21 +47,35 @@ function wan.UpdateMechanicData(abilityName, value, icon, name, desaturation)
     }
 end
 
-function wan.UpdateHealingData(abilityName, value, icon, name, desaturation)
-    if value == 0 then value, icon, name, desaturation = nil, nil, nil, nil end
-    wan.AbilityData[abilityName] = {
-        value = value,
-        icon = icon,
-        name = name,
-        desat = desaturation,
-    }
+function wan.UpdateHealingData(unitTokens, abilityName, value, icon, name, desaturation)
+    local validTokens = {}
+    for _, unitToken in pairs(unitTokens) do
+        validTokens[unitToken] = true
+    end
+
+    for unitToken in pairs(wan.HealingData) do
+        if not validTokens[unitToken] then
+            wan.HealingData[unitToken] = nil
+        end
+    end
+
+    for _, groupUnitToken in pairs(unitTokens) do
+        wan.HealingData[groupUnitToken] = wan.HealingData[groupUnitToken] or {}
+        if value == 0 then wan.HealingData[groupUnitToken][abilityName] = nil return end
+        wan.HealingData[groupUnitToken][abilityName] = {
+            value = value,
+            icon = icon,
+            name = name,
+            desat = desaturation,
+        }
+    end
 end
 
 -- Reduce damage for "beyond x target abilities"
 function wan.AdjustSoftCapUnitOverflow(capStart, numTargets)
     local maxTargets = math.min(numTargets, 20)
     if numTargets > capStart then
-        return numTargets * math.sqrt(capStart / maxTargets) 
+        return numTargets * math.sqrt(capStart / maxTargets)
     end
 
     return numTargets
@@ -145,24 +159,46 @@ function wan.ValidGroupMembers()
     if not IsInGroup() then return 1, 1, {} end
 
     local inRangeUnits = {}
-    local nDamageScaler = 1
-    for groupUnitID, _ in pairs(wan.GroupUnitID) do
-        print(groupUnitID)
+    local count = 0
+    for groupUnitID, groupUnitGUID in pairs(wan.GroupUnitID) do
         if not UnitIsDeadOrGhost(groupUnitID)
             and UnitIsConnected(groupUnitID)
             and UnitInRange(groupUnitID)
         then
-            nDamageScaler = nDamageScaler + 1
-            inRangeUnits[groupUnitID] = true
+            count = count + 1
+            inRangeUnits[groupUnitID] = groupUnitGUID
         end
     end
 
 
-    local nGroupMembersInRange = nDamageScaler
-    nDamageScaler = wan.AdjustSoftCapUnitOverflow(5, nDamageScaler)
+    local nGroupMembersInRange = count
+    local nDamageScaler = wan.AdjustSoftCapUnitOverflow(4, count)
 
     return nDamageScaler, nGroupMembersInRange, inRangeUnits
 end
+
+function wan.GroupUnitHealThreshold(abilityValue, idValidGroupMember)
+    if not wan.PlayerState.IsInGroup then return {} end
+    local groupUnitNeedsHeal = {}
+
+    for groupUnitToken, groupUnitGUID in pairs(idValidGroupMember) do
+        local missingPercentHealth = 1 - ((UnitPercentHealthFromGUID(groupUnitGUID) or 0) * 0.01)
+        local maxHealth = (UnitHealthMax(groupUnitToken) or 0)
+        local currentMissingHeath = maxHealth * missingPercentHealth
+        if abilityValue > currentMissingHeath then
+            groupUnitNeedsHeal[groupUnitToken] = groupUnitGUID
+        elseif abilityValue > maxHealth then
+            local playerMaxHealth = UnitHealthMax("player") or 0
+            local abilityPercentageValue = abilityValue / playerMaxHealth 
+            if (missingPercentHealth + abilityPercentageValue ) >= 100 then
+                groupUnitNeedsHeal[groupUnitToken] = groupUnitGUID
+            end
+        end
+    end
+
+    return groupUnitNeedsHeal
+end
+
 
 -- Parses spell description and converts string numbers to numeric values.
 -- Returns specified numbers indexed by `indexes`.
@@ -423,36 +459,38 @@ end
 
 -- Counts units that have a specific debuff
 function wan.CheckClassBuff(buffName)
-    if not IsInGroup() then
-        return wan.auraData.player["buff_" ..buffName] == nil
-    end
+    if wan.PlayerState.InHealerMode then
+        local nGroupUnits = GetNumGroupMembers()
+        local _, nGroupMembersInRange, idValidGroupMember = wan.ValidGroupMembers()
+        local countBuffed = wan.auraData.player["buff_" .. buffName] and 1 or 0
+        local nDisconnected = 0
 
-    local groupType = UnitInRaid("player") and "raid" or "party"
-    local nGroupUnits = GetNumGroupMembers()
-    local _, nGroupMembersInRange, idValidGroupMember = wan.ValidGroupMembers()
-    local countBuffed = wan.auraData.player["buff_" .. buffName] and 1 or 0
-    local nDisconnected = 0
-
-    for groupUnitID, _ in pairs(wan.GroupUnitID) do
-        local isOnline = UnitIsConnected(groupUnitID)
-        if not isOnline then
-            nDisconnected = nDisconnected + 1
-        end
-    end
-
-    local nGroupSize = (nGroupUnits - nDisconnected)
-
-    if nGroupSize == nGroupMembersInRange then
-        for unitID, _ in pairs(idValidGroupMember or {}) do
-            local buffed = wan.auraData[unitID]["buff_" .. buffName]
-            if buffed then
-                countBuffed = countBuffed + 1
+        for groupUnitID, _ in pairs(wan.GroupUnitID) do
+            local isOnline = UnitIsConnected(groupUnitID)
+            if not isOnline then
+                nDisconnected = nDisconnected + 1
             end
         end
-        return nGroupMembersInRange > countBuffed
-    end
 
-    return false
+        local nGroupSize = (nGroupUnits - nDisconnected)
+
+        if nGroupSize ~= nGroupMembersInRange then
+            local aura = wan.auraData.player["buff_" .. buffName]
+            local remainingDuration = aura and (aura.expirationTime - GetTime())
+            return not aura or remainingDuration < 360 
+        else
+            for unitID, _ in pairs(idValidGroupMember or {}) do
+                local buffed = wan.auraData[unitID]["buff_" .. buffName]
+                if buffed then
+                    countBuffed = countBuffed + 1
+                end
+            end
+            return (nGroupUnits > 0 and nGroupMembersInRange > countBuffed)
+        end
+    end
+    local aura = wan.auraData.player["buff_" .. buffName]
+    local remainingDuration = aura and (aura.expirationTime - GetTime())
+    return not aura or remainingDuration < 360
 end
 
 -- Adjust ability dot value to unit health

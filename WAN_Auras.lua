@@ -2,6 +2,7 @@ local _, wan = ...
 
 wan.auraData = {}
 wan.instanceIDMap = {}
+wan.instanceIDThrottler = {}
 
 setmetatable(wan.auraData, {
     __index = function(t, key)
@@ -11,7 +12,6 @@ setmetatable(wan.auraData, {
     end
 }) 
 
-local auraInstanceThrottler = {}
 local function UpdateAuras(unitID, updateInfo)
     if not updateInfo then return end
 
@@ -19,6 +19,9 @@ local function UpdateAuras(unitID, updateInfo)
     wan.instanceIDMap[unitID] = wan.instanceIDMap[unitID] or {}
 
     if updateInfo.isFullUpdate then -- Full aura update for units
+    
+        wan.auraData[unitID] = {}
+        wan.instanceIDMap[unitID] = {}
 
         for i = 1, 40 do
             local aura = C_UnitAuras.GetAuraDataByIndex(unitID, i, "HELPFUL")
@@ -123,8 +126,6 @@ local function AuraUpdate(self, event, unitID, updateInfo)
 
     -- update aura data on target when switching targets
     if event == "PLAYER_TARGET_CHANGED" then
-        wan.auraData[wan.TargetUnitID] = nil
-        wan.instanceIDMap[wan.TargetUnitID] = nil
         UpdateAuras(wan.TargetUnitID, { isFullUpdate = true })
     end
 
@@ -152,10 +153,10 @@ local function AuraUpdate(self, event, unitID, updateInfo)
     if wan.PlayerState.InHealerMode and wan.GroupUnitID[unitID] then
         if updateInfo and updateInfo.updatedAuraInstanceIDs then
             -- update rate for updatedAuraInstanceIDs, this will tank fps if not throttled for each unit token
-            local lastUpdate = auraInstanceThrottler[unitID]
+            local lastUpdate = wan.instanceIDThrottler[unitID]
             if not lastUpdate or lastUpdate < GetTime() - 1 then
                 lastUpdate = GetTime()
-                auraInstanceThrottler[unitID] = GetTime()
+                wan.instanceIDThrottler[unitID] = GetTime()
                 UpdateAuras(unitID, updateInfo)
             end
         elseif updateInfo and (updateInfo.isFullUpdate or updateInfo.addedAuras or updateInfo.removedAuraInstanceIDs) then

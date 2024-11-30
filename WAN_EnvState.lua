@@ -15,11 +15,8 @@ wan.PlayerState.Status = false
 wan.PlayerState.Combat = false
 wan.CritChance = GetCritChance() or 0
 wan.Haste = GetHaste() or 0
-
 local isDeadOrGhost, isMounted, inVehicle
-local function UpdatePlayerStatus()
-    wan.PlayerState.Status = not (isDeadOrGhost or isMounted or inVehicle)
-end
+
 
 local function OnEvent(self, event, ...)
 
@@ -55,7 +52,7 @@ local function OnEvent(self, event, ...)
 
         -- noticable performance drop when the game assigns group unit tokens en masse
         -- haven't found a way to go around this yet...
-        if wan.PlayerState.InHealerMode and nGroupUnits > 0 then
+        if nGroupUnits > 0 then
             for i = 1, nGroupUnits do
                 local unit = groupType .. i
                 local groupGUID = UnitGUID(unit)
@@ -68,7 +65,7 @@ local function OnEvent(self, event, ...)
                                 unitToken = unitNumber and groupType .. unitNumber
                         end
                         if groupGUID and unitToken and unitToken ~= "player" then
-                            wan.GroupUnitID[unitToken] = unitToken
+                            wan.GroupUnitID[unitToken] = groupGUID
                             wan.GUIDMap[groupGUID] = unitToken
                             activeUnits[groupGUID] = unitToken
                         end
@@ -77,31 +74,32 @@ local function OnEvent(self, event, ...)
             end
         end
 
-        -- wipe data on removed units
+        -- wipe data on removed group units
         for guid, unitToken in pairs(activeUnits) do
             if not wan.GroupUnitID[unitToken] then
                 wan.GroupUnitID[unitToken] = nil
                 wan.GUIDMap[guid] = nil
                 wan.auraData[unitToken] = nil
                 wan.instanceIDMap[unitToken] = nil
+                wan.instanceIDThrottler[unitToken] = nil
             end
         end
     end
 
     if event == "PLAYER_ALIVE" or event == "PLAYER_DEAD" or event == "PLAYER_ENTERING_WORLD" then
         isDeadOrGhost = UnitIsDeadOrGhost("player")
-        UpdatePlayerStatus()
+        wan.PlayerState.Status = not (isDeadOrGhost or isMounted or inVehicle)
     end
 
     if (event == "UNIT_AURA" and ... == "player") or event == "PLAYER_ENTERING_WORLD" or
         (event == "UPDATE_SHAPESHIFT_FORM" and wan.PlayerState.Class == "DRUID") then
         isMounted = IsMounted() or GetShapeshiftForm() == 3
-        UpdatePlayerStatus()
+        wan.PlayerState.Status = not (isDeadOrGhost or isMounted or inVehicle)
     end
 
     if event == "VEHICLE_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
         inVehicle = UnitInVehicle("player") or UnitHasVehicleUI("player")
-        UpdatePlayerStatus()
+        wan.PlayerState.Status = not (isDeadOrGhost or isMounted or inVehicle)
     end
 
     if event == "PLAYER_REGEN_DISABLED" then
@@ -130,6 +128,13 @@ local function OnEvent(self, event, ...)
         wan.Haste = nil
     end
 end
+
+wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
+    if event == "TRAIT_DATA_READY" or event == "HEALERMODE_FRAME_TOGGLE" then
+        local _, _, _, _, role = wan.GetTraitInfo()
+        wan.PlayerState.InHealerMode = role == "HEALER" or wan.Options.HealerMode.Toggle
+    end
+end)
 
 local stateFrame = CreateFrame("Frame")
 wan.RegisterBlizzardEvents(stateFrame,

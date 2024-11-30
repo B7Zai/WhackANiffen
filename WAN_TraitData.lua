@@ -75,8 +75,6 @@ traitFrame:SetScript("OnEvent", function(self, event, ...)
         wan.WipeTable(wan.HealingData)
         wan.WipeTable(wan.traitData)
         GetTraitData(wan.traitData)
-        local _, _, _, _, role = wan.GetTraitInfo()
-        wan.PlayerState.InHealerMode = role == "HEALER" or wan.Options.HealerMode.Toggle
     end
 
     if event == "PLAYER_LOGOUT" then

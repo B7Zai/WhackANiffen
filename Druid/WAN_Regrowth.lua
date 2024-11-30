@@ -19,7 +19,6 @@ local function AddonLoad(self, event, addonName)
         if not wan.PlayerState.Status or wan.auraData.player.buff_Prowl
             or (wan.auraData.player.buff_CatForm and not wan.auraData.player.buff_PredatorySwiftness)
             or (wan.auraData.player.buff_BearForm and not wan.auraData.player.buff_DreamofCenarius)
-            or wan.auraData.player.buff_FrenziedRegeneration or wan.HealThreshold() <= nRegrowthHeal
             or not wan.IsSpellUsable(wan.spellData.Regrowth.id)
         then
             wan.UpdateMechanicData(wan.spellData.Regrowth.basename)
@@ -35,10 +34,13 @@ local function AddonLoad(self, event, addonName)
         cRegrowthHeal = cRegrowthHeal * wan.ValueFromCritical(wan.CritChance)
 
         -- Update ability data
-        local abilityValue = math.floor(cRegrowthHeal) or 0
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
-            wan.UpdateHealingData(wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
+            local abilityValue = math.floor(cRegrowthHeal) or 0
+            local _, _, idValidGroupUnit = wan.ValidGroupMembers()
+            local groupUnitTokenHeal = wan.GroupUnitHealThreshold(abilityValue, idValidGroupUnit)
+            wan.UpdateHealingData(groupUnitTokenHeal, wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
         else
+            local abilityValue = not wan.auraData.player.buff_FrenziedRegeneration and wan.HealThreshold() > nRegrowthHeal and math.floor(cRegrowthHeal) or 0
             wan.UpdateMechanicData(wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
         end
     end
