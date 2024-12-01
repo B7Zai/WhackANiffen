@@ -13,7 +13,7 @@ local function AddonLoad(self, event, addonName)
     local abilityActive = false
     local currentSpecName = "Unknown"
     local specName = "Guardian"
-    local nBearForm, nBearFormMaxRange = 0, 15
+    local nBearForm, nBearFormMaxRange = 0, 20
 
     -- Ability value calculation
     local function CheckAbilityValue()

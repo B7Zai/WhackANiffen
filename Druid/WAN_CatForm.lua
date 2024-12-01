@@ -13,7 +13,7 @@ local function AddonLoad(self, event, addonName)
     local abilityActive = false
     local currentSpecName = "Unknown"
     local specName = "Feral"
-    local nCatForm, nCatFormMaxRange = 0, 15
+    local nCatForm, nCatFormMaxRange = 0, 20
 
     -- Ability value calculation
     local function CheckAbilityValue()
