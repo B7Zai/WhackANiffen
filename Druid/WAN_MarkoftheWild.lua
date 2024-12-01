@@ -16,7 +16,7 @@ local function AddonLoad(self, event, addonName)
     -- Ability value calculation
     local function CheckAbilityValue()
         -- Early exits
-        if not wan.PlayerState.Status or wan.PlayerState.Combat
+        if not wan.PlayerState.Status or wan.PlayerState.Combat or wan.auraData.player.buff_Prowl
         or not wan.CheckClassBuff(wan.spellData.MarkoftheWild.basename)
              or not wan.IsSpellUsable(wan.spellData.MarkoftheWild.id)
         then

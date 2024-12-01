@@ -24,6 +24,7 @@ WAN_AbilityData.lua
 WAN_FrameUtil.lua
 WAN_DamageFrame.lua
 WAN_MechanicFrame.lua
+WAN_HealingFrame.lua
 
 # Druid
 Druid\WAN_AdaptiveSwarm.lua

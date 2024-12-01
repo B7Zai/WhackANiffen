@@ -35,15 +35,6 @@ local function OnEvent(self, event, ...)
         wan.NameplateUnitID[unitID] = nil
     end
 
-    -- sets in group status or wipes tokens and GUIDs for the group units
-    if event == "GROUP_FORMED" or event == "GROUP_JOINED" then
-        wan.PlayerState.InGroup = true
-    elseif event == "GROUP_LEFT" then
-        wan.PlayerState.InGroup = false
-        wan.GroupUnitID = {}
-        wan.GUIDMap = {}
-    end
-
     -- assigns group unit tokens for group
     if event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
         local groupType = UnitInRaid("player") and "raid" or "party"
@@ -53,6 +44,7 @@ local function OnEvent(self, event, ...)
         -- noticable performance drop when the game assigns group unit tokens en masse
         -- haven't found a way to go around this yet...
         if nGroupUnits > 0 then
+            wan.PlayerState.InGroup = true
             for i = 1, nGroupUnits do
                 local unit = groupType .. i
                 local groupGUID = UnitGUID(unit)
@@ -64,7 +56,7 @@ local function OnEvent(self, event, ...)
                             local unitNumber = unitToken:match("%d+")
                                 unitToken = unitNumber and groupType .. unitNumber
                         end
-                        if groupGUID and unitToken and unitToken ~= "player" then
+                        if groupGUID and unitToken then
                             wan.GroupUnitID[unitToken] = groupGUID
                             wan.GUIDMap[groupGUID] = unitToken
                             activeUnits[groupGUID] = unitToken
@@ -72,6 +64,10 @@ local function OnEvent(self, event, ...)
                     end
                 end
             end
+        else
+            wan.PlayerState.InGroup = false
+            wan.GroupUnitID = {}
+            wan.GUIDMap = {}
         end
 
         -- wipe data on removed group units

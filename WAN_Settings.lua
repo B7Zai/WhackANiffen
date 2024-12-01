@@ -86,7 +86,7 @@ local function OnEvent(self, event, addonname)
             end
         end
 
-        do
+        do -- toggle to enable healing and support frames for non healer specializations
             wan.Options.HealerMode = wan.Options.HealerMode or {}
             wan.Options.HealerMode.Toggle = wan.Options.HealerMode.Toggle or false
             local function GetValueHealerModeToggle() return wan.Options.HealerMode.Toggle end
@@ -138,8 +138,8 @@ local function OnEvent(self, event, addonname)
             local initDamageToggle = Settings.CreateCheckbox(subcategory, settingDamageToggle, tooltipDamageToggle)
 
             local function IsParentSelectedDamageToggle() return settingDamageToggle:GetValue() end
-            do
-                -- Transparency Slider
+
+            do  -- Transparency Slider
                 wan.Options.Damage.AlphaSlider = wan.Options.Damage.AlphaSlider or 0.75
                 local function GetValueDamageAlphaSlider() return wan.Options.Damage.AlphaSlider end
                 local function SetValueDamageAlphaSlider(value) wan.Options.Damage.AlphaSlider = value end
@@ -160,8 +160,7 @@ local function OnEvent(self, event, addonname)
                 initDamageAlphaSlider:SetParentInitializer(initDamageToggle, IsParentSelectedDamageToggle)
             end
 
-            do
-                -- Horizontal Position Slider
+            do  -- Horizontal Position Slider
                 wan.Options.Damage.HorizontalPosition = wan.Options.Damage.HorizontalPosition or 120
                 local function GetValueDamageHorizontalPosition() return wan.Options.Damage.HorizontalPosition end
                 local function SetValueDamageHorizontalPosition(value)
@@ -185,8 +184,7 @@ local function OnEvent(self, event, addonname)
                 initDamageHorizontalPosition:SetParentInitializer(initDamageToggle, IsParentSelectedDamageToggle)
             end
 
-            do
-                -- Vertical Position Slider
+            do  -- Vertical Position Slider
                 wan.Options.Damage.VerticalPosition = wan.Options.Damage.VerticalPosition or -30
                 local function GetValueDamageVerticalPosition() return wan.Options.Damage.VerticalPosition end
                 local function SetValueDamageVerticalPosition(value)
@@ -210,8 +208,7 @@ local function OnEvent(self, event, addonname)
                 initDamageVerticalPosition:SetParentInitializer(initDamageToggle, IsParentSelectedDamageToggle)
             end
 
-            do
-                -- Out of Combat Transparency Slider
+            do  -- Out of Combat Transparency Slider
                 wan.Options.Damage.CombatAlphaSlider = wan.Options.Damage.CombatAlphaSlider or 0.4
                 local function GetValueDamageCombatAlphaSlider() return wan.Options.Damage.CombatAlphaSlider end
                 local function SetValueDamageCombatAlphaSlider(value) wan.Options.Damage.CombatAlphaSlider = value end
@@ -232,7 +229,6 @@ local function OnEvent(self, event, addonname)
                 initDamageCombatAlphaSlider:SetParentInitializer(initDamageToggle, IsParentSelectedDamageToggle)
             end
         end
-
 
         -- Mechanic Frame Toggle
         do
@@ -257,8 +253,8 @@ local function OnEvent(self, event, addonname)
             local initMechanicToggle = Settings.CreateCheckbox(subcategory, settingMechanicToggle, tooltipMechanicToggle)
 
             local function IsParentSelectedMechanicToggle() return settingMechanicToggle:GetValue() end
-            do
-                -- Transparency Slider
+
+            do  -- Transparency Slider
                 wan.Options.Mechanic.AlphaSlider = wan.Options.Mechanic.AlphaSlider or 0.75
                 local function GetValueMechanicAlphaSlider() return wan.Options.Mechanic.AlphaSlider end
                 local function SetValueMechanicAlphaSlider(value) wan.Options.Mechanic.AlphaSlider = value end
@@ -279,8 +275,7 @@ local function OnEvent(self, event, addonname)
                 initMechanicAlphaSlider:SetParentInitializer(initMechanicToggle, IsParentSelectedMechanicToggle)
             end
 
-            do
-                -- Horizontal Position Slider
+            do  -- Horizontal Position Slider
                 wan.Options.Mechanic.HorizontalPosition = wan.Options.Mechanic.HorizontalPosition or 190
                 local function GetValueMechanicHorizontalPosition() return wan.Options.Mechanic.HorizontalPosition end
                 local function SetValueMechanicHorizontalPosition(value)
@@ -304,8 +299,7 @@ local function OnEvent(self, event, addonname)
                 initMechanicHorizontalPosition:SetParentInitializer(initMechanicToggle, IsParentSelectedMechanicToggle)
             end
 
-            do
-                -- Vertical Position Slider
+            do  -- Vertical Position Slider
                 wan.Options.Mechanic.VerticalPosition = wan.Options.Mechanic.VerticalPosition or -30
                 local function GetValueMechanicVerticalPosition() return wan.Options.Mechanic.VerticalPosition end
                 local function SetValueMechanicVerticalPosition(value)
@@ -329,8 +323,7 @@ local function OnEvent(self, event, addonname)
                 initMechanicVerticalPosition:SetParentInitializer(initMechanicToggle, IsParentSelectedMechanicToggle)
             end
 
-            do
-                -- Out of Combat Transparency Slider
+            do  -- Out of Combat Transparency Slider
                 wan.Options.Mechanic.CombatAlphaSlider = wan.Options.Mechanic.CombatAlphaSlider or 0.4
                 local function GetValueMechanicCombatAlphaSlider() return wan.Options.Mechanic.CombatAlphaSlider end
                 local function SetValueMechanicCombatAlphaSlider(value) wan.Options.Mechanic.CombatAlphaSlider = value end
@@ -358,7 +351,7 @@ local function OnEvent(self, event, addonname)
             local function GetValueHealToggle() return wan.Options.Heal.Toggle end
             local function SetValueHealToggle(value)
                 wan.Options.Heal.Toggle = value
-                wan.CustomEvents("Heal_FRAME_TOGGLE")
+                wan.CustomEvents("HEAL_FRAME_TOGGLE")
             end
             local tooltipHealToggle = "Enables dragging and unlocks settings for the Heal Priority display."
             local settingHealToggle = Settings.RegisterProxySetting(
@@ -373,8 +366,8 @@ local function OnEvent(self, event, addonname)
             local initHealToggle = Settings.CreateCheckbox(subcategory, settingHealToggle, tooltipHealToggle)
 
             local function IsParentSelectedHealToggle() return settingHealToggle:GetValue() end
-            do
-                -- Transparency Slider
+
+            do  -- Transparency Slider
                 wan.Options.Heal.AlphaSlider = wan.Options.Heal.AlphaSlider or 0.75
                 local function GetValueHealAlphaSlider() return wan.Options.Heal.AlphaSlider end
                 local function SetValueHealAlphaSlider(value) wan.Options.Heal.AlphaSlider = value end
@@ -395,16 +388,15 @@ local function OnEvent(self, event, addonname)
                 initHealAlphaSlider:SetParentInitializer(initHealToggle, IsParentSelectedHealToggle)
             end
 
-            do
-                -- Horizontal Position Slider
-                wan.Options.Heal.HorizontalPosition = wan.Options.Heal.HorizontalPosition or 120
+            do  -- Horizontal Position Slider
+                wan.Options.Heal.HorizontalPosition = wan.Options.Heal.HorizontalPosition or -20
                 local function GetValueHealHorizontalPosition() return wan.Options.Heal.HorizontalPosition end
                 local function SetValueHealHorizontalPosition(value)
                     wan.Options.Heal.HorizontalPosition = value
-                    wan.CustomEvents("Heal_FRAME_HORIZONTAL_SLIDER")
+                    wan.CustomEvents("HEAL_FRAME_HORIZONTAL_SLIDER")
                 end
                 local tooltipHealHorizontalPosition = "Manually adjust the frame's horizontal position."
-                local minValue, maxValue, stepValue = -500, 500, 1
+                local minValue, maxValue, stepValue = -100, 100, 1
                 local settingHealHorizontalPosition = Settings.RegisterProxySetting(
                     subcategory,
                     "Heal_Frame_Horizontal_Position_Slider",
@@ -420,16 +412,15 @@ local function OnEvent(self, event, addonname)
                 initHealHorizontalPosition:SetParentInitializer(initHealToggle, IsParentSelectedHealToggle)
             end
 
-            do
-                -- Vertical Position Slider
-                wan.Options.Heal.VerticalPosition = wan.Options.Heal.VerticalPosition or -30
+            do  -- Vertical Position Slider
+                wan.Options.Heal.VerticalPosition = wan.Options.Heal.VerticalPosition or 0
                 local function GetValueHealVerticalPosition() return wan.Options.Heal.VerticalPosition end
                 local function SetValueHealVerticalPosition(value)
                     wan.Options.Heal.VerticalPosition = value
-                    wan.CustomEvents("Heal_FRAME_VERTICAL_SLIDER")
+                    wan.CustomEvents("HEAL_FRAME_VERTICAL_SLIDER")
                 end
                 local tooltipHealVerticalPosition = "Manually adjust the frame's vertical position."
-                local minValue, maxValue, stepValue = -500, 500, 1
+                local minValue, maxValue, stepValue = -100, 100, 1
                 local settingHealVerticalPosition = Settings.RegisterProxySetting(
                     subcategory,
                     "Heal_Frame_Vertical_Position_Slider",
@@ -445,8 +436,7 @@ local function OnEvent(self, event, addonname)
                 initHealVerticalPosition:SetParentInitializer(initHealToggle, IsParentSelectedHealToggle)
             end
 
-            do
-                -- Out of Combat Transparency Slider
+            do  -- Out of Combat Transparency Slider
                 wan.Options.Heal.CombatAlphaSlider = wan.Options.Heal.CombatAlphaSlider or 0.4
                 local function GetValueHealCombatAlphaSlider() return wan.Options.Heal.CombatAlphaSlider end
                 local function SetValueHealCombatAlphaSlider(value) wan.Options.Heal.CombatAlphaSlider = value end
@@ -465,6 +455,119 @@ local function OnEvent(self, event, addonname)
                 local initHealCombatAlphaSlider = Settings.CreateSlider(subcategory, settingHealCombatAlphaSlider, optionsHealCombatAlphaSlider, tooltipHealCombatAlphaSlider)
                 optionsHealCombatAlphaSlider:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
                 initHealCombatAlphaSlider:SetParentInitializer(initHealToggle, IsParentSelectedHealToggle)
+            end
+        end
+
+        do -- toggle for the Support frame to enable dragging and enable further customization
+            wan.Options.Support = wan.Options.Support or {}
+            wan.Options.Support.Toggle = wan.Options.Support.Toggle or false
+            local function GetValueSupportToggle() return wan.Options.Support.Toggle end
+            local function SetValueSupportToggle(value)
+                wan.Options.Support.Toggle = value
+                wan.CustomEvents("SUPPORT_FRAME_TOGGLE")
+            end
+            local tooltipSupportToggle = "Enables dragging and unlocks settings for the Support Priority display."
+            local settingSupportToggle = Settings.RegisterProxySetting(
+                subcategory,
+                "Support_Frame_Toggle",
+                Settings.VarType.Boolean,
+                "Unlock Support Frames",
+                wan.Options.Support.Toggle,
+                GetValueSupportToggle,
+                SetValueSupportToggle
+            )
+            local initSupportToggle = Settings.CreateCheckbox(subcategory, settingSupportToggle, tooltipSupportToggle)
+
+            local function IsParentSelectedSupportToggle() return settingSupportToggle:GetValue() end
+
+            do  -- Transparency Slider
+                wan.Options.Support.AlphaSlider = wan.Options.Support.AlphaSlider or 0.75
+                local function GetValueSupportAlphaSlider() return wan.Options.Support.AlphaSlider end
+                local function SetValueSupportAlphaSlider(value) wan.Options.Support.AlphaSlider = value end
+                local tooltipSupportAlphaSlider = "Sets how visible the frame appears."
+                local minValue, maxValue, stepValue = 0, 1, 0.01
+                local settingSupportAlphaSlider = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Support_Frame_Alpha_Slider",
+                    Settings.VarType.Number,
+                    "Visibility",
+                    wan.Options.Support.AlphaSlider,
+                    GetValueSupportAlphaSlider,
+                    SetValueSupportAlphaSlider
+                )
+                local optionsSupportAlphaSlider = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initSupportAlphaSlider = Settings.CreateSlider(subcategory, settingSupportAlphaSlider, optionsSupportAlphaSlider, tooltipSupportAlphaSlider)
+                optionsSupportAlphaSlider:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
+                initSupportAlphaSlider:SetParentInitializer(initSupportToggle, IsParentSelectedSupportToggle)
+            end
+
+            do  -- Horizontal Position Slider
+                wan.Options.Support.HorizontalPosition = wan.Options.Support.HorizontalPosition or 120
+                local function GetValueSupportHorizontalPosition() return wan.Options.Support.HorizontalPosition end
+                local function SetValueSupportHorizontalPosition(value)
+                    wan.Options.Support.HorizontalPosition = value
+                    wan.CustomEvents("SUPPORT_FRAME_HORIZONTAL_SLIDER")
+                end
+                local tooltipSupportHorizontalPosition = "Manually adjust the frame's horizontal position."
+                local minValue, maxValue, stepValue = -500, 500, 1
+                local settingSupportHorizontalPosition = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Support_Frame_Horizontal_Position_Slider",
+                    Settings.VarType.Number,
+                    "Horizontal Position",
+                    wan.Options.Support.HorizontalPosition,
+                    GetValueSupportHorizontalPosition,
+                    SetValueSupportHorizontalPosition
+                )
+                local optionsSupportHorizontalPosition = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initSupportHorizontalPosition = Settings.CreateSlider(subcategory, settingSupportHorizontalPosition, optionsSupportHorizontalPosition, tooltipSupportHorizontalPosition)
+                optionsSupportHorizontalPosition:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, wan.FormatDecimalNumbers)
+                initSupportHorizontalPosition:SetParentInitializer(initSupportToggle, IsParentSelectedSupportToggle)
+            end
+
+            do  -- Vertical Position Slider
+                wan.Options.Support.VerticalPosition = wan.Options.Support.VerticalPosition or -30
+                local function GetValueSupportVerticalPosition() return wan.Options.Support.VerticalPosition end
+                local function SetValueSupportVerticalPosition(value)
+                    wan.Options.Support.VerticalPosition = value
+                    wan.CustomEvents("SUPPORT_FRAME_VERTICAL_SLIDER")
+                end
+                local tooltipSupportVerticalPosition = "Manually adjust the frame's vertical position."
+                local minValue, maxValue, stepValue = -500, 500, 1
+                local settingSupportVerticalPosition = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Support_Frame_Vertical_Position_Slider",
+                    Settings.VarType.Number,
+                    "Vertical Position",
+                    wan.Options.Support.VerticalPosition,
+                    GetValueSupportVerticalPosition,
+                    SetValueSupportVerticalPosition
+                )
+                local optionsSupportVerticalPosition = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initSupportVerticalPosition = Settings.CreateSlider(subcategory, settingSupportVerticalPosition, optionsSupportVerticalPosition, tooltipSupportVerticalPosition)
+                optionsSupportVerticalPosition:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, wan.FormatDecimalNumbers)
+                initSupportVerticalPosition:SetParentInitializer(initSupportToggle, IsParentSelectedSupportToggle)
+            end
+
+            do  -- Out of Combat Transparency Slider
+                wan.Options.Support.CombatAlphaSlider = wan.Options.Support.CombatAlphaSlider or 0.4
+                local function GetValueSupportCombatAlphaSlider() return wan.Options.Support.CombatAlphaSlider end
+                local function SetValueSupportCombatAlphaSlider(value) wan.Options.Support.CombatAlphaSlider = value end
+                local tooltipSupportCombatAlphaSlider = "Sets how visible the frame appears outside combat."
+                local minValue, maxValue, stepValue = 0, 1, 0.01
+                local settingSupportCombatAlphaSlider = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Support_Frame_Combat_Alpha_Slider",
+                    Settings.VarType.Number,
+                    "Visiblity Outside Combat",
+                    wan.Options.Support.CombatAlphaSlider,
+                    GetValueSupportCombatAlphaSlider,
+                    SetValueSupportCombatAlphaSlider
+                )
+                local optionsSupportCombatAlphaSlider = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initSupportCombatAlphaSlider = Settings.CreateSlider(subcategory, settingSupportCombatAlphaSlider, optionsSupportCombatAlphaSlider, tooltipSupportCombatAlphaSlider)
+                optionsSupportCombatAlphaSlider:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
+                initSupportCombatAlphaSlider:SetParentInitializer(initSupportToggle, IsParentSelectedSupportToggle)
             end
         end
 

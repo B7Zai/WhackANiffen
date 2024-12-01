@@ -11,9 +11,9 @@ function wan.SetResizableIconFrame(frame, xPosition, yPosition, enabler, savedVa
     frame:SetMovable(settings)
     frame:SetResizable(true)
     frame:SetResizeBounds(20, 20, 100, 100)
-    frame:SetScript("OnSizeChanged", function(self, width, height)
-        if width ~= height then self:SetHeight(width) end
-        savedVariable.width, savedVariable.height = self:GetSize()
+    frame:SetScript("OnSizeChanged", function(frame, width, height)
+        if width ~= height then frame:SetHeight(width) end
+        savedVariable.width, savedVariable.height = frame:GetSize()
     end)
 end
 
@@ -27,15 +27,17 @@ function wan.SetDragFrame(frame, enabler, savedPosition)
     local isDraggable = enabler
     if isDraggable then
         frame:RegisterForDrag("LeftButton")
-        frame:SetScript("OnMouseDown", function(self, button)
-            if button == "LeftButton" then self:StartMoving() end
+        frame:SetScript("OnMouseDown", function(frame, button)
+            if button == "LeftButton" then frame:StartMoving() end
         end)
-        frame:SetScript("OnMouseUp", function(self, button)
+        frame:SetScript("OnMouseUp", function(frame, button)
             if button == "LeftButton" then
-                self:StopMovingOrSizing()
-                local _, _, _, x, y = self:GetPoint()
+                frame:StopMovingOrSizing()
+                local _, _, _, x, y = frame:GetPoint()
+                print(x)
                 savedPosition.HorizontalPosition = x
                 savedPosition.VerticalPosition = y
+                wan.CustomEvents("HEAL_FRAME_DRAG")
             end
         end)
     else
@@ -47,8 +49,8 @@ end
 
 function wan.SetResize(frame, enabler)
     if enabler then
-        frame:SetScript("OnMouseDown", function(self) self:GetParent():StartSizing("BOTTOMRIGHT") end)
-        frame:SetScript("OnMouseUp", function(self) self:GetParent():StopMovingOrSizing() end)
+        frame:SetScript("OnMouseDown", function(frame) frame:GetParent():StartSizing("BOTTOMRIGHT") end)
+        frame:SetScript("OnMouseUp", function(frame) frame:GetParent():StopMovingOrSizing() end)
         frame:SetAlpha(1)
     else
         frame:SetScript("OnMouseDown", nil)
@@ -173,4 +175,20 @@ function wan.GetHighestMechanicValues()
     if highestSpell then
         return highestSpell.value, highestSpell.icon, highestSpell.name, highestSpell.desat
     end
+end
+
+function wan.GetHighestHealingValues()
+    local highestValuesForUnitToken = {}
+    for groupUnitToken, _ in pairs(wan.HealingData) do
+        local highestValue = 0
+        highestValuesForUnitToken[groupUnitToken] = {}
+        for _, healingValues in pairs(wan.HealingData[groupUnitToken]) do
+            if healingValues.value and healingValues.value >= highestValue then
+                highestValue = healingValues.value
+                highestValuesForUnitToken[groupUnitToken] = healingValues
+            end
+        end
+    end
+
+    return highestValuesForUnitToken
 end
