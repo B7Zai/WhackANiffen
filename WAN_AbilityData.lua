@@ -20,38 +20,39 @@ setmetatable(wan.spellData, {
 })
 
 local function GetSpellData(dataArray)
-
     wan.WipeTable(dataArray)
     local spellBookItemSpellBank = Enum.SpellBookSpellBank.Player
 
     for i = 1, C_SpellBook.GetNumSpellBookSkillLines() do
         local skillLineInfo = C_SpellBook.GetSpellBookSkillLineInfo(i)
-        local offset, numSlots = skillLineInfo.itemIndexOffset, skillLineInfo.numSpellBookItems
+        if skillLineInfo then
+            local offset, numSlots = skillLineInfo.itemIndexOffset, skillLineInfo.numSpellBookItems
 
-        for j = offset + 1, offset + numSlots do
-            local spellBookItemInfo = C_SpellBook.GetSpellBookItemInfo(j, spellBookItemSpellBank)
-            local spellType, spellID = spellBookItemInfo.itemType, spellBookItemInfo.actionID
-            local isPassive, isOffSpec = spellBookItemInfo.isPassive, spellBookItemInfo.isOffSpec
+            for j = offset + 1, offset + numSlots do
+                local spellBookItemInfo = C_SpellBook.GetSpellBookItemInfo(j, spellBookItemSpellBank)
+                local spellType, spellID = spellBookItemInfo.itemType, spellBookItemInfo.actionID
+                local isPassive, isOffSpec = spellBookItemInfo.isPassive, spellBookItemInfo.isOffSpec
 
-            if spellType == Enum.SpellBookItemType.Spell and not isPassive and not isOffSpec then
-                local baseSpellID = FindBaseSpellByID(spellID)
-                local baseSpellName = C_Spell.GetSpellName(baseSpellID)
-                local overriddenSpellID = C_Spell.GetOverrideSpell(spellID)
-                local spellInfo = C_Spell.GetSpellInfo(overriddenSpellID)
-                local keyName = wan.FormatNameForKey(baseSpellName)
+                if spellType == Enum.SpellBookItemType.Spell and not isPassive and not isOffSpec then
+                    local baseSpellID = FindBaseSpellByID(spellID)
+                    local baseSpellName = C_Spell.GetSpellName(baseSpellID)
+                    local overriddenSpellID = C_Spell.GetOverrideSpell(spellID)
+                    local spellInfo = C_Spell.GetSpellInfo(overriddenSpellID)
+                    local keyName = wan.FormatNameForKey(baseSpellName)
 
-                if spellInfo then
-                    dataArray[keyName] = {
-                        name = spellInfo.name,
-                        icon = spellInfo.iconID,
-                        originalIconID = spellInfo.originalIconID,
-                        castTime = spellInfo.castTime,
-                        minRange = spellInfo.minRange,
-                        maxRange = spellInfo.maxRange,
-                        id = spellInfo.spellID,
-                        basename = keyName,
-                        known = true
-                    }
+                    if spellInfo then
+                        dataArray[keyName] = {
+                            name = spellInfo.name,
+                            icon = spellInfo.iconID,
+                            originalIconID = spellInfo.originalIconID,
+                            castTime = spellInfo.castTime,
+                            minRange = spellInfo.minRange,
+                            maxRange = spellInfo.maxRange,
+                            id = spellInfo.spellID,
+                            basename = keyName,
+                            known = true
+                        }
+                    end
                 end
             end
         end

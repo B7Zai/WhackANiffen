@@ -35,7 +35,7 @@ local function AddonLoad(self, event, addonName)
 
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
-            local abilityValue = math.floor(cRegrowthHeal) or 0
+            local abilityValue = math.floor(nRegrowthHeal) or 0
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
             local groupUnitTokenHeal = wan.GroupUnitHealThreshold(abilityValue, idValidGroupUnit)
             wan.UpdateHealingData(groupUnitTokenHeal, wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)

@@ -27,7 +27,7 @@ local function UpdateAuras(unitID, updateInfo)
             local aura = C_UnitAuras.GetAuraDataByIndex(unitID, i, "HELPFUL")
             if not aura then break end
             if unitID == "player" or unitID == wan.TargetUnitID or wan.NameplateUnitID[unitID]
-                or (wan.GroupUnitID[unitID] and aura.canApplyAura) then
+                or (wan.GroupUnitID[unitID] and (aura.canApplyAura or wan.IsAI[unitID])) then
                 local spellName = wan.FormatNameForKey(aura.name)
                 local key = spellName and "buff_" .. spellName
                 if key then
@@ -60,7 +60,7 @@ local function UpdateAuras(unitID, updateInfo)
             if unitID == "player"
             or (unitID == wan.TargetUnitID and (aura.isHelpful or aura.sourceUnit == "player"))
             or (wan.NameplateUnitID[unitID] and (aura.isHelpful or aura.sourceUnit == "player"))
-            or (wan.GroupUnitID[unitID] and (aura.isHelpful and aura.canApplyAura or aura.isHarmful))
+            or (wan.GroupUnitID[unitID] and (aura.isHelpful and (aura.canApplyAura or wan.IsAI[unitID]) or aura.isHarmful))
              then
                 local spellName = wan.FormatNameForKey(aura.name)
                 if spellName then
@@ -120,7 +120,9 @@ local function AuraUpdate(self, event, unitID, updateInfo)
     end
 
     -- update aura data for the player
-    if unitID == "player" then
+    if unitID == "player" and not wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
+        UpdateAuras("player", updateInfo)
+    elseif unitID == "player" and not wan.PlayerState.InHealerMode then
         UpdateAuras("player", updateInfo)
     end
 

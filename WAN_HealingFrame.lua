@@ -8,6 +8,7 @@ local function OnEvent(self, event, addonName)
     local framePool = {}
     local resizePool = {}
     local unitTokensInFrames = {}
+    local frameReference = {}
 
 
     local function GroupFrames()
@@ -15,9 +16,11 @@ local function OnEvent(self, event, addonName)
         if nGroupMembers > 0 then
             for i = 1, nGroupMembers do
                 local groupMember = "group" .. i
-                local groupUIMember = _G["CompactPartyFrameMember" .. i]
+                local frameName = "CompactPartyFrameMember" .. i
+                local groupUIMember = _G[frameName]
                 local groupUnitToken = groupUIMember and groupUIMember.unit
                 if groupUIMember then
+                    frameReference[groupMember] = groupUIMember
                     unitTokensInFrames[groupUnitToken] = groupMember
 
                     if not framePool[groupMember] then
@@ -25,17 +28,18 @@ local function OnEvent(self, event, addonName)
                         resizePool[groupMember] = CreateFrame("Button", nil, framePool[groupMember])
 
                         wan.Options.Heal.FrameSize = wan.Options.Heal.FrameSize or {}
-                        if wan.Options.Heal.FrameSize.width == nil then wan.Options.Heal.FrameSize.width = 20 end
-                        if wan.Options.Heal.FrameSize.height == nil then wan.Options.Heal.FrameSize.height = 20 end
-                        wan.SetResizableIconFrame(
+                        if wan.Options.Heal.FrameSize.width == nil then wan.Options.Heal.FrameSize.width = 40 end
+                        if wan.Options.Heal.FrameSize.height == nil then wan.Options.Heal.FrameSize.height = 40 end
+                        wan.SetResizableIconGroupFrame(
                             framePool[groupMember],
                             wan.Options.Heal.HorizontalPosition,
                             wan.Options.Heal.VerticalPosition,
                             wan.Options.Heal.Toggle,
-                            wan.Options.Heal.FrameSize
+                            wan.Options.Heal.FrameSize,
+                            groupUIMember
                         )
                         wan.SetClickThroughFrame(framePool[groupMember], wan.Options.Heal.Toggle)
-                        wan.SetDragFrame(framePool[groupMember], wan.Options.Heal.Toggle, wan.Options.Heal)
+                        wan.SetDragFrameGroup(framePool[groupMember], wan.Options.Heal.Toggle, wan.Options.Heal, groupUIMember)
                         wan.SetText1(framePool[groupMember], wan.Options.ShowName.Toggle)
                     
                         framePool[groupMember].texture = framePool[groupMember]:CreateTexture(nil, "BACKGROUND", nil, 0)
@@ -61,6 +65,7 @@ local function OnEvent(self, event, addonName)
                 else
                     framePool[groupMember]:Hide()
                     resizePool[groupMember]:Hide()
+                    frameReference[groupMember] = nil
                     unitTokensInFrames[groupUnitToken] = nil
                 end
             end
@@ -85,11 +90,10 @@ local function OnEvent(self, event, addonName)
             local highestSpellData = wan.GetHighestHealingValues()
             for validGroupUnitToken, topSpellData in pairs(highestSpellData) do
                 local topValue, topIcon, topName, topDesat = topSpellData.value, topSpellData.icon, topSpellData.name, topSpellData.desat
-                if unitTokensInFrames[validGroupUnitToken] then
-                    wan.IconUpdater(framePool[validGroupUnitToken], topIcon, topDesat, alphaValue)
-                    wan.TextUpdater1(framePool[validGroupUnitToken], topName, wan.Options.Heal.AlphaSlider)
-                    wan.TextUpdater2(framePool[validGroupUnitToken], topValue, wan.Options.Heal.AlphaSlider)                   
-                end
+                local frameNumber = unitTokensInFrames[validGroupUnitToken]
+                wan.IconUpdater(framePool[frameNumber], topIcon, topDesat, alphaValue)
+                wan.TextUpdater1(framePool[frameNumber], topName, wan.Options.Heal.AlphaSlider)
+                wan.TextUpdater2(framePool[frameNumber], topValue, wan.Options.Heal.AlphaSlider)
             end
         end
     end)
@@ -98,13 +102,10 @@ local function OnEvent(self, event, addonName)
         if event == "HEAL_FRAME_TOGGLE" then
             for groupMember, _ in pairs(framePool) do
                 wan.SetClickThroughFrame(framePool[groupMember], wan.Options.Heal.Toggle)
-                wan.SetDragFrame(framePool[groupMember], wan.Options.Heal.Toggle, wan.Options.Heal)
+                wan.SetDragFrameGroup(framePool[groupMember], wan.Options.Heal.Toggle, wan.Options.Heal, frameReference[groupMember])
+                wan.SetResize(resizePool[groupMember], wan.Options.Heal.Toggle)
                 wan.SetAlpha(framePool[groupMember], wan.Options.Heal.Toggle, wan.Options.Heal.AlphaSlider)
                 wan.SetTesterAlpha(framePool[groupMember], wan.Options.Heal.Toggle, wan.Options.Heal.AlphaSlider)
-            end
-            
-            for groupMember, _ in pairs(resizePool) do
-                wan.SetResize(resizePool[groupMember], wan.Options.Heal.Toggle)
             end
         end
 
@@ -114,16 +115,23 @@ local function OnEvent(self, event, addonName)
             end
         end
 
-        if event == "HEAL_FRAME_DRAG" then
+        if event == "FRAME_DRAG" or "FRAME_RESIZE" then
             for groupMember, _ in pairs(framePool) do
-                wan.SetDragFrame(framePool[groupMember], wan.Options.Heal.Toggle, wan.Options.Heal)
-                framePool[groupMember]:SetPoint("CENTER", wan.Options.Heal.HorizontalPosition, wan.Options.Heal.VerticalPosition)
+                if frameReference[groupMember] then
+                    wan.UpdatePositionGroup(
+                        framePool[groupMember],
+                        frameReference[groupMember],
+                        wan.Options.Heal.HorizontalPosition,
+                        wan.Options.Heal.VerticalPosition,
+                        wan.Options.Heal.FrameSize
+                    )
+                end
             end
         end
 
         if event == "HEAL_FRAME_HORIZONTAL_SLIDER" or event == "HEAL_FRAME_VERTICAL_SLIDER" then
             for groupMember, _ in pairs(framePool) do
-                framePool[groupMember]:SetPoint("CENTER", wan.Options.Heal.HorizontalPosition, wan.Options.Heal.VerticalPosition)
+                framePool[groupMember]:SetPoint("CENTER", frameReference[groupMember], wan.Options.Heal.HorizontalPosition, wan.Options.Heal.VerticalPosition)
             end
         end
 

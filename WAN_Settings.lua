@@ -396,7 +396,7 @@ local function OnEvent(self, event, addonname)
                     wan.CustomEvents("HEAL_FRAME_HORIZONTAL_SLIDER")
                 end
                 local tooltipHealHorizontalPosition = "Manually adjust the frame's horizontal position."
-                local minValue, maxValue, stepValue = -100, 100, 1
+                local minValue, maxValue, stepValue = -150, 150, 1
                 local settingHealHorizontalPosition = Settings.RegisterProxySetting(
                     subcategory,
                     "Heal_Frame_Horizontal_Position_Slider",
@@ -420,7 +420,7 @@ local function OnEvent(self, event, addonname)
                     wan.CustomEvents("HEAL_FRAME_VERTICAL_SLIDER")
                 end
                 local tooltipHealVerticalPosition = "Manually adjust the frame's vertical position."
-                local minValue, maxValue, stepValue = -100, 100, 1
+                local minValue, maxValue, stepValue = -150, 150, 1
                 local settingHealVerticalPosition = Settings.RegisterProxySetting(
                     subcategory,
                     "Heal_Frame_Vertical_Position_Slider",

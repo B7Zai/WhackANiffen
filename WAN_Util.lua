@@ -123,22 +123,6 @@ function wan.SetUpdateRate(frame, callback, spellID)
     end
 end
 
--- Sets the update rate of the displays
-function wan.UpdateFrameThrottle()
-    local gcdValue = 1
-    local _, gcdMS = GetSpellBaseCooldown(61304)
-    if gcdMS then
-        gcdValue = gcdMS / 1000
-    end
-    local setting = 8
-    if wan.Options.UpdateRate.Toggle then
-        setting = wan.Options.UpdateRate.Slider * 2
-    else
-        setting = 8
-    end
-    return gcdValue / setting
-end
-
 -- checks if aura found on units
 function wan.IsUnitMissingAuraAoE(spellName)
     if not IsInGroup() then

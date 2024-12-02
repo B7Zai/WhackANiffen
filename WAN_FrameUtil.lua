@@ -1,10 +1,27 @@
 local _, wan = ...
 
+-- Sets the update rate of the displays
+function wan.UpdateFrameThrottle()
+    local gcdValue = 1
+    local _, gcdMS = GetSpellBaseCooldown(61304)
+    if gcdMS then
+        gcdValue = gcdMS / 1000
+    end
+    local setting = 8
+    if wan.Options.UpdateRate.Toggle then
+        setting = wan.Options.UpdateRate.Slider * 2
+    else
+        setting = 8
+    end
+    return gcdValue / setting
+end
+
 function wan.SetResizableIconFrame(frame, xPosition, yPosition, enabler, savedVariable)
     local settings = enabler or true
     local frameWidth = savedVariable.width
     local frameHeight = savedVariable.height
 
+    frame:ClearAllPoints()
     frame:SetPoint("CENTER", xPosition, yPosition)
     frame:SetSize(frameWidth, frameHeight)
     frame:EnableMouse(settings)
@@ -12,6 +29,24 @@ function wan.SetResizableIconFrame(frame, xPosition, yPosition, enabler, savedVa
     frame:SetResizable(true)
     frame:SetResizeBounds(20, 20, 100, 100)
     frame:SetScript("OnSizeChanged", function(frame, width, height)
+        if width ~= height then frame:SetHeight(width) end
+        savedVariable.width, savedVariable.height = frame:GetSize()
+    end)
+end
+
+function wan.SetResizableIconGroupFrame(frame, xPosition, yPosition, enabler, savedVariable, relativeTo)
+    local settings = enabler or true
+    local frameWidth = savedVariable.width
+    local frameHeight = savedVariable.height
+
+    frame:ClearAllPoints()
+    frame:SetPoint("CENTER", relativeTo, xPosition, yPosition)
+    frame:SetSize(frameWidth, frameHeight)
+    frame:EnableMouse(settings)
+    frame:SetMovable(settings)
+    frame:SetResizable(true)
+    frame:SetResizeBounds(20, 20, 100, 100)
+    frame:HookScript("OnSizeChanged", function(frame, width, height)
         if width ~= height then frame:SetHeight(width) end
         savedVariable.width, savedVariable.height = frame:GetSize()
     end)
@@ -27,17 +62,15 @@ function wan.SetDragFrame(frame, enabler, savedPosition)
     local isDraggable = enabler
     if isDraggable then
         frame:RegisterForDrag("LeftButton")
-        frame:SetScript("OnMouseDown", function(frame, button)
-            if button == "LeftButton" then frame:StartMoving() end
+        frame:SetScript("OnMouseDown", function(self, button)
+            if button == "LeftButton" then self:StartMoving() end
         end)
-        frame:SetScript("OnMouseUp", function(frame, button)
+        frame:SetScript("OnMouseUp", function(self, button)
             if button == "LeftButton" then
-                frame:StopMovingOrSizing()
+                self:StopMovingOrSizing()
                 local _, _, _, x, y = frame:GetPoint()
-                print(x)
                 savedPosition.HorizontalPosition = x
                 savedPosition.VerticalPosition = y
-                wan.CustomEvents("HEAL_FRAME_DRAG")
             end
         end)
     else
@@ -47,10 +80,51 @@ function wan.SetDragFrame(frame, enabler, savedPosition)
     end
 end
 
+function wan.SetDragFrameGroup(frame, enabler, savedPosition, anchorFrame)
+    local isDraggable = enabler
+    if isDraggable then
+        frame:RegisterForDrag("LeftButton")
+        frame:SetScript("OnMouseDown", function(self, button)
+            if button == "LeftButton" then self:StartMoving() end
+        end)
+        frame:SetScript("OnMouseUp", function(self, button)
+            if button == "LeftButton" then
+                self:StopMovingOrSizing()
+
+                local parentX, parentY = anchorFrame:GetCenter()
+                local frameX, frameY = self:GetCenter()
+                local relativeX = frameX - parentX
+                local relativeY = frameY - parentY
+
+                savedPosition.HorizontalPosition = relativeX
+                savedPosition.VerticalPosition = relativeY
+                wan.CustomEvents("FRAME_DRAG")
+
+                self:ClearAllPoints()
+                self:SetPoint("CENTER", anchorFrame, "CENTER", relativeX, relativeY)
+            end
+        end)
+    else
+        frame:SetScript("OnMouseDown", nil)
+        frame:SetScript("OnMouseUp", nil)
+    end
+end
+
+function wan.UpdatePositionGroup(frame, relativeTo, xPosition, yPosition, size)
+    local width = size.width
+    local height = size.height
+    frame:ClearAllPoints()
+    frame:SetSize(width, height)
+    frame:SetPoint("CENTER", relativeTo, "CENTER", xPosition, yPosition)
+end
+
+
 function wan.SetResize(frame, enabler)
     if enabler then
         frame:SetScript("OnMouseDown", function(frame) frame:GetParent():StartSizing("BOTTOMRIGHT") end)
-        frame:SetScript("OnMouseUp", function(frame) frame:GetParent():StopMovingOrSizing() end)
+        frame:SetScript("OnMouseUp", function(frame) frame:GetParent():StopMovingOrSizing()
+            wan.CustomEvents("FRAME_RESIZE")
+         end)
         frame:SetAlpha(1)
     else
         frame:SetScript("OnMouseDown", nil)
@@ -126,7 +200,7 @@ function wan.TextUpdater2(frame, value, alpha)
 end
 
 function wan.SetAlpha(frame, enabler, setting)
-    if enabler then 
+    if enabler == false then 
         frame.texture:SetAlpha(0)
     else
         frame.texture:Show()
@@ -135,8 +209,8 @@ function wan.SetAlpha(frame, enabler, setting)
 end
 
 function wan.SetTesterAlpha(frame, enabler, setting)
-    if enabler then 
-        frame.texture:Hide()
+    if enabler == true then 
+        frame.testtexture:Show()
         frame.testtexture:SetAlpha(setting)
     else
         frame.testtexture:SetAlpha(0)

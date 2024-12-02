@@ -48,26 +48,21 @@ function wan.UpdateMechanicData(abilityName, value, icon, name, desaturation)
 end
 
 function wan.UpdateHealingData(unitTokens, abilityName, value, icon, name, desaturation)
-    local validTokens = {}
-    for _, unitToken in pairs(unitTokens) do
-        validTokens[unitToken] = true
-    end
 
-    for unitToken in pairs(wan.HealingData) do
-        if not validTokens[unitToken] then
-            wan.HealingData[unitToken] = nil
-        end
-    end
-
-    for _, groupUnitToken in pairs(unitTokens) do
+    for groupUnitToken, _ in pairs(unitTokens) do
         wan.HealingData[groupUnitToken] = wan.HealingData[groupUnitToken] or {}
-        if value == 0 then wan.HealingData[groupUnitToken][abilityName] = nil return end
         wan.HealingData[groupUnitToken][abilityName] = {
             value = value,
             icon = icon,
             name = name,
             desat = desaturation,
         }
+    end
+
+    for unit, _ in pairs(wan.HealingData) do
+        if unitTokens and not unitTokens[unit] then
+            wan.HealingData[unit][abilityName] = {}
+        end
     end
 end
 
@@ -178,14 +173,14 @@ function wan.ValidGroupMembers()
 end
 
 function wan.GroupUnitHealThreshold(abilityValue, idValidGroupMember)
-    if not wan.PlayerState.IsInGroup then return {} end
+    if not wan.PlayerState.InGroup then return {} end
     local groupUnitNeedsHeal = {}
 
     for groupUnitToken, groupUnitGUID in pairs(idValidGroupMember) do
-        local missingPercentHealth = 1 - ((UnitPercentHealthFromGUID(groupUnitGUID) or 0) * 0.01)
+        local missingPercentHealth = 1 - (UnitPercentHealthFromGUID(groupUnitGUID) or 0)
         local maxHealth = (UnitHealthMax(groupUnitToken) or 0)
-        local currentMissingHeath = maxHealth * missingPercentHealth
-        if abilityValue > currentMissingHeath then
+        local currentMissingHealth = maxHealth * missingPercentHealth
+        if abilityValue < currentMissingHealth then
             groupUnitNeedsHeal[groupUnitToken] = groupUnitGUID
         elseif abilityValue > maxHealth then
             local playerMaxHealth = UnitHealthMax("player") or 0
@@ -195,7 +190,6 @@ function wan.GroupUnitHealThreshold(abilityValue, idValidGroupMember)
             end
         end
     end
-
     return groupUnitNeedsHeal
 end
 
@@ -462,7 +456,7 @@ function wan.CheckClassBuff(buffName)
     if wan.PlayerState.InHealerMode then
         local nGroupUnits = GetNumGroupMembers()
         local _, nGroupMembersInRange, idValidGroupMember = wan.ValidGroupMembers()
-        local countBuffed = wan.auraData.player["buff_" .. buffName] and 1 or 0
+        local countBuffed = 0
         local nDisconnected = 0
 
         for groupUnitID, _ in pairs(wan.GroupUnitID) do

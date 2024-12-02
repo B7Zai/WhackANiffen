@@ -11,6 +11,7 @@ wan.PlayerState = {}
 wan.PlayerState.InHealerMode = false
 wan.PlayerState.Class = UnitClassBase("player") or "UNKNOWN"
 wan.PlayerState.InGroup = false
+wan.IsAI = {}
 wan.PlayerState.Status = false
 wan.PlayerState.Combat = false
 wan.CritChance = GetCritChance() or 0
@@ -52,9 +53,14 @@ local function OnEvent(self, event, ...)
                     local validToken = wan.GUIDMap[groupGUID]
                     if not validToken or validToken ~= unit then
                         local unitToken = groupGUID and UnitTokenFromGUID(groupGUID)
+                        local isAI =  UnitInPartyIsAI(unitToken)
+                        if unitToken and isAI then
+                        wan.IsAI[unitToken] = isAI
+                        end
+
                         if unitToken and not unitToken:find("^" .. groupType) then
                             local unitNumber = unitToken:match("%d+")
-                                unitToken = unitNumber and groupType .. unitNumber
+                            unitToken = unitNumber and groupType .. unitNumber
                         end
                         if groupGUID and unitToken then
                             wan.GroupUnitID[unitToken] = groupGUID
@@ -63,6 +69,13 @@ local function OnEvent(self, event, ...)
                         end
                     end
                 end
+            end
+            local playerGUID = UnitGUID("player")
+            local playerUnitToken = "player"
+            if playerGUID then
+                wan.GroupUnitID[playerUnitToken] = playerGUID
+                wan.GUIDMap[playerGUID] = playerUnitToken
+                activeUnits[playerGUID] = playerUnitToken
             end
         else
             wan.PlayerState.InGroup = false
@@ -78,6 +91,7 @@ local function OnEvent(self, event, ...)
                 wan.auraData[unitToken] = nil
                 wan.instanceIDMap[unitToken] = nil
                 wan.instanceIDThrottler[unitToken] = nil
+                wan.HealingData = nil
             end
         end
     end
