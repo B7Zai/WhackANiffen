@@ -79,6 +79,7 @@ local function OnEvent(self, event, ...)
             end
         else
             wan.PlayerState.InGroup = false
+            wan.HotValue = {}
             wan.GroupUnitID = {}
             wan.GUIDMap = {}
         end

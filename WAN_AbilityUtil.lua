@@ -1,8 +1,9 @@
 local _, wan = ...
 
-wan.AbilityData = wan.AbilityData or {}
-wan.MechanicData = wan.MechanicData or {}
-wan.HealingData = wan.HealingData or {}
+wan.AbilityData = {}
+wan.MechanicData = {}
+wan.HealingData = {}
+wan.HotValue = {}
 
 setmetatable(wan.AbilityData, {
     __index = function(t, key)
@@ -165,34 +166,40 @@ function wan.ValidGroupMembers()
         end
     end
 
-
     local nGroupMembersInRange = count
     local nDamageScaler = wan.AdjustSoftCapUnitOverflow(4, count)
 
     return nDamageScaler, nGroupMembersInRange, inRangeUnits
 end
 
-function wan.GroupUnitHealThreshold(abilityValue, idValidGroupMember)
-    if not wan.PlayerState.InGroup then return {} end
+function wan.GroupUnitHealThreshold(abilityValue, idValidGroupMember, hotValues)
+    if not abilityValue or not idValidGroupMember then return {} end
     local groupUnitNeedsHeal = {}
 
     for groupUnitToken, groupUnitGUID in pairs(idValidGroupMember) do
+        local totalHotValues = 0
+        for formattedHotName, hotValue in pairs(hotValues)do
+            if wan.auraData[groupUnitToken]["buff_".. formattedHotName] then
+                totalHotValues = totalHotValues + hotValue
+            end
+        end
+
+        local totalHealValue = abilityValue + totalHotValues
         local missingPercentHealth = 1 - (UnitPercentHealthFromGUID(groupUnitGUID) or 0)
         local maxHealth = (UnitHealthMax(groupUnitToken) or 0)
         local currentMissingHealth = maxHealth * missingPercentHealth
-        if abilityValue < currentMissingHealth then
+        if totalHealValue < currentMissingHealth then
             groupUnitNeedsHeal[groupUnitToken] = groupUnitGUID
-        elseif abilityValue > maxHealth then
+        elseif totalHealValue > maxHealth then
             local playerMaxHealth = UnitHealthMax("player") or 0
             local abilityPercentageValue = abilityValue / playerMaxHealth 
-            if (missingPercentHealth + abilityPercentageValue ) >= 100 then
+            if (missingPercentHealth + abilityPercentageValue ) > 1 then
                 groupUnitNeedsHeal[groupUnitToken] = groupUnitGUID
             end
         end
     end
     return groupUnitNeedsHeal
 end
-
 
 -- Parses spell description and converts string numbers to numeric values.
 -- Returns specified numbers indexed by `indexes`.

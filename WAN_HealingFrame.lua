@@ -11,70 +11,199 @@ local function OnEvent(self, event, addonName)
     local frameReference = {}
 
 
-    local function GroupFrames()
+    local function GroupFrame_CompactParty()
+        
+        local groupUIParent = "CompactPartyFrameMember"
         local nGroupMembers = GetNumGroupMembers()
         if nGroupMembers > 0 then
             for i = 1, nGroupMembers do
-                local groupMember = "group" .. i
-                local frameName = "CompactPartyFrameMember" .. i
+                local groupTag = "group_" .. groupUIParent .. i
+                local frameName = groupUIParent .. i
                 local groupUIMember = _G[frameName]
                 local groupUnitToken = groupUIMember and groupUIMember.unit
                 if groupUIMember then
-                    frameReference[groupMember] = groupUIMember
-                    unitTokensInFrames[groupUnitToken] = groupMember
+                    frameReference[groupTag] = groupUIMember
+                    unitTokensInFrames[groupUnitToken] = groupTag
 
-                    if not framePool[groupMember] then
-                        framePool[groupMember] = CreateFrame("Frame", nil, groupUIMember)
-                        resizePool[groupMember] = CreateFrame("Button", nil, framePool[groupMember])
+                    if not framePool[groupTag] then
+                        framePool[groupTag] = CreateFrame("Frame", nil, groupUIMember)
+                        resizePool[groupTag] = CreateFrame("Button", nil, framePool[groupTag])
 
                         wan.Options.Heal.FrameSize = wan.Options.Heal.FrameSize or {}
                         if wan.Options.Heal.FrameSize.width == nil then wan.Options.Heal.FrameSize.width = 40 end
                         if wan.Options.Heal.FrameSize.height == nil then wan.Options.Heal.FrameSize.height = 40 end
                         wan.SetResizableIconGroupFrame(
-                            framePool[groupMember],
+                            framePool[groupTag],
                             wan.Options.Heal.HorizontalPosition,
                             wan.Options.Heal.VerticalPosition,
                             wan.Options.Heal.Toggle,
                             wan.Options.Heal.FrameSize,
                             groupUIMember
                         )
-                        wan.SetClickThroughFrame(framePool[groupMember], wan.Options.Heal.Toggle)
-                        wan.SetDragFrameGroup(framePool[groupMember], wan.Options.Heal.Toggle, wan.Options.Heal, groupUIMember)
-                        wan.SetText1(framePool[groupMember], wan.Options.ShowName.Toggle)
+                        wan.SetClickThroughFrame(framePool[groupTag], wan.Options.Heal.Toggle)
+                        wan.SetDragFrameGroup(framePool[groupTag], wan.Options.Heal.Toggle, wan.Options.Heal, groupUIMember)
+                        wan.SetText1(framePool[groupTag], wan.Options.ShowName.Toggle)
                     
-                        framePool[groupMember].texture = framePool[groupMember]:CreateTexture(nil, "BACKGROUND", nil, 0)
-                        framePool[groupMember].texture:SetAllPoints(framePool[groupMember])
-                        framePool[groupMember].texture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+                        framePool[groupTag].texture = framePool[groupTag]:CreateTexture(nil, "BACKGROUND", nil, 0)
+                        framePool[groupTag].texture:SetAllPoints(framePool[groupTag])
+                        framePool[groupTag].texture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
                     
-                        framePool[groupMember].testtexture = framePool[groupMember]:CreateTexture(nil, "BACKGROUND", nil, 0)
-                        framePool[groupMember].testtexture:SetAllPoints(framePool[groupMember])
-                        framePool[groupMember].testtexture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-                        wan.SetTesterAlpha(framePool[groupMember], wan.Options.Heal.Toggle, wan.Options.Heal.AlphaSlider)
+                        framePool[groupTag].testtexture = framePool[groupTag]:CreateTexture(nil, "BACKGROUND", nil, 0)
+                        framePool[groupTag].testtexture:SetAllPoints(framePool[groupTag])
+                        framePool[groupTag].testtexture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+                        wan.SetTesterAlpha(framePool[groupTag], wan.Options.Heal.Toggle, wan.Options.Heal.AlphaSlider)
 
-                        resizePool[groupMember]:SetPoint("BOTTOMRIGHT")
-                        resizePool[groupMember]:SetSize(10, 10)
-                        resizePool[groupMember]:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-                        resizePool[groupMember]:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-                        wan.SetResize(resizePool[groupMember], wan.Options.Heal.Toggle)
+                        resizePool[groupTag]:SetPoint("BOTTOMRIGHT")
+                        resizePool[groupTag]:SetSize(10, 10)
+                        resizePool[groupTag]:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+                        resizePool[groupTag]:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+                        wan.SetResize(resizePool[groupTag], wan.Options.Heal.Toggle)
                     end
 
-                    if framePool[groupMember] and not framePool[groupMember]:IsShown() then
-                        framePool[groupMember]:Show()
-                        resizePool[groupMember]:Show()
+                    if framePool[groupTag] and not framePool[groupTag]:IsShown() then
+                        framePool[groupTag]:Show()
+                        resizePool[groupTag]:Show()
                     end
                 else
-                    framePool[groupMember]:Hide()
-                    resizePool[groupMember]:Hide()
-                    frameReference[groupMember] = nil
-                    unitTokensInFrames[groupUnitToken] = nil
+                    if framePool[groupTag] then
+                        framePool[groupTag]:Hide()
+                        resizePool[groupTag]:Hide()
+                        frameReference[groupTag] = nil
+                        unitTokensInFrames[groupUnitToken] = nil
+                    end
                 end
             end
         end
     end
 
+    local function GroupFrame_Party()
+        local parentFrame = _G["PartyFrame"]
+        local groupUIParent = "MemberFrame"
+
+        local nGroupMembers = GetNumGroupMembers()
+        if nGroupMembers > 0 then
+            local playerTag = "group_player"
+            local playerUIParent = _G["PlayerFrame"]
+            local playerUnitToken = "player"
+
+            frameReference[playerTag] = playerUIParent
+            unitTokensInFrames[playerUnitToken] = playerTag
+
+            if not framePool[playerTag] then
+                framePool[playerTag] = CreateFrame("Frame", nil, playerUIParent)
+                resizePool[playerTag] = CreateFrame("Button", nil, framePool[playerTag])
+
+                wan.Options.Heal.FrameSize = wan.Options.Heal.FrameSize or {}
+                if wan.Options.Heal.FrameSize.width == nil then wan.Options.Heal.FrameSize.width = 40 end
+                if wan.Options.Heal.FrameSize.height == nil then wan.Options.Heal.FrameSize.height = 40 end
+                wan.SetResizableIconGroupFrame(
+                    framePool[playerTag],
+                    wan.Options.Heal.HorizontalPosition,
+                    wan.Options.Heal.VerticalPosition,
+                    wan.Options.Heal.Toggle,
+                    wan.Options.Heal.FrameSize,
+                    playerUIParent
+                )
+                wan.SetClickThroughFrame(framePool[playerTag], wan.Options.Heal.Toggle)
+                wan.SetDragFrameGroup(framePool[playerTag], wan.Options.Heal.Toggle, wan.Options.Heal, playerUIParent)
+                wan.SetText1(framePool[playerTag], wan.Options.ShowName.Toggle)
+
+                framePool[playerTag].texture = framePool[playerTag]:CreateTexture(nil, "BACKGROUND", nil, 0)
+                framePool[playerTag].texture:SetAllPoints(framePool[playerTag])
+                framePool[playerTag].texture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+
+                framePool[playerTag].testtexture = framePool[playerTag]:CreateTexture(nil, "BACKGROUND", nil, 0)
+                framePool[playerTag].testtexture:SetAllPoints(framePool[playerTag])
+                framePool[playerTag].testtexture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+                wan.SetTesterAlpha(framePool[playerTag], wan.Options.Heal.Toggle, wan.Options.Heal.AlphaSlider)
+
+                resizePool[playerTag]:SetPoint("BOTTOMRIGHT")
+                resizePool[playerTag]:SetSize(10, 10)
+                resizePool[playerTag]:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+                resizePool[playerTag]:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+                wan.SetResize(resizePool[playerTag], wan.Options.Heal.Toggle)
+            end
+
+            for i = 1, nGroupMembers do
+                local groupTag = "group_" .. groupUIParent .. i
+                local groupUIMember = parentFrame[groupUIParent .. i]
+                local groupUnitToken = groupUIMember and groupUIMember.unit
+                if groupUIMember then
+                    frameReference[groupTag] = groupUIMember
+                    unitTokensInFrames[groupUnitToken] = groupTag
+
+                    if not framePool[groupTag] then
+                        framePool[groupTag] = CreateFrame("Frame", nil, groupUIMember)
+                        resizePool[groupTag] = CreateFrame("Button", nil, framePool[groupTag])
+
+                        wan.Options.Heal.FrameSize = wan.Options.Heal.FrameSize or {}
+                        if wan.Options.Heal.FrameSize.width == nil then wan.Options.Heal.FrameSize.width = 40 end
+                        if wan.Options.Heal.FrameSize.height == nil then wan.Options.Heal.FrameSize.height = 40 end
+                        wan.SetResizableIconGroupFrame(
+                            framePool[groupTag],
+                            wan.Options.Heal.HorizontalPosition,
+                            wan.Options.Heal.VerticalPosition,
+                            wan.Options.Heal.Toggle,
+                            wan.Options.Heal.FrameSize,
+                            groupUIMember
+                        )
+                        wan.SetClickThroughFrame(framePool[groupTag], wan.Options.Heal.Toggle)
+                        wan.SetDragFrameGroup(framePool[groupTag], wan.Options.Heal.Toggle, wan.Options.Heal, groupUIMember)
+                        wan.SetText1(framePool[groupTag], wan.Options.ShowName.Toggle)
+                    
+                        framePool[groupTag].texture = framePool[groupTag]:CreateTexture(nil, "BACKGROUND", nil, 0)
+                        framePool[groupTag].texture:SetAllPoints(framePool[groupTag])
+                        framePool[groupTag].texture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+                    
+                        framePool[groupTag].testtexture = framePool[groupTag]:CreateTexture(nil, "BACKGROUND", nil, 0)
+                        framePool[groupTag].testtexture:SetAllPoints(framePool[groupTag])
+                        framePool[groupTag].testtexture:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+                        wan.SetTesterAlpha(framePool[groupTag], wan.Options.Heal.Toggle, wan.Options.Heal.AlphaSlider)
+
+                        resizePool[groupTag]:SetPoint("BOTTOMRIGHT")
+                        resizePool[groupTag]:SetSize(10, 10)
+                        resizePool[groupTag]:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+                        resizePool[groupTag]:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+                        wan.SetResize(resizePool[groupTag], wan.Options.Heal.Toggle)
+                    end
+
+                    if framePool[groupTag] and not framePool[groupTag]:IsShown() then
+                        framePool[groupTag]:Show()
+                        resizePool[groupTag]:Show()
+                    end
+                else
+                    if framePool[groupTag] then
+                        framePool[groupTag]:Hide()
+                        resizePool[groupTag]:Hide()
+                        frameReference[groupTag] = nil
+                        unitTokensInFrames[groupUnitToken] = nil
+                    end
+                end
+            end
+
+            if _G["CompactPartyFrame"]:IsShown() == false then
+                if framePool[playerTag] and not framePool[playerTag]:IsShown() then
+                    framePool[playerTag]:Show()
+                    resizePool[playerTag]:Show()
+                end
+            else
+                framePool[playerTag]:Hide()
+                resizePool[playerTag]:Hide()
+                frameReference[playerTag] = nil
+                unitTokensInFrames[playerUnitToken] = nil
+            end
+        end
+    end
+
+    local function GroupFrames()
+        GroupFrame_CompactParty()
+        GroupFrame_Party()
+    end
+
     wan.RegisterBlizzardEvents(
         groupHealingFrame,
-        "GROUP_ROSTER_UPDATE"
+        "GROUP_ROSTER_UPDATE",
+        "PLAYER_FOCUS_CHANGED"
     )
 
     groupHealingFrame:SetScript("OnEvent", GroupFrames)

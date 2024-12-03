@@ -22,24 +22,34 @@ local function AddonLoad(self, event, addonName)
             or not wan.IsSpellUsable(wan.spellData.Regrowth.id)
         then
             wan.UpdateMechanicData(wan.spellData.Regrowth.basename)
+            wan.GroupUnitHealThreshold()
             return
         end
 
-        -- Base values
+        -- Cast time layer
         local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Regrowth.id, wan.spellData.Regrowth.castTime)
-        local cRegrowtHotHeal = (not wan.auraData.player.buff_Regrowth and nRegrowthHotHeal) or 0 -- Hot values
-        local cRegrowthHeal = (nRegrowthInstantHeal + cRegrowtHotHeal * castEfficiency)
 
         -- Crit layer
-        cRegrowthHeal = cRegrowthHeal * wan.ValueFromCritical(wan.CritChance)
+        local critValue = wan.ValueFromCritical(wan.CritChance)
 
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
-            local abilityValue = math.floor(nRegrowthHeal) or 0
+
+            -- Base value
+            local cRegrowthInstantHeal = nRegrowthInstantHeal *  critValue
+            local cRegrowtHotHeal = nRegrowthHotHeal * critValue
+            local cRegrowth = (cRegrowthInstantHeal + cRegrowtHotHeal) * castEfficiency
+
+            wan.HotValue[wan.spellData.Regrowth.basename] = math.floor(cRegrowtHotHeal)
+            local abilityValue = math.floor(cRegrowth) or 0
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
-            local groupUnitTokenHeal = wan.GroupUnitHealThreshold(abilityValue, idValidGroupUnit)
+            local groupUnitTokenHeal = wan.GroupUnitHealThreshold(abilityValue, idValidGroupUnit, wan.HotValue)
             wan.UpdateHealingData(groupUnitTokenHeal, wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
         else
+            -- Base values
+            local cRegrowtHotHeal = (not wan.auraData.player.buff_Regrowth and nRegrowthHotHeal) or 0
+            local cRegrowthHeal = (nRegrowthInstantHeal + cRegrowtHotHeal) * castEfficiency * critValue
+
             local abilityValue = not wan.auraData.player.buff_FrenziedRegeneration and wan.HealThreshold() > nRegrowthHeal and math.floor(cRegrowthHeal) or 0
             wan.UpdateMechanicData(wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
         end
