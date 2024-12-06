@@ -201,7 +201,7 @@ end
 
 function wan.SetAlpha(frame, enabler, setting)
     if enabler == false then 
-        frame.texture:SetAlpha(0)
+        frame.texture:Hide()
     else
         frame.texture:Show()
         frame.texture:SetAlpha(setting)
@@ -213,7 +213,7 @@ function wan.SetTesterAlpha(frame, enabler, setting)
         frame.testtexture:Show()
         frame.testtexture:SetAlpha(setting)
     else
-        frame.testtexture:SetAlpha(0)
+        frame.testtexture:Hide()
     end
 end
 

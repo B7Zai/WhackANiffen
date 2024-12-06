@@ -15,9 +15,11 @@ libs\LibRangeCheck-3.0\LibRangeCheck-3.0\LibRangeCheck-3.0.lua
 WAN_Settings.lua
 WAN_Util.lua
 WAN_EnvState.lua
-WAN_AbilityUtil.lua
-WAN_Auras.lua
+WAN_AuraData.lua
 WAN_TraitData.lua
+WAN_AbilityUtil.lua
+WAN_AbilityUtilOffensive.lua
+WAN_AbilityUtilSupport.lua
 WAN_AbilityData.lua
 
 # Display
@@ -55,6 +57,7 @@ Druid\WAN_RageoftheSleeper.lua
 Druid\WAN_Rake.lua
 Druid\WAN_Raze.lua
 Druid\WAN_Regrowth.lua
+Druid\WAN_Rejuvenation.lua
 Druid\WAN_RemoveCorruption.lua
 Druid\WAN_Renewal.lua
 Druid\WAN_Rip.lua

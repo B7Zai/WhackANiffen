@@ -33,7 +33,7 @@ local function GetSpellData(dataArray)
                 local spellType, spellID = spellBookItemInfo.itemType, spellBookItemInfo.actionID
                 local isPassive, isOffSpec = spellBookItemInfo.isPassive, spellBookItemInfo.isOffSpec
 
-                if spellType == Enum.SpellBookItemType.Spell and not isPassive and not isOffSpec then
+                if spellType == Enum.SpellBookItemType.Spell and not isOffSpec then
                     local baseSpellID = FindBaseSpellByID(spellID)
                     local baseSpellName = C_Spell.GetSpellName(baseSpellID)
                     local overriddenSpellID = C_Spell.GetOverrideSpell(spellID)

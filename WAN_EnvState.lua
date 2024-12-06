@@ -11,14 +11,14 @@ wan.PlayerState = {}
 wan.PlayerState.InHealerMode = false
 wan.PlayerState.Class = UnitClassBase("player") or "UNKNOWN"
 wan.PlayerState.InGroup = false
-wan.IsAI = {}
 wan.PlayerState.Status = false
 wan.PlayerState.Combat = false
+wan.IsAI = {}
+wan.UnitMaxHealth = {}
 wan.CritChance = GetCritChance() or 0
 wan.Haste = GetHaste() or 0
+
 local isDeadOrGhost, isMounted, inVehicle
-
-
 local function OnEvent(self, event, ...)
 
     -- sets unit token for targeting
@@ -53,16 +53,17 @@ local function OnEvent(self, event, ...)
                     local validToken = wan.GUIDMap[groupGUID]
                     if not validToken or validToken ~= unit then
                         local unitToken = groupGUID and UnitTokenFromGUID(groupGUID)
-                        local isAI =  UnitInPartyIsAI(unitToken)
-                        if unitToken and isAI then
-                        wan.IsAI[unitToken] = isAI
-                        end
+                        if unitToken then
+                            local isAI = UnitInPartyIsAI(unitToken)
+                            local unitMaxHealth = UnitHealthMax(unitToken)
 
-                        if unitToken and not unitToken:find("^" .. groupType) then
-                            local unitNumber = unitToken:match("%d+")
-                            unitToken = unitNumber and groupType .. unitNumber
-                        end
-                        if groupGUID and unitToken then
+                            if not unitToken:find("^" .. groupType) then
+                                local unitNumber = unitToken:match("%d+")
+                                unitToken = unitNumber and groupType .. unitNumber
+                            end
+
+                            wan.IsAI[unitToken] = isAI
+                            wan.UnitMaxHealth[unitToken] = unitMaxHealth
                             wan.GroupUnitID[unitToken] = groupGUID
                             wan.GUIDMap[groupGUID] = unitToken
                             activeUnits[groupGUID] = unitToken
@@ -72,16 +73,20 @@ local function OnEvent(self, event, ...)
             end
             local playerGUID = UnitGUID("player")
             local playerUnitToken = "player"
+            local playerMaxHealth = UnitHealthMax("player")
             if playerGUID then
                 wan.GroupUnitID[playerUnitToken] = playerGUID
+                wan.UnitMaxHealth[playerUnitToken] = playerMaxHealth
                 wan.GUIDMap[playerGUID] = playerUnitToken
                 activeUnits[playerGUID] = playerUnitToken
             end
         else
             wan.PlayerState.InGroup = false
+            wan.UnitMaxHealth = {}
             wan.HotValue = {}
             wan.GroupUnitID = {}
             wan.GUIDMap = {}
+            wan.IsAI = {}
         end
 
         -- wipe data on removed group units
@@ -92,7 +97,9 @@ local function OnEvent(self, event, ...)
                 wan.auraData[unitToken] = nil
                 wan.instanceIDMap[unitToken] = nil
                 wan.instanceIDThrottler[unitToken] = nil
-                wan.HealingData = nil
+                wan.HealingData[unitToken] = nil
+                wan.IsAI[unitToken] = nil
+                wan.UnitMaxHealth[unitToken] = nil
             end
         end
     end
@@ -108,7 +115,8 @@ local function OnEvent(self, event, ...)
         wan.PlayerState.Status = not (isDeadOrGhost or isMounted or inVehicle)
     end
 
-    if event == "VEHICLE_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
+    if (event == "UNIT_ENTERING_VEHICLE" and ... == "player") or (event == "UNIT_EXITING_VEHICLE" and ... == "player")
+    or event == "PLAYER_ENTERING_WORLD" then
         inVehicle = UnitInVehicle("player") or UnitHasVehicleUI("player")
         wan.PlayerState.Status = not (isDeadOrGhost or isMounted or inVehicle)
     end
@@ -151,7 +159,8 @@ local stateFrame = CreateFrame("Frame")
 wan.RegisterBlizzardEvents(stateFrame,
     "PLAYER_ALIVE",
     "PLAYER_DEAD",
-    "VEHICLE_UPDATE",
+    "UNIT_ENTERING_VEHICLE",
+    "UNIT_EXITING_VEHICLE",
     "UPDATE_SHAPESHIFT_FORM",
     "PLAYER_LOGOUT",
     "UNIT_AURA",

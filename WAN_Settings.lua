@@ -353,12 +353,12 @@ local function OnEvent(self, event, addonname)
                 wan.Options.Heal.Toggle = value
                 wan.CustomEvents("HEAL_FRAME_TOGGLE")
             end
-            local tooltipHealToggle = "Enables dragging and unlocks settings for the Heal Priority display."
+            local tooltipHealToggle = "Enables dragging and unlocks settings for the group's Heal Priority display."
             local settingHealToggle = Settings.RegisterProxySetting(
                 subcategory,
                 "Heal_Frame_Toggle",
                 Settings.VarType.Boolean,
-                "Unlock Healing Frames",
+                "Unlock Group Healing Frames",
                 wan.Options.Heal.Toggle,
                 GetValueHealToggle,
                 SetValueHealToggle
@@ -371,7 +371,7 @@ local function OnEvent(self, event, addonname)
                 wan.Options.Heal.AlphaSlider = wan.Options.Heal.AlphaSlider or 0.75
                 local function GetValueHealAlphaSlider() return wan.Options.Heal.AlphaSlider end
                 local function SetValueHealAlphaSlider(value) wan.Options.Heal.AlphaSlider = value end
-                local tooltipHealAlphaSlider = "Sets how visible the frame appears."
+                local tooltipHealAlphaSlider = "Sets how visible the frames appear."
                 local minValue, maxValue, stepValue = 0, 1, 0.01
                 local settingHealAlphaSlider = Settings.RegisterProxySetting(
                     subcategory,
@@ -389,13 +389,13 @@ local function OnEvent(self, event, addonname)
             end
 
             do  -- Horizontal Position Slider
-                wan.Options.Heal.HorizontalPosition = wan.Options.Heal.HorizontalPosition or -20
+                wan.Options.Heal.HorizontalPosition = wan.Options.Heal.HorizontalPosition or 80
                 local function GetValueHealHorizontalPosition() return wan.Options.Heal.HorizontalPosition end
                 local function SetValueHealHorizontalPosition(value)
                     wan.Options.Heal.HorizontalPosition = value
                     wan.CustomEvents("HEAL_FRAME_HORIZONTAL_SLIDER")
                 end
-                local tooltipHealHorizontalPosition = "Manually adjust the frame's horizontal position."
+                local tooltipHealHorizontalPosition = "Manually adjust the frames horizontal position."
                 local minValue, maxValue, stepValue = -150, 150, 1
                 local settingHealHorizontalPosition = Settings.RegisterProxySetting(
                     subcategory,
@@ -419,7 +419,7 @@ local function OnEvent(self, event, addonname)
                     wan.Options.Heal.VerticalPosition = value
                     wan.CustomEvents("HEAL_FRAME_VERTICAL_SLIDER")
                 end
-                local tooltipHealVerticalPosition = "Manually adjust the frame's vertical position."
+                local tooltipHealVerticalPosition = "Manually adjust the frames vertical position."
                 local minValue, maxValue, stepValue = -150, 150, 1
                 local settingHealVerticalPosition = Settings.RegisterProxySetting(
                     subcategory,
@@ -440,7 +440,7 @@ local function OnEvent(self, event, addonname)
                 wan.Options.Heal.CombatAlphaSlider = wan.Options.Heal.CombatAlphaSlider or 0.4
                 local function GetValueHealCombatAlphaSlider() return wan.Options.Heal.CombatAlphaSlider end
                 local function SetValueHealCombatAlphaSlider(value) wan.Options.Heal.CombatAlphaSlider = value end
-                local tooltipHealCombatAlphaSlider = "Sets how visible the frame appears outside combat."
+                local tooltipHealCombatAlphaSlider = "Sets how visible the frames appear outside combat."
                 local minValue, maxValue, stepValue = 0, 1, 0.01
                 local settingHealCombatAlphaSlider = Settings.RegisterProxySetting(
                     subcategory,
@@ -458,7 +458,7 @@ local function OnEvent(self, event, addonname)
             end
         end
 
-        do -- toggle for the Support frame to enable dragging and enable further customization
+        do -- toggle for the group's support frame to enable dragging and enable further customization
             wan.Options.Support = wan.Options.Support or {}
             wan.Options.Support.Toggle = wan.Options.Support.Toggle or false
             local function GetValueSupportToggle() return wan.Options.Support.Toggle end
@@ -466,12 +466,12 @@ local function OnEvent(self, event, addonname)
                 wan.Options.Support.Toggle = value
                 wan.CustomEvents("SUPPORT_FRAME_TOGGLE")
             end
-            local tooltipSupportToggle = "Enables dragging and unlocks settings for the Support Priority display."
+            local tooltipSupportToggle = "Enables dragging and unlocks settings for the group's Support Priority display."
             local settingSupportToggle = Settings.RegisterProxySetting(
                 subcategory,
                 "Support_Frame_Toggle",
                 Settings.VarType.Boolean,
-                "Unlock Support Frames",
+                "Unlock Group Support Frames",
                 wan.Options.Support.Toggle,
                 GetValueSupportToggle,
                 SetValueSupportToggle
@@ -484,7 +484,7 @@ local function OnEvent(self, event, addonname)
                 wan.Options.Support.AlphaSlider = wan.Options.Support.AlphaSlider or 0.75
                 local function GetValueSupportAlphaSlider() return wan.Options.Support.AlphaSlider end
                 local function SetValueSupportAlphaSlider(value) wan.Options.Support.AlphaSlider = value end
-                local tooltipSupportAlphaSlider = "Sets how visible the frame appears."
+                local tooltipSupportAlphaSlider = "Sets how visible the frames appear."
                 local minValue, maxValue, stepValue = 0, 1, 0.01
                 local settingSupportAlphaSlider = Settings.RegisterProxySetting(
                     subcategory,
@@ -508,7 +508,7 @@ local function OnEvent(self, event, addonname)
                     wan.Options.Support.HorizontalPosition = value
                     wan.CustomEvents("SUPPORT_FRAME_HORIZONTAL_SLIDER")
                 end
-                local tooltipSupportHorizontalPosition = "Manually adjust the frame's horizontal position."
+                local tooltipSupportHorizontalPosition = "Manually adjust the frames horizontal position."
                 local minValue, maxValue, stepValue = -500, 500, 1
                 local settingSupportHorizontalPosition = Settings.RegisterProxySetting(
                     subcategory,
@@ -532,7 +532,7 @@ local function OnEvent(self, event, addonname)
                     wan.Options.Support.VerticalPosition = value
                     wan.CustomEvents("SUPPORT_FRAME_VERTICAL_SLIDER")
                 end
-                local tooltipSupportVerticalPosition = "Manually adjust the frame's vertical position."
+                local tooltipSupportVerticalPosition = "Manually adjust the frames vertical position."
                 local minValue, maxValue, stepValue = -500, 500, 1
                 local settingSupportVerticalPosition = Settings.RegisterProxySetting(
                     subcategory,
@@ -553,7 +553,7 @@ local function OnEvent(self, event, addonname)
                 wan.Options.Support.CombatAlphaSlider = wan.Options.Support.CombatAlphaSlider or 0.4
                 local function GetValueSupportCombatAlphaSlider() return wan.Options.Support.CombatAlphaSlider end
                 local function SetValueSupportCombatAlphaSlider(value) wan.Options.Support.CombatAlphaSlider = value end
-                local tooltipSupportCombatAlphaSlider = "Sets how visible the frame appears outside combat."
+                local tooltipSupportCombatAlphaSlider = "Sets how visible the frames appear outside combat."
                 local minValue, maxValue, stepValue = 0, 1, 0.01
                 local settingSupportCombatAlphaSlider = Settings.RegisterProxySetting(
                     subcategory,
@@ -568,6 +568,232 @@ local function OnEvent(self, event, addonname)
                 local initSupportCombatAlphaSlider = Settings.CreateSlider(subcategory, settingSupportCombatAlphaSlider, optionsSupportCombatAlphaSlider, tooltipSupportCombatAlphaSlider)
                 optionsSupportCombatAlphaSlider:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
                 initSupportCombatAlphaSlider:SetParentInitializer(initSupportToggle, IsParentSelectedSupportToggle)
+            end
+        end
+
+        do -- toggle for the player's heal frame to enable dragging and enable further customization
+            wan.Options.PlayerHeal = wan.Options.PlayerHeal or {}
+            wan.Options.PlayerHeal.Toggle = wan.Options.PlayerHeal.Toggle or false
+            local function GetValuePlayerHealToggle() return wan.Options.PlayerHeal.Toggle end
+            local function SetValuePlayerHealToggle(value)
+                wan.Options.PlayerHeal.Toggle = value
+                wan.CustomEvents("PLAYER_HEAL_FRAME_TOGGLE")
+            end
+            local tooltipPlayerHealToggle = "Enables dragging and unlocks settings for the player's Heal Priority display when using the default party UI."
+            local settingPlayerHealToggle = Settings.RegisterProxySetting(
+                subcategory,
+                "Player_Heal_Frame_Toggle",
+                Settings.VarType.Boolean,
+                "Unlocks Player Healing Frame",
+                wan.Options.PlayerHeal.Toggle,
+                GetValuePlayerHealToggle,
+                SetValuePlayerHealToggle
+            )
+            local initPlayerHealToggle = Settings.CreateCheckbox(subcategory, settingPlayerHealToggle, tooltipPlayerHealToggle)
+
+            local function IsParentSelectedPlayerHealToggle() return settingPlayerHealToggle:GetValue() end
+
+            do  -- Transparency Slider
+                wan.Options.PlayerHeal.AlphaSlider = wan.Options.PlayerHeal.AlphaSlider or 0.75
+                local function GetValuePlayerHealAlphaSlider() return wan.Options.PlayerHeal.AlphaSlider end
+                local function SetValuePlayerHealAlphaSlider(value) wan.Options.PlayerHeal.AlphaSlider = value end
+                local tooltipPlayerHealAlphaSlider = "Sets how visible the frame appears."
+                local minValue, maxValue, stepValue = 0, 1, 0.01
+                local settingPlayerHealAlphaSlider = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Player_Heal_Frame_Alpha_Slider",
+                    Settings.VarType.Number,
+                    "Visibility",
+                    wan.Options.PlayerHeal.AlphaSlider,
+                    GetValuePlayerHealAlphaSlider,
+                    SetValuePlayerHealAlphaSlider
+                )
+                local optionsPlayerHealAlphaSlider = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initPlayerHealAlphaSlider = Settings.CreateSlider(subcategory, settingPlayerHealAlphaSlider, optionsPlayerHealAlphaSlider, tooltipPlayerHealAlphaSlider)
+                optionsPlayerHealAlphaSlider:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
+                initPlayerHealAlphaSlider:SetParentInitializer(initPlayerHealToggle, IsParentSelectedPlayerHealToggle)
+            end
+
+            do  -- Horizontal Position Slider
+                wan.Options.PlayerHeal.HorizontalPosition = wan.Options.PlayerHeal.HorizontalPosition or 125
+                local function GetValuePlayerHealHorizontalPosition() return wan.Options.PlayerHeal.HorizontalPosition end
+                local function SetValuePlayerHealHorizontalPosition(value)
+                    wan.Options.PlayerHeal.HorizontalPosition = value
+                    wan.CustomEvents("PLAYER_HEAL_FRAME_HORIZONTAL_SLIDER")
+                end
+                local tooltipPlayerHealHorizontalPosition = "Manually adjust the frame's horizontal position."
+                local minValue, maxValue, stepValue = -200, 200, 1
+                local settingPlayerHealHorizontalPosition = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Player_Heal_Frame_Horizontal_Position_Slider",
+                    Settings.VarType.Number,
+                    "Horizontal Position",
+                    wan.Options.PlayerHeal.HorizontalPosition,
+                    GetValuePlayerHealHorizontalPosition,
+                    SetValuePlayerHealHorizontalPosition
+                )
+                local optionsPlayerHealHorizontalPosition = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initPlayerHealHorizontalPosition = Settings.CreateSlider(subcategory, settingPlayerHealHorizontalPosition, optionsPlayerHealHorizontalPosition, tooltipPlayerHealHorizontalPosition)
+                optionsPlayerHealHorizontalPosition:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, wan.FormatDecimalNumbers)
+                initPlayerHealHorizontalPosition:SetParentInitializer(initPlayerHealToggle, IsParentSelectedPlayerHealToggle)
+            end
+
+            do  -- Vertical Position Slider
+                wan.Options.PlayerHeal.VerticalPosition = wan.Options.PlayerHeal.VerticalPosition or -5
+                local function GetValuePlayerHealVerticalPosition() return wan.Options.PlayerHeal.VerticalPosition end
+                local function SetValuePlayerHealVerticalPosition(value)
+                    wan.Options.PlayerHeal.VerticalPosition = value
+                    wan.CustomEvents("PLAYER_HEAL_FRAME_VERTICAL_SLIDER")
+                end
+                local tooltipPlayerHealVerticalPosition = "Manually adjust the frame's vertical position."
+                local minValue, maxValue, stepValue = -150, 150, 1
+                local settingPlayerHealVerticalPosition = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Player_Heal_Frame_Vertical_Position_Slider",
+                    Settings.VarType.Number,
+                    "Vertical Position",
+                    wan.Options.PlayerHeal.VerticalPosition,
+                    GetValuePlayerHealVerticalPosition,
+                    SetValuePlayerHealVerticalPosition
+                )
+                local optionsPlayerHealVerticalPosition = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initPlayerHealVerticalPosition = Settings.CreateSlider(subcategory, settingPlayerHealVerticalPosition, optionsPlayerHealVerticalPosition, tooltipPlayerHealVerticalPosition)
+                optionsPlayerHealVerticalPosition:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, wan.FormatDecimalNumbers)
+                initPlayerHealVerticalPosition:SetParentInitializer(initPlayerHealToggle, IsParentSelectedPlayerHealToggle)
+            end
+
+            do  -- Out of Combat Transparency Slider
+                wan.Options.PlayerHeal.CombatAlphaSlider = wan.Options.PlayerHeal.CombatAlphaSlider or 0.4
+                local function GetValuePlayerHealCombatAlphaSlider() return wan.Options.PlayerHeal.CombatAlphaSlider end
+                local function SetValuePlayerHealCombatAlphaSlider(value) wan.Options.PlayerHeal.CombatAlphaSlider = value end
+                local tooltipPlayerHealCombatAlphaSlider = "Sets how visible the frame appears outside combat."
+                local minValue, maxValue, stepValue = 0, 1, 0.01
+                local settingPlayerHealCombatAlphaSlider = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Player_Heal_Frame_Combat_Alpha_Slider",
+                    Settings.VarType.Number,
+                    "Visiblity Outside Combat",
+                    wan.Options.PlayerHeal.CombatAlphaSlider,
+                    GetValuePlayerHealCombatAlphaSlider,
+                    SetValuePlayerHealCombatAlphaSlider
+                )
+                local optionsPlayerHealCombatAlphaSlider = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initPlayerHealCombatAlphaSlider = Settings.CreateSlider(subcategory, settingPlayerHealCombatAlphaSlider, optionsPlayerHealCombatAlphaSlider, tooltipPlayerHealCombatAlphaSlider)
+                optionsPlayerHealCombatAlphaSlider:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
+                initPlayerHealCombatAlphaSlider:SetParentInitializer(initPlayerHealToggle, IsParentSelectedPlayerHealToggle)
+            end
+        end
+
+        do -- toggle for the player's support frame to enable dragging and enable further customization
+            wan.Options.PlayerSupport = wan.Options.PlayerSupport or {}
+            wan.Options.PlayerSupport.Toggle = wan.Options.PlayerSupport.Toggle or false
+            local function GetValuePlayerSupportToggle() return wan.Options.PlayerSupport.Toggle end
+            local function SetValuePlayerSupportToggle(value)
+                wan.Options.PlayerSupport.Toggle = value
+                wan.CustomEvents("PLAYER_SUPPORT_FRAME_TOGGLE")
+            end
+            local tooltipPlayerSupportToggle = "Enables dragging and unlocks settings for the player's Support Priority display when using the default party UI."
+            local settingPlayerSupportToggle = Settings.RegisterProxySetting(
+                subcategory,
+                "Player_Support_Frame_Toggle",
+                Settings.VarType.Boolean,
+                "Unlock Player Support Frame",
+                wan.Options.PlayerSupport.Toggle,
+                GetValuePlayerSupportToggle,
+                SetValuePlayerSupportToggle
+            )
+            local initPlayerSupportToggle = Settings.CreateCheckbox(subcategory, settingPlayerSupportToggle, tooltipPlayerSupportToggle)
+
+            local function IsParentSelectedPlayerSupportToggle() return settingPlayerSupportToggle:GetValue() end
+
+            do  -- Transparency Slider
+                wan.Options.PlayerSupport.AlphaSlider = wan.Options.PlayerSupport.AlphaSlider or 0.75
+                local function GetValuePlayerSupportAlphaSlider() return wan.Options.PlayerSupport.AlphaSlider end
+                local function SetValuePlayerSupportAlphaSlider(value) wan.Options.PlayerSupport.AlphaSlider = value end
+                local tooltipPlayerSupportAlphaSlider = "Sets how visible the frame appears."
+                local minValue, maxValue, stepValue = 0, 1, 0.01
+                local settingPlayerSupportAlphaSlider = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Player_Support_Frame_Alpha_Slider",
+                    Settings.VarType.Number,
+                    "Visibility",
+                    wan.Options.PlayerSupport.AlphaSlider,
+                    GetValuePlayerSupportAlphaSlider,
+                    SetValuePlayerSupportAlphaSlider
+                )
+                local optionsPlayerSupportAlphaSlider = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initPlayerSupportAlphaSlider = Settings.CreateSlider(subcategory, settingPlayerSupportAlphaSlider, optionsPlayerSupportAlphaSlider, tooltipPlayerSupportAlphaSlider)
+                optionsPlayerSupportAlphaSlider:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
+                initPlayerSupportAlphaSlider:SetParentInitializer(initPlayerSupportToggle, IsParentSelectedPlayerSupportToggle)
+            end
+
+            do  -- Horizontal Position Slider
+                wan.Options.PlayerSupport.HorizontalPosition = wan.Options.PlayerSupport.HorizontalPosition or 120
+                local function GetValuePlayerSupportHorizontalPosition() return wan.Options.PlayerSupport.HorizontalPosition end
+                local function SetValuePlayerSupportHorizontalPosition(value)
+                    wan.Options.PlayerSupport.HorizontalPosition = value
+                    wan.CustomEvents("PLAYER_SUPPORT_FRAME_HORIZONTAL_SLIDER")
+                end
+                local tooltipPlayerSupportHorizontalPosition = "Manually adjust the frame's horizontal position."
+                local minValue, maxValue, stepValue = -500, 500, 1
+                local settingPlayerSupportHorizontalPosition = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Player_Support_Frame_Horizontal_Position_Slider",
+                    Settings.VarType.Number,
+                    "Horizontal Position",
+                    wan.Options.PlayerSupport.HorizontalPosition,
+                    GetValuePlayerSupportHorizontalPosition,
+                    SetValuePlayerSupportHorizontalPosition
+                )
+                local optionsPlayerSupportHorizontalPosition = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initPlayerSupportHorizontalPosition = Settings.CreateSlider(subcategory, settingPlayerSupportHorizontalPosition, optionsPlayerSupportHorizontalPosition, tooltipPlayerSupportHorizontalPosition)
+                optionsPlayerSupportHorizontalPosition:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, wan.FormatDecimalNumbers)
+                initPlayerSupportHorizontalPosition:SetParentInitializer(initPlayerSupportToggle, IsParentSelectedPlayerSupportToggle)
+            end
+
+            do  -- Vertical Position Slider
+                wan.Options.PlayerSupport.VerticalPosition = wan.Options.PlayerSupport.VerticalPosition or -30
+                local function GetValuePlayerSupportVerticalPosition() return wan.Options.PlayerSupport.VerticalPosition end
+                local function SetValuePlayerSupportVerticalPosition(value)
+                    wan.Options.PlayerSupport.VerticalPosition = value
+                    wan.CustomEvents("PLAYER_SUPPORT_FRAME_VERTICAL_SLIDER")
+                end
+                local tooltipPlayerSupportVerticalPosition = "Manually adjust the frame's vertical position."
+                local minValue, maxValue, stepValue = -500, 500, 1
+                local settingPlayerSupportVerticalPosition = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Player_Support_Frame_Vertical_Position_Slider",
+                    Settings.VarType.Number,
+                    "Vertical Position",
+                    wan.Options.PlayerSupport.VerticalPosition,
+                    GetValuePlayerSupportVerticalPosition,
+                    SetValuePlayerSupportVerticalPosition
+                )
+                local optionsPlayerSupportVerticalPosition = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initPlayerSupportVerticalPosition = Settings.CreateSlider(subcategory, settingPlayerSupportVerticalPosition, optionsPlayerSupportVerticalPosition, tooltipPlayerSupportVerticalPosition)
+                optionsPlayerSupportVerticalPosition:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, wan.FormatDecimalNumbers)
+                initPlayerSupportVerticalPosition:SetParentInitializer(initPlayerSupportToggle, IsParentSelectedPlayerSupportToggle)
+            end
+
+            do  -- Out of Combat Transparency Slider
+                wan.Options.PlayerSupport.CombatAlphaSlider = wan.Options.PlayerSupport.CombatAlphaSlider or 0.4
+                local function GetValuePlayerSupportCombatAlphaSlider() return wan.Options.PlayerSupport.CombatAlphaSlider end
+                local function SetValuePlayerSupportCombatAlphaSlider(value) wan.Options.PlayerSupport.CombatAlphaSlider = value end
+                local tooltipPlayerSupportCombatAlphaSlider = "Sets how visible the frame appears outside combat."
+                local minValue, maxValue, stepValue = 0, 1, 0.01
+                local settingPlayerSupportCombatAlphaSlider = Settings.RegisterProxySetting(
+                    subcategory,
+                    "Player_Support_Frame_Combat_Alpha_Slider",
+                    Settings.VarType.Number,
+                    "Visiblity Outside Combat",
+                    wan.Options.PlayerSupport.CombatAlphaSlider,
+                    GetValuePlayerSupportCombatAlphaSlider,
+                    SetValuePlayerSupportCombatAlphaSlider
+                )
+                local optionsPlayerSupportCombatAlphaSlider = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initPlayerSupportCombatAlphaSlider = Settings.CreateSlider(subcategory, settingPlayerSupportCombatAlphaSlider, optionsPlayerSupportCombatAlphaSlider, tooltipPlayerSupportCombatAlphaSlider)
+                optionsPlayerSupportCombatAlphaSlider:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, FormatPercentage)
+                initPlayerSupportCombatAlphaSlider:SetParentInitializer(initPlayerSupportToggle, IsParentSelectedPlayerSupportToggle)
             end
         end
 
