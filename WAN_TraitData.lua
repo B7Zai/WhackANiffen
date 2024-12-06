@@ -51,6 +51,7 @@ local function GetTraitData(dataArray)
                                 entryid = entryID,
                                 known = isActive,
                                 rank = nodeInfo.currentRank,
+                                traitkey = keyName
                             }
                         end
                     end
@@ -64,8 +65,7 @@ end
 local traitFrame = CreateFrame("Frame")
 wan.RegisterBlizzardEvents(traitFrame,
     "TRAIT_CONFIG_UPDATED",
-    "PLAYER_ENTERING_WORLD",
-    "PLAYER_LOGOUT"
+    "PLAYER_ENTERING_WORLD"
 )
 
 traitFrame:SetScript("OnEvent", function(self, event, ...)
@@ -75,9 +75,5 @@ traitFrame:SetScript("OnEvent", function(self, event, ...)
         wan.WipeTable(wan.HealingData)
         wan.WipeTable(wan.traitData)
         GetTraitData(wan.traitData)
-    end
-
-    if event == "PLAYER_LOGOUT" then
-        wan.WipeTable(wan.traitData)
     end
 end)

@@ -14,14 +14,14 @@ function wan.UpdateHealingData(unitToken, abilityName, value, icon, name, desatu
     if not unitToken then
         for unitID, _ in pairs(wan.HealingData) do
             if wan.HealingData[unitID] then
-                wan.HealingData[unitID][abilityName] = nil
+                wan.HealingData[unitID][abilityName] = {}
             end
         end
         return
     end
 
     wan.HealingData[unitToken] = wan.HealingData[unitToken] or {}
-    if value == 0 then wan.HealingData[unitToken][abilityName] = nil return end
+    if value == 0 then wan.HealingData[unitToken][abilityName] = {} return end
     wan.HealingData[unitToken][abilityName] = {
         value = value,
         icon = icon,

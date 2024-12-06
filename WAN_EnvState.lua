@@ -13,6 +13,7 @@ wan.PlayerState.Class = UnitClassBase("player") or "UNKNOWN"
 wan.PlayerState.InGroup = false
 wan.PlayerState.Status = false
 wan.PlayerState.Combat = false
+wan.PlayerState.GUID = "guid"
 wan.IsAI = {}
 wan.UnitMaxHealth = {}
 wan.CritChance = GetCritChance() or 0
@@ -20,6 +21,10 @@ wan.Haste = GetHaste() or 0
 
 local isDeadOrGhost, isMounted, inVehicle
 local function OnEvent(self, event, ...)
+
+    if event == "PLAYER_ENTERING_WORLD" then
+        wan.PlayerState.GUID = UnitGUID("player")
+    end
 
     -- sets unit token for targeting
     if event == "PLAYER_ENTERING_WORLD" or (event == "CVAR_UPDATE" and ... == "SoftTargetEnemy") then
@@ -54,16 +59,17 @@ local function OnEvent(self, event, ...)
                     if not validToken or validToken ~= unit then
                         local unitToken = groupGUID and UnitTokenFromGUID(groupGUID)
                         if unitToken then
-                            local isAI = UnitInPartyIsAI(unitToken)
-                            local unitMaxHealth = UnitHealthMax(unitToken)
 
                             if not unitToken:find("^" .. groupType) then
                                 local unitNumber = unitToken:match("%d+")
                                 unitToken = unitNumber and groupType .. unitNumber
                             end
 
+                            local isAI = UnitInPartyIsAI(unitToken)
+                            local maxHealth = UnitHealthMax(unitToken)
+
                             wan.IsAI[unitToken] = isAI
-                            wan.UnitMaxHealth[unitToken] = unitMaxHealth
+                            wan.UnitMaxHealth[unitToken] = maxHealth
                             wan.GroupUnitID[unitToken] = groupGUID
                             wan.GUIDMap[groupGUID] = unitToken
                             activeUnits[groupGUID] = unitToken
@@ -71,18 +77,18 @@ local function OnEvent(self, event, ...)
                     end
                 end
             end
-            local playerGUID = UnitGUID("player")
+            local playerGUID = wan.PlayerState.GUID
             local playerUnitToken = "player"
-            local playerMaxHealth = UnitHealthMax("player")
+            local playerMaxHealth = UnitHealthMax(playerUnitToken)
             if playerGUID then
                 wan.GroupUnitID[playerUnitToken] = playerGUID
                 wan.UnitMaxHealth[playerUnitToken] = playerMaxHealth
                 wan.GUIDMap[playerGUID] = playerUnitToken
                 activeUnits[playerGUID] = playerUnitToken
             end
+
         else
             wan.PlayerState.InGroup = false
-            wan.UnitMaxHealth = {}
             wan.HotValue = {}
             wan.GroupUnitID = {}
             wan.GUIDMap = {}
@@ -102,6 +108,14 @@ local function OnEvent(self, event, ...)
                 wan.UnitMaxHealth[unitToken] = nil
             end
         end
+    end
+
+    if (event == "UNIT_MAXHEALTH" and ... == "player") or (event == "UNIT_MAXHEALTH" and wan.GroupUnitID[...])
+     or event == "PLAYER_ENTERING_WORLD" then
+        local unitToken = ... or "player"
+        local maxHealth = UnitHealthMax(unitToken)
+        wan.UnitMaxHealth[unitToken] = maxHealth
+        print("max health event check for: ", unitToken)
     end
 
     if event == "PLAYER_ALIVE" or event == "PLAYER_DEAD" or event == "PLAYER_ENTERING_WORLD" then
@@ -133,6 +147,8 @@ local function OnEvent(self, event, ...)
     end
 
     if event == "PLAYER_LOGOUT" then
+        wan.traitData = nil
+
         wan.TargetUnitID = nil
         wan.NameplateUnitID = nil
         wan.GroupUnitID = nil
@@ -173,6 +189,7 @@ wan.RegisterBlizzardEvents(stateFrame,
     "GROUP_ROSTER_UPDATE",
     "GROUP_FORMED",
     "GROUP_JOINED",
-    "GROUP_LEFT"
+    "GROUP_LEFT",
+    "UNIT_MAXHEALTH"
 )
 stateFrame:SetScript("OnEvent", OnEvent)

@@ -58,7 +58,7 @@ local function OnEvent(self, event, addonName)
                         wan.SetResize(resizePool[groupTag], wan.Options.Heal.Toggle)
                     end
 
-                    if framePool[groupTag] and not framePool[groupTag]:IsShown() then
+                    if framePool[groupTag] then
                         framePool[groupTag]:Show()
                         resizePool[groupTag]:Show()
                         frameReference[groupTag] = groupUIMember
@@ -165,14 +165,15 @@ local function OnEvent(self, event, addonName)
                         wan.SetResize(resizePool[groupTag], wan.Options.Heal.Toggle)
                     end
 
-                    if framePool[groupTag] and not framePool[groupTag]:IsShown() then
+                    if framePool[groupTag] then
                         framePool[groupTag]:Show()
                         resizePool[groupTag]:Show()
                         frameReference[groupTag] = groupUIMember
                         unitTokensInFrames[groupUnitToken] = groupTag
                     end
                 else
-                    if framePool[groupTag] and framePool[groupTag]:IsShown() then
+                    
+                    if framePool[groupTag] then
                         framePool[groupTag]:Hide()
                         resizePool[groupTag]:Hide()
                         frameReference[groupTag] = nil
@@ -186,6 +187,7 @@ local function OnEvent(self, event, addonName)
                 resizePool[playerTag]:Show()
                 frameReference[playerTag] = playerUIParent
                 unitTokensInFrames[playerUnitToken] = playerTag
+
             elseif framePool[playerTag] and _G["CompactPartyFrame"]:IsShown() == true then
                 framePool[playerTag]:Hide()
                 resizePool[playerTag]:Hide()
@@ -218,23 +220,24 @@ local function OnEvent(self, event, addonName)
         if not last or last < GetTime() - updateThrottle then
             last = GetTime()
             updateThrottle = wan.UpdateFrameThrottle()
-            local playedTag = "group_player"
-            local alphaValue = (wan.PlayerState.Combat and wan.Options.Heal.AlphaSlider) or wan.Options.Heal.CombatAlphaSlider
-            local alphaValuePlayer = (wan.PlayerState.Combat and wan.Options.PlayerHeal.AlphaSlider) or wan.Options.PlayerHeal.CombatAlphaSlider
-            local highestSpellData = wan.GetHighestHealingValues()
-            for validGroupUnitToken, topSpellData in pairs(highestSpellData) do
-                local topValue, topIcon, topName, topDesat = topSpellData.value, topSpellData.icon, topSpellData.name, topSpellData.desat
-                local frameID = unitTokensInFrames[validGroupUnitToken]
-                if frameID ~= playedTag then
-                    wan.IconUpdater(framePool[frameID], topIcon, topDesat, alphaValue)
-                    wan.TextUpdater1(framePool[frameID], topName, wan.Options.Heal.AlphaSlider)
-                    wan.TextUpdater2(framePool[frameID], topValue, wan.Options.Heal.AlphaSlider)
-                else
-                    wan.IconUpdater(framePool[playedTag], topIcon, topDesat, alphaValuePlayer)
-                    wan.TextUpdater1(framePool[playedTag], topName, wan.Options.PlayerHeal.AlphaSlider)
-                    wan.TextUpdater2(framePool[playedTag], topValue, wan.Options.PlayerHeal.AlphaSlider)
+            if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
+                local playerTag = "group_player"
+                local alphaValue = (wan.PlayerState.Combat and wan.Options.Heal.AlphaSlider) or wan.Options.Heal.CombatAlphaSlider
+                local alphaValuePlayer = (wan.PlayerState.Combat and wan.Options.PlayerHeal.AlphaSlider) or wan.Options.PlayerHeal.CombatAlphaSlider
+                local highestSpellData = wan.GetHighestHealingValues()
+                for validGroupUnitToken, topSpellData in pairs(highestSpellData) do
+                    local topValue, topIcon, topName, topDesat = topSpellData.value, topSpellData.icon, topSpellData.name, topSpellData.desat
+                    local frameID = unitTokensInFrames[validGroupUnitToken]
+                    if frameID ~= playerTag then
+                        wan.IconUpdater(framePool[frameID], topIcon, topDesat, alphaValue)
+                        wan.TextUpdater1(framePool[frameID], topName, wan.Options.Heal.AlphaSlider)
+                        wan.TextUpdater2(framePool[frameID], topValue, wan.Options.Heal.AlphaSlider)
+                    else
+                        wan.IconUpdater(framePool[playerTag], topIcon, topDesat, alphaValuePlayer)
+                        wan.TextUpdater1(framePool[playerTag], topName, wan.Options.PlayerHeal.AlphaSlider)
+                        wan.TextUpdater2(framePool[playerTag], topValue, wan.Options.PlayerHeal.AlphaSlider)
+                    end
                 end
-
             end
         end
     end)

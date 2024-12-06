@@ -17,6 +17,7 @@ local function AddonLoad(self, event, addonName)
     -- Init trait data
     local nAbundance, nAbundanceCapValue = 0, 0
     local nImprovedRegrowth = 0
+    local nHarmoniousBlooming = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -27,102 +28,164 @@ local function AddonLoad(self, event, addonName)
             or not wan.IsSpellUsable(wan.spellData.Regrowth.id)
         then
             wan.UpdateMechanicData(wan.spellData.Regrowth.basename)
-            wan.GroupUnitHealThreshold(nil, wan.spellData.Regrowth.basename)
+            wan.UpdateHealingData(nil, wan.spellData.Regrowth.basename)
             return
         end
+
+        local critHotChanceMod = 0
+        local cRegrowthHotHeal = nRegrowthHotHeal
+        local cRegrowthInstantHeal = nRegrowthInstantHeal
+        local hotKey = wan.spellData.Regrowth.basename
 
         -- Cast time layer
         local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Regrowth.id, wan.spellData.Regrowth.castTime)
 
-        local cAbundance = 0
+         -- check abundance trait layer
         if wan.traitData.Abundance.known and wan.auraData.player.buff_Abundance then
             local nAbundanceStacks = wan.auraData.player.buff_Abundance.applications
             local cAbundanceCrit = nAbundance * nAbundanceStacks
-            cAbundance = cAbundanceCrit >= nAbundanceCapValue and nAbundanceCapValue or cAbundanceCrit
+            critHotChanceMod  = cAbundanceCrit >= nAbundanceCapValue and nAbundanceCapValue or cAbundanceCrit
         end
-
-        -- Crit layer
-        local critHotValue = wan.ValueFromCritical(wan.CritChance, cAbundance)
-        local critInstantCheck = wan.ValueFromCritical(wan.CritChance)
 
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
-
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
+
+            local critHotValue = wan.ValueFromCritical(wan.CritChance, critHotChanceMod)
+            cRegrowthHotHeal = cRegrowthHotHeal * critHotValue
 
             for groupUnitToken, groupUnitGUID in pairs(idValidGroupUnit) do
 
-                local hotKey = "buff_" .. wan.spellData.Rejuvenation.basename
-                local cRegrowthHotHeal = nRegrowthHotHeal * critHotValue
+                local critInstantChanceMod = 0
                 
                 wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
-                wan.HotValue[groupUnitToken][hotKey] = math.floor(cRegrowthHotHeal)
+                wan.HotValue[groupUnitToken][hotKey] = cRegrowthHotHeal
 
                 if wan.spellData.MasteryHarmony.known then
                     local _, countHots = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
-                    local cMasteryHarmony = nMasteryHarmony * countHots
+
+                    if wan.traitData.HarmoniousBlooming.known and wan.auraData[groupUnitToken].buff_Lifebloom then
+                        countHots = countHots + nHarmoniousBlooming
+                    end
+
+                    local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
                     cRegrowthHotHeal = cRegrowthHotHeal * cMasteryHarmony
-                    wan.HotValue[groupUnitToken][hotKey] = math.floor(cRegrowthHotHeal)
+                    wan.HotValue[groupUnitToken][hotKey] = cRegrowthHotHeal
                 end
 
-                local critInstantValue = 0
-                if wan.traitData.ImprovedRegrowth.known and wan.auraData[groupUnitToken][hotKey] then
+                -- add Improved Regrowth layer
+                if wan.traitData.ImprovedRegrowth.known and wan.auraData[groupUnitToken]["buff_" .. hotKey] then
                     local cImprovedRegrowth = nImprovedRegrowth
-                    critInstantValue = critInstantValue + cImprovedRegrowth
+                    critInstantChanceMod = critInstantChanceMod + cImprovedRegrowth
                 end
 
-                local critInstant = wan.ValueFromCritical(wan.CritChance, critInstantValue)
-                local cRegrowthInstantHeal = nRegrowthInstantHeal * critInstant
+                local critInstantValue = wan.ValueFromCritical(wan.CritChance, critInstantChanceMod)
+                cRegrowthInstantHeal = nRegrowthInstantHeal * critInstantValue
 
-                local baseRegrowthHeal = cRegrowthInstantHeal + cRegrowthHotHeal
+                local maxRegrowthHeal = cRegrowthInstantHeal + cRegrowthHotHeal
                 local cRegrowthHeal = cRegrowthInstantHeal + cRegrowthHotHeal
 
                 -- subtract healing value of ability's hot from ability's max healing value
-                if wan.auraData[groupUnitToken][hotKey] then
+                if wan.auraData[groupUnitToken]["buff_" .. hotKey] then
                     local hotValue = wan.HotValue[groupUnitToken][hotKey]
                     cRegrowthHeal = cRegrowthHeal - hotValue
                 end
 
+                cRegrowthHeal = cRegrowthHeal * castEfficiency
+
                 -- exit early when ability doesn't contribute toward healing
-                if cRegrowthHeal / baseRegrowthHeal < 0.5 then
+                if cRegrowthHeal / maxRegrowthHeal < 0.5 then
                     wan.UpdateHealingData(groupUnitToken, wan.spellData.Regrowth.basename)
-                    break
+                else
+                    local unitHotValues = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
+                    local currentPercentHealth = (UnitPercentHealthFromGUID(groupUnitGUID) or 0)
+                    local maxHealth = wan.UnitMaxHealth[groupUnitToken]
+                    local abilityPercentageValue = (cRegrowthHeal / maxHealth) or 0
+                    local hotPercentageValue = (unitHotValues / maxHealth) or 0
+                    local abilityValue = math.floor(cRegrowthHeal) or 0
+
+                    -- check if the value of the healing ability exceeds the unit's missing health
+                    if (currentPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
+                        wan.UpdateHealingData(groupUnitToken, wan.spellData.Regrowth.basename, abilityValue,
+                            wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
+                        -- check on units that are too lvl compared to the player
+                    elseif cRegrowthHeal > maxHealth then
+                        -- convert heal scaling on player when group member is low lvl
+                        local playerMaxHealth = wan.UnitMaxHealth["player"]
+                        local abilityPercentageValueLowLvl = (cRegrowthHeal / playerMaxHealth) or 0
+                        local hotPercentageValueLowLvl = (unitHotValues / playerMaxHealth) or 0
+                        if (currentPercentHealth + abilityPercentageValueLowLvl + hotPercentageValueLowLvl) < 1 then
+                            wan.UpdateHealingData(groupUnitToken, wan.spellData.Regrowth.basename, abilityValue,
+                                wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
+                        end
+                    else
+                        wan.UpdateHealingData(groupUnitToken, wan.spellData.Regrowth.basename)
+                    end
+                end
+            end
+        else
+            local unitToken = "player"
+            local playerGUID =  wan.PlayerState.GUID
+
+            local critHotValue = wan.ValueFromCritical(wan.CritChance, critHotChanceMod)
+            cRegrowthHotHeal = cRegrowthHotHeal * critHotValue
+                
+            wan.HotValue[unitToken] = wan.HotValue[unitToken] or {}
+            wan.HotValue[unitToken][hotKey] = cRegrowthHotHeal
+
+            if wan.spellData.MasteryHarmony.known then
+                local _, countHots = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
+
+                if wan.traitData.HarmoniousBlooming.known and wan.auraData[unitToken].buff_Lifebloom then
+                    countHots = countHots + nHarmoniousBlooming
                 end
 
-                local unitHotValues = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
+                local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
+                cRegrowthHotHeal = cRegrowthHotHeal * cMasteryHarmony
+                wan.HotValue[unitToken][hotKey] = cRegrowthHotHeal
+            end
 
-                -- check health of the unit
-                local currentPercentHealth = (UnitPercentHealthFromGUID(groupUnitGUID) or 0)
-                local maxHealth = wan.UnitMaxHealth[groupUnitToken]
+            -- init crit value for the instant dmg
+            local critInstantChanceMod = 0
+
+            -- add Improved Regrowth layer
+            if wan.traitData.ImprovedRegrowth.known and wan.auraData[unitToken]["buff_" .. hotKey] then
+                local cImprovedRegrowth = nImprovedRegrowth
+                critInstantChanceMod = critInstantChanceMod + cImprovedRegrowth
+            end
+
+            local critInstantValue = wan.ValueFromCritical(wan.CritChance, critInstantChanceMod)
+            cRegrowthInstantHeal = nRegrowthInstantHeal * critInstantValue
+
+            local maxRegrowthHeal = cRegrowthInstantHeal + cRegrowthHotHeal
+            local cRegrowthHeal = cRegrowthInstantHeal + cRegrowthHotHeal
+
+            -- subtract healing value of ability's hot from ability's max healing value
+            if wan.auraData[unitToken]["buff_" .. hotKey] then
+                local hotValue = wan.HotValue[unitToken][hotKey]
+                cRegrowthHeal = cRegrowthHeal - hotValue
+            end
+
+            cRegrowthHeal = cRegrowthHeal * castEfficiency
+
+            -- exit early when ability doesn't contribute enough compared to it's own max healing
+            if cRegrowthHeal / maxRegrowthHeal < 0.5 then
+                wan.UpdateMechanicData(wan.spellData.Regrowth.basename)
+            else
+                local unitHotValues = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
+                local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
+                local maxHealth = wan.UnitMaxHealth[unitToken]
                 local abilityPercentageValue = (cRegrowthHeal / maxHealth) or 0
                 local hotPercentageValue = (unitHotValues / maxHealth) or 0
                 local abilityValue = math.floor(cRegrowthHeal) or 0
 
                 -- check if the value of the healing ability exceeds the unit's missing health
                 if (currentPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
-                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
-
-                    -- check on units that are too lvl compared to the player
-                elseif cRegrowthHeal > maxHealth then
-                    -- convert heal scaling on player when group member is low lvl
-                    local playerMaxHealth = wan.UnitMaxHealth["player"]
-                    local abilityPercentageValueLowLvl = (cRegrowthHeal / playerMaxHealth) or 0
-                    local hotPercentageValueLowLvl = (unitHotValues / playerMaxHealth) or 0
-                    if (currentPercentHealth + abilityPercentageValueLowLvl + hotPercentageValueLowLvl) < 1 then
-                        wan.UpdateHealingData(groupUnitToken, wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
-                    end
+                    wan.UpdateMechanicData(wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
+                else
+                    wan.UpdateMechanicData(wan.spellData.Regrowth.basename)
                 end
             end
-        else
-            local cRegrowthInstantHeal = nRegrowthInstantHeal * critInstantCheck
-            local cRegrowthHotHeal = nRegrowthHotHeal * critHotValue
-            -- Base values
-            local cRegrowtHotHeal = wan.auraData.player.buff_Regrowth and cRegrowthHotHeal or 0
-            local cRegrowthHeal = (cRegrowthInstantHeal + cRegrowtHotHeal) * castEfficiency
-            cRegrowthHeal = not wan.auraData.player.buff_FrenziedRegeneration and wan.HealThreshold() > cRegrowthHeal and cRegrowthHeal or 0
-
-            local abilityValue = math.floor(cRegrowthHeal) or 0
-            wan.UpdateMechanicData(wan.spellData.Regrowth.basename, abilityValue, wan.spellData.Regrowth.icon, wan.spellData.Regrowth.name)
         end
     end
 
@@ -133,8 +196,7 @@ local function AddonLoad(self, event, addonName)
             nRegrowthInstantHeal = regrowthValues[1]
             nRegrowthHotHeal = regrowthValues[2]
 
-            local nMasteryHarmonyValue = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryHarmony.id, { 1 })
-            nMasteryHarmony = 1 + (nMasteryHarmonyValue * 0.01)
+            nMasteryHarmony = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryHarmony.id, { 1 }) * 0.01
         end
     end)
 
@@ -153,6 +215,8 @@ local function AddonLoad(self, event, addonName)
             nAbundanceCapValue = nAbundanceValues[2]
 
             nImprovedRegrowth = wan.GetTraitDescriptionNumbers(wan.traitData.ImprovedRegrowth.entryid, { 1 })
+
+            nHarmoniousBlooming = wan.GetTraitDescriptionNumbers(wan.traitData.HarmoniousBlooming.entryid, { 1 }) - 1
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
