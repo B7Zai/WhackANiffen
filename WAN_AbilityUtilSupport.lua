@@ -64,7 +64,15 @@ function wan.GetUnitHotValues(unitToken, hotData)
     return totalHotValues, countHots
 end
 
+function wan.HotPotency(unitToken, unitPercentHealth, initialValue)
+    local currentPercentHealth = unitPercentHealth or 0
+    local baseValue = initialValue or 0
+    local maxHealth = wan.UnitMaxHealth[unitToken] or 0
+    local targetHealth = maxHealth * currentPercentHealth
+    local healPotency = (targetHealth / maxHealth)
 
+    return math.min(healPotency, 1)
+end
 
 -- Checks damage reduction from armor gain
 function wan.GetArmorDamageReductionFromSpell(armorValue)

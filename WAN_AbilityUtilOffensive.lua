@@ -227,7 +227,7 @@ end
 -- Adjust ability dot value to unit health
 function wan.CheckDotPotency(initialValue)
     local baseValue = initialValue or 0
-    local maxHealth = UnitHealthMax("player")
+    local maxHealth = wan.UnitMaxHealth.player or 0
     local targetHealth = math.max((UnitCanAttack("player", wan.TargetUnitID) and UnitHealth(wan.TargetUnitID) or 0)- baseValue, 0)
     local damagePotency = (targetHealth / maxHealth)
     local validGroupMembers = wan.ValidGroupMembers()
@@ -254,7 +254,7 @@ function wan.CheckDotPotencyAoE(auraData, validUnitIDs, debuffName, maxStacks, i
         end
     end
 
-    local maxHealth = UnitHealthMax("player")
+    local maxHealth = wan.UnitMaxHealth.player or 0
     local damagePotency = (totalNameplateHealth / maxHealth)
     local validGroupMembers = wan.ValidGroupMembers()
     local calcPotency = damagePotency / validGroupMembers

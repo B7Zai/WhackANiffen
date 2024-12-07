@@ -8,7 +8,8 @@ setmetatable(wan.traitData, {
             id = 0,
             entryid = 0,
             known = false,
-            rank = 0
+            rank = 0,
+            traitkey = "UnknownKey"
         }
         t[key] = default
         return default

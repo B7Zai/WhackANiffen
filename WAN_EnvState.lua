@@ -79,10 +79,8 @@ local function OnEvent(self, event, ...)
             end
             local playerGUID = wan.PlayerState.GUID
             local playerUnitToken = "player"
-            local playerMaxHealth = UnitHealthMax(playerUnitToken)
             if playerGUID then
                 wan.GroupUnitID[playerUnitToken] = playerGUID
-                wan.UnitMaxHealth[playerUnitToken] = playerMaxHealth
                 wan.GUIDMap[playerGUID] = playerUnitToken
                 activeUnits[playerGUID] = playerUnitToken
             end
@@ -112,10 +110,9 @@ local function OnEvent(self, event, ...)
 
     if (event == "UNIT_MAXHEALTH" and ... == "player") or (event == "UNIT_MAXHEALTH" and wan.GroupUnitID[...])
      or event == "PLAYER_ENTERING_WORLD" then
-        local unitToken = ... or "player"
+        local unitToken = ... ~= true and ... or "player"
         local maxHealth = UnitHealthMax(unitToken)
         wan.UnitMaxHealth[unitToken] = maxHealth
-        print("max health event check for: ", unitToken)
     end
 
     if event == "PLAYER_ALIVE" or event == "PLAYER_DEAD" or event == "PLAYER_ENTERING_WORLD" then

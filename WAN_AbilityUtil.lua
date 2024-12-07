@@ -115,6 +115,7 @@ end
 
 -- Checks cast efficiency against gcd
 function wan.CheckCastEfficiency(spellID, spellCastTime)
+    if IsPlayerMoving() then return 0 end
     local _, gcdMS = GetSpellBaseCooldown(spellID)
 
     if not gcdMS or not spellCastTime then

@@ -43,6 +43,7 @@ Druid\WAN_ForceofNature.lua
 Druid\WAN_FrenziedRegeneration.lua
 Druid\WAN_FuryofElune.lua
 Druid\WAN_Ironfur.lua
+Druid\WAN_Lifebloom.lua
 Druid\WAN_LunarBeam.lua
 Druid\WAN_Mangle.lua
 Druid\WAN_MarkoftheWild.lua
