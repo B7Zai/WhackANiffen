@@ -86,6 +86,52 @@ local function OnEvent(self, event, addonname)
             end
         end
 
+        do -- toggle to enable movement detection for abilities that requires casting
+            wan.Options.DetectMovement = wan.Options.DetectMovement or {}
+            wan.Options.DetectMovement.Toggle = wan.Options.DetectMovement.Toggle or false
+            local function GetValueDetectMovementToggle() return wan.Options.DetectMovement.Toggle end
+            local function SetValueDetectMovementToggle(value)
+                wan.Options.DetectMovement.Toggle = value
+            end
+            local tooltipDetectMovementToggle = "Toggle to hide abilities with casting times while the player is moving."
+            local settingDetectMovementToggle = Settings.RegisterProxySetting(
+                category,
+                "Detect_Movement_Toggle",
+                Settings.VarType.Boolean,
+                "Movement Detection",
+                wan.Options.DetectMovement.Toggle,
+                GetValueDetectMovementToggle,
+                SetValueDetectMovementToggle
+            )
+
+            local initDetectMovementToggle = Settings.CreateCheckbox(category, settingDetectMovementToggle, tooltipDetectMovementToggle)
+
+            local function IsParentSelectedDetectMovementToggle() return settingDetectMovementToggle:GetValue() end
+
+            do -- slider that set the throttle timer while its updating on every frame
+                wan.Options.DetectMovement.Slider = wan.Options.DetectMovement.Slider or 0.8
+                local function GetValueDetectMovementSlider() return wan.Options.DetectMovement.Slider end
+                local function SetValueDetectMovementSlider(value)
+                    wan.Options.DetectMovement.Slider = value
+                end
+                local tooltipDetectMovementSlider = "Set a delay in seconds for movement detection to ignore minor position adjustments."
+                local minValue, maxValue, stepValue = 0.1, 2, 0.1
+                local settingDetectMovementSlider = Settings.RegisterProxySetting(
+                    category,
+                    "Detect_Movement_Slider",
+                    Settings.VarType.Number,
+                    "Movement Detection Delay",
+                    wan.Options.DetectMovement.Slider,
+                    GetValueDetectMovementSlider,
+                    SetValueDetectMovementSlider
+                )
+                local optionsDetectMovementSlider = Settings.CreateSliderOptions(minValue, maxValue, stepValue)
+                local initDetectMovementSlider = Settings.CreateSlider(category, settingDetectMovementSlider, optionsDetectMovementSlider, tooltipDetectMovementSlider)
+                optionsDetectMovementSlider:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, wan.FormatFractionalNumber)
+                initDetectMovementSlider:SetParentInitializer(initDetectMovementToggle, IsParentSelectedDetectMovementToggle)
+            end
+        end
+
         do -- toggle to enable healing and support frames for non healer specializations
             wan.Options.HealerMode = wan.Options.HealerMode or {}
             wan.Options.HealerMode.Toggle = wan.Options.HealerMode.Toggle or false

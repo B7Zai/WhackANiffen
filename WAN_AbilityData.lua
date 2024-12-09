@@ -62,17 +62,13 @@ end
 
 local frameAbilityData = CreateFrame("Frame")
 wan.RegisterBlizzardEvents(frameAbilityData,
-    "SPELLS_CHANGED",
     "PLAYER_ENTERING_WORLD",
-    "PLAYER_LOGOUT"
+    "SPELLS_CHANGED",
+    "UNIT_AURA"
 )
 
-frameAbilityData:SetScript("OnEvent", function(self, event)
-    if event == "SPELLS_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
+frameAbilityData:SetScript("OnEvent", function(self, event, ...)
+    if event == "SPELLS_CHANGED" or (event == "UNIT_AURA" and ... == "player") or event == "PLAYER_ENTERING_WORLD" then
         GetSpellData(wan.spellData)
-    end
-
-    if event == "PLAYER_LOGOUT" then
-        wan.WipeTable(wan.spellData)
     end
 end)

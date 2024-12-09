@@ -217,10 +217,6 @@ function wan.SetTesterAlpha(frame, enabler, setting)
     end
 end
 
-function wan.FormatDecimalNumbers(value)
-    return math.floor(value)
-end
-
 function wan.GetHighestAbilityValues()
     local highestValue = 0
     local highestSpell = nil

@@ -4,14 +4,14 @@ local _, wan = ...
 if wan.PlayerState.Class ~= "DRUID" then return end
 
 -- Init frame 
-local frameLifebloom = CreateFrame("Frame")
+local frameWildGrowth = CreateFrame("Frame")
 local function AddonLoad(self, event, addonName)
     -- Early Exit
     if addonName ~= "WhackANiffen" then return end
 
     -- Init data
     local abilityActive = false
-    local nLifebloomInstantHeal, nLifebloomHotHeal, nLifebloomHeal = 0, 0, 0
+    local nWildGrowthInstantHeal, nWildGrowthHotHeal, nWildGrowthUnitCap = 0, 0, 5
     local nMasteryHarmony = 0
 
     -- Init triat data
@@ -22,18 +22,27 @@ local function AddonLoad(self, event, addonName)
         -- Early exits
         if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
         or wan.auraData.player.buff_BearForm or wan.auraData.player.buff_MoonkinForm
-            or not wan.IsSpellUsable(wan.spellData.Lifebloom.id)
+            or not wan.IsSpellUsable(wan.spellData.WildGrowth.id)
         then
-            wan.UpdateMechanicData(wan.spellData.Lifebloom.basename)
-            wan.UpdateHealingData(nil, wan.spellData.Lifebloom.basename)
+            wan.UpdateMechanicData(wan.spellData.WildGrowth.basename)
+            wan.UpdateHealingData(nil, wan.spellData.WildGrowth.basename)
             return
         end
 
-        -- setting the cap for max number of targets lifebloom can apply to
-        local nLifebloomCap = wan.traitData.Undergrowth.known and 2 or 1
+        local cWildGrowthUnitCap = nWildGrowthUnitCap
+        if wan.traitData.ImprovedWildGrowth.known then
+            cWildGrowthUnitCap = cWildGrowthUnitCap + 1
+        end
+
+        if wan.auraData.player.buff_IncarnationTreeofLife then
+            cWildGrowthUnitCap = cWildGrowthUnitCap + 2
+        end
+
+        -- cast time layer
+        local castEfficiency = wan.CheckCastEfficiency(wan.spellData.WildGrowth.id, wan.spellData.WildGrowth.castTime)
 
         -- array of hots applied by this ability as key value
-        local hotKey = wan.spellData.Lifebloom.basename
+        local hotKey = wan.spellData.WildGrowth.basename
 
         -- check crit layer
         local critMod = wan.ValueFromCritical(wan.CritChance)
@@ -42,17 +51,8 @@ local function AddonLoad(self, event, addonName)
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
 
-            -- exit early when a lifebloom is at the target cap
-            local nLifebloomCount = 0
-            for groupUnitToken, _ in pairs(idValidGroupUnit) do
-                if wan.auraData[groupUnitToken].buff_Lifebloom then
-                    nLifebloomCount = nLifebloomCount + 1
-                end
-            end
-            if nLifebloomCount >= nLifebloomCap then
-                wan.UpdateHealingData(nil, wan.spellData.Lifebloom.basename)
-                return
-            end
+            local unitsNeedHeal = 0
+            wan.HealUnitCountAoE[hotKey] = wan.HealUnitCountAoE[hotKey] or unitsNeedHeal
 
             -- run check over all group units in range
             for groupUnitToken, groupUnitGUID in pairs(idValidGroupUnit) do
@@ -61,31 +61,23 @@ local function AddonLoad(self, event, addonName)
                 local currentPercentHealth = (UnitPercentHealthFromGUID(groupUnitGUID) or 0)
 
                 -- base value
-                local cLifebloomInstantHeal = 0
-                local cLifebloomHotHeal = nLifebloomHotHeal
+                local cWildGrowthInstantHeal = 0
+                local cWildGrowthHotHeal = nWildGrowthHotHeal
                 local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth)
 
                 -- calculate estimated hot value
-                cLifebloomHotHeal = cLifebloomHotHeal * critMod * hotPotency
+                cWildGrowthHotHeal = cWildGrowthHotHeal * critMod * hotPotency
 
                 -- cache hot value on unit 
                 wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
-                wan.HotValue[groupUnitToken][hotKey] = cLifebloomHotHeal
+                wan.HotValue[groupUnitToken][hotKey] = cWildGrowthHotHeal
 
                 -- add mastery layer
                 if wan.spellData.MasteryHarmony.known then
                     local _, countHots = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
 
                     -- add base mastery mod for ability's hot
-                    if wan.traitData.HarmoniousBlooming.known then
-                        if countHots == 0 then
-                            countHots = 1 + nHarmoniousBlooming
-                        end
-                    else
-                        if countHots == 0 then
-                            countHots = 1
-                        end
-                    end
+                    if countHots == 0 then countHots = 1 end
 
                     -- Harmonious Blooming trait layer
                     if wan.traitData.HarmoniousBlooming.known and wan.auraData[groupUnitToken].buff_Lifebloom then
@@ -94,48 +86,59 @@ local function AddonLoad(self, event, addonName)
 
                     -- add mastery layer to hot value and update array with max hot value
                     local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
-                    cLifebloomHotHeal = cLifebloomHotHeal * cMasteryHarmony
-                    wan.HotValue[groupUnitToken][hotKey] = cLifebloomHotHeal
+                    cWildGrowthHotHeal = cWildGrowthHotHeal * cMasteryHarmony
+                    wan.HotValue[groupUnitToken][hotKey] = cWildGrowthHotHeal
                 end
 
                 -- max healing values
-                local maxLifebloomHeal = cLifebloomInstantHeal + cLifebloomHotHeal
-                local cLifebloomHeal = cLifebloomInstantHeal + cLifebloomHotHeal 
+                local maxWildGrowthHeal = cWildGrowthInstantHeal + cWildGrowthHotHeal
+                local cWildGrowthHeal = cWildGrowthInstantHeal + cWildGrowthHotHeal 
 
                 -- subtract healing value of ability's hot from ability's max healing value
                 if wan.auraData[groupUnitToken]["buff_" .. hotKey] then
                     local hotValue = wan.HotValue[groupUnitToken][hotKey]
-                    cLifebloomHeal = cLifebloomHeal - hotValue
+                    cWildGrowthHeal = cWildGrowthHeal - hotValue
                 end
 
+                cWildGrowthHeal = cWildGrowthHeal * castEfficiency
+
                 -- exit early when ability doesn't contribute toward healing
-                if cLifebloomHeal / maxLifebloomHeal < 0.5 then
-                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Lifebloom.basename)
+                if cWildGrowthHeal / maxWildGrowthHeal < 0.5 then
+                    wan.UpdateHealingData(groupUnitToken, wan.spellData.WildGrowth.basename)
                 else
                     local unitHotValues = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
                     local maxHealth = wan.UnitMaxHealth[groupUnitToken]
-                    local abilityPercentageValue = (cLifebloomHeal / maxHealth) or 0
+                    local abilityPercentageValue = (cWildGrowthHeal / maxHealth) or 0
                     local hotPercentageValue = (unitHotValues / maxHealth) or 0
-                    local abilityValue = math.floor(cLifebloomHeal) or 0
+                    local abilityValue = (math.floor(cWildGrowthHeal) or 0) * wan.HealUnitCountAoE[hotKey]
 
-                    -- check if the sum of hot values present and ability's healing value is lower the the target's max health
+                    -- check if the value of the healing ability exceeds the unit's missing health
                     if (currentPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
-                        wan.UpdateHealingData(groupUnitToken, wan.spellData.Lifebloom.basename, abilityValue, wan.spellData.Lifebloom.icon, wan.spellData.Lifebloom.name)
+                        print(abilityValue)
+                        unitsNeedHeal = unitsNeedHeal + 1
+                        wan.UpdateHealingData(groupUnitToken, wan.spellData.WildGrowth.basename, abilityValue, wan.spellData.WildGrowth.icon, wan.spellData.WildGrowth.name)
 
                         -- check on units that are too lvl compared to the player
-                    elseif cLifebloomHeal > maxHealth then
-                        -- convert heal scaling to player when group member is low lvl
+                    elseif cWildGrowthHeal > maxHealth then
+                        unitsNeedHeal = unitsNeedHeal + 1
+
+                        -- convert heal scaling on player when group member is low lvl
                         local playerMaxHealth = wan.UnitMaxHealth["player"]
-                        local abilityPercentageValueLowLvl = (cLifebloomHeal / playerMaxHealth) or 0
+                        local abilityPercentageValueLowLvl = (cWildGrowthHeal / playerMaxHealth) or 0
                         local hotPercentageValueLowLvl = (unitHotValues / playerMaxHealth) or 0
                         if (currentPercentHealth + abilityPercentageValueLowLvl + hotPercentageValueLowLvl) < 1 then
-                            wan.UpdateHealingData(groupUnitToken, wan.spellData.Lifebloom.basename, abilityValue, wan.spellData.Lifebloom.icon, wan.spellData.Lifebloom.name)
+                            wan.UpdateHealingData(groupUnitToken, wan.spellData.WildGrowth.basename, abilityValue, wan.spellData.WildGrowth.icon, wan.spellData.WildGrowth.name)
                         end
                     else
-                        wan.UpdateHealingData(groupUnitToken, wan.spellData.Lifebloom.basename)
+                        wan.UpdateHealingData(groupUnitToken, wan.spellData.WildGrowth.basename)
                     end
                 end
             end
+
+            if unitsNeedHeal > cWildGrowthUnitCap then
+                unitsNeedHeal = cWildGrowthUnitCap
+            end
+            wan.HealUnitCountAoE[hotKey] = unitsNeedHeal
         else
             -- init data for player
             local unitToken = "player"
@@ -143,14 +146,14 @@ local function AddonLoad(self, event, addonName)
             local currentPercentHealth = playerGUID and UnitPercentHealthFromGUID(playerGUID) or 0
             local hotPotency = wan.HotPotency(unitToken, currentPercentHealth)
             local cLifebloomInstantHeal = 0
-            local cLifebloomHotHeal = nLifebloomHotHeal
+            local cLifebloomHotHeal = nWildGrowthHotHeal
 
             -- calculate estimated hot value
             cLifebloomHotHeal = cLifebloomHotHeal * critMod * hotPotency
 
             -- cache hot value on unit 
             wan.HotValue[unitToken] = wan.HotValue[unitToken] or {}
-            wan.HotValue[unitToken][wan.spellData.Lifebloom.basename] = cLifebloomHotHeal
+            wan.HotValue[unitToken][wan.spellData.WildGrowth.basename] = cLifebloomHotHeal
 
             -- add mastery layer
             if wan.spellData.MasteryHarmony.known then
@@ -175,7 +178,7 @@ local function AddonLoad(self, event, addonName)
                 -- add mastery layer to hot value and cache hot value on unit 
                 local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
                 cLifebloomHotHeal = cLifebloomHotHeal * cMasteryHarmony
-                wan.HotValue[unitToken][wan.spellData.Lifebloom.basename] = cLifebloomHotHeal
+                wan.HotValue[unitToken][wan.spellData.WildGrowth.basename] = cLifebloomHotHeal
             end
 
             -- max healing values
@@ -190,7 +193,7 @@ local function AddonLoad(self, event, addonName)
 
             -- exit early when ability doesn't contribute toward healing
             if cLifebloomHeal / maxLifebloomHeal < 0.5 then
-                wan.UpdateMechanicData(wan.spellData.Lifebloom.basename)
+                wan.UpdateMechanicData(wan.spellData.WildGrowth.basename)
             else
                 local unitHotValues = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
                 local maxHealth = wan.UnitMaxHealth[unitToken]
@@ -200,9 +203,9 @@ local function AddonLoad(self, event, addonName)
 
                 -- check if the sum of hot values present and ability's healing value is lower the the target's max health
                 if (currentPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
-                    wan.UpdateMechanicData(wan.spellData.Lifebloom.basename, abilityValue, wan.spellData.Lifebloom.icon, wan.spellData.Lifebloom.name)
+                    wan.UpdateMechanicData(wan.spellData.WildGrowth.basename, abilityValue, wan.spellData.WildGrowth.icon, wan.spellData.WildGrowth.name)
                 else
-                    wan.UpdateMechanicData(wan.spellData.Lifebloom.basename)
+                    wan.UpdateMechanicData(wan.spellData.WildGrowth.basename)
                 end
             end
         end
@@ -211,8 +214,8 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            local nLifebloomValues = wan.GetSpellDescriptionNumbers(wan.spellData.Lifebloom.id, { 1, 3 })
-            nLifebloomHotHeal = nLifebloomValues[1] + nLifebloomValues[2]
+            local nLifebloomValues = wan.GetSpellDescriptionNumbers(wan.spellData.WildGrowth.id, { 1, 3 })
+            nWildGrowthHotHeal = nLifebloomValues[1] + nLifebloomValues[2]
 
             nMasteryHarmony = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryHarmony.id, { 1 }) * 0.01
         end
@@ -222,9 +225,9 @@ local function AddonLoad(self, event, addonName)
     wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
         if event == "SPELL_DATA_READY" then
-            abilityActive = wan.spellData.Lifebloom.known and wan.spellData.Lifebloom.id
-            wan.BlizzardEventHandler(frameLifebloom, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
-            wan.SetUpdateRate(frameLifebloom, CheckAbilityValue, abilityActive)
+            abilityActive = wan.spellData.WildGrowth.known and wan.spellData.WildGrowth.id
+            wan.BlizzardEventHandler(frameWildGrowth, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
+            wan.SetUpdateRate(frameWildGrowth, CheckAbilityValue, abilityActive)
         end
 
         if event == "TRAIT_DATA_READY" then 
@@ -232,10 +235,10 @@ local function AddonLoad(self, event, addonName)
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
-            wan.SetUpdateRate(frameLifebloom, CheckAbilityValue, abilityActive)
+            wan.SetUpdateRate(frameWildGrowth, CheckAbilityValue, abilityActive)
         end
     end)
 end
 
-frameLifebloom:RegisterEvent("ADDON_LOADED")
-frameLifebloom:SetScript("OnEvent", AddonLoad)
+frameWildGrowth:RegisterEvent("ADDON_LOADED")
+frameWildGrowth:SetScript("OnEvent", AddonLoad)

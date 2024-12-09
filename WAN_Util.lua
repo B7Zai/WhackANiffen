@@ -79,6 +79,16 @@ function wan.FormatNameForKey(string)
     return string
 end
 
+function wan.FormatDecimalNumbers(value)
+    return math.floor(value)
+end
+
+function wan.FormatFractionalNumber(value)
+    return math.floor(value * 10 + 0.5) / 10
+end
+
+
+
 -- Checks gcd value
 function wan.GetSpellGcdValue(spellID)
     local gcdValue = 1.5

@@ -145,6 +145,7 @@ local function OnEvent(self, event, ...)
 
     if event == "PLAYER_LOGOUT" then
         wan.traitData = nil
+        wan.spellData = nil
 
         wan.TargetUnitID = nil
         wan.NameplateUnitID = nil

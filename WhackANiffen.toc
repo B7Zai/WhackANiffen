@@ -74,5 +74,6 @@ Druid\WAN_Swipe.lua
 Druid\WAN_Thrash.lua
 Druid\WAN_TigersFury.lua
 Druid\WAN_WarriorofElune.lua
+Druid\WAN_WildGrowth.lua
 Druid\WAN_WildMushroom.lua
 Druid\WAN_Wrath.lua

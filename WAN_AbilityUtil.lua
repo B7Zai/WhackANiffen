@@ -1,9 +1,11 @@
 local _, wan = ...
 
-wan.AbilityData = {}
-wan.MechanicData = {}
-wan.HealingData = {}
-wan.HotValue = {}
+-- init tables for values
+wan.AbilityData = {}    -- used for displaying damage values for player
+wan.MechanicData = {}   -- used for displaying defensive cooldowns, healing for player
+wan.HealingData = {}    -- used for displaying healing values in a group
+wan.HotValue = {}       -- used for storing hot values over all valid group units
+wan.HealUnitCountAoE = {}  -- used for storing valid group unit count for aoe healing spells
 
 -- Parses spell description and converts string numbers to numeric values.
 -- Returns specified numbers indexed by `indexes`.
@@ -114,22 +116,36 @@ function wan.GetSpellCost(spellIndentifier, powerType)
 end
 
 -- Checks cast efficiency against gcd
-function wan.CheckCastEfficiency(spellID, spellCastTime)
-    if IsPlayerMoving() then return 0 end
-    local _, gcdMS = GetSpellBaseCooldown(spellID)
-
-    if not gcdMS or not spellCastTime then
-        return 1
-    end
-
-    local gcdValue = gcdMS / 1000
+local lastMoved = GetTime()
+function wan.CheckCastEfficiency(spellID, spellCastTime, canMoveCast)
+    local valueModifier = 1
     local castTime = spellCastTime / 1000
 
-    if gcdValue and castTime > 0 then
-        return math.min(gcdValue / castTime, 1)
+    if castTime == 0 then
+        return valueModifier
     end
 
-    return 1
+    local movingCast = canMoveCast or false
+    if wan.Options.DetectMovement.Toggle then
+        local playerSpeed = GetUnitSpeed("player") or 0
+        local currentTime = GetTime()
+        if not movingCast and playerSpeed > 0 then
+            if not lastMoved or lastMoved < currentTime - wan.Options.DetectMovement.Slider then
+                return 0
+            end
+        else
+            lastMoved = currentTime
+        end
+    end
+
+    local _, gcdMS = GetSpellBaseCooldown(spellID)
+    local gcdValue = gcdMS / 1000
+
+    if gcdValue and castTime > 0 then
+        valueModifier = math.min(gcdValue / castTime, 1)
+    end
+
+    return valueModifier
 end
 
 -- Reduce damage for "beyond x target abilities"
