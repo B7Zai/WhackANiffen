@@ -89,7 +89,15 @@ end
 function wan.IsSpellUsable(spellIdentifier)
     local isReady = C_Spell.IsSpellUsable(spellIdentifier)
     if not isReady then return false end
-    local _, gcdMS = GetSpellBaseCooldown(spellIdentifier)
+    local cooldownMS, gcdMS = GetSpellBaseCooldown(spellIdentifier)
+
+    if cooldownMS > gcdMS then
+        local _, _, _, _, _, _, _, _, spellId = UnitCastingInfo("player")
+        if spellId == spellIdentifier then 
+            return false
+        end
+    end
+    
     local getGCD = gcdMS and gcdMS / 1000 or 0
     local getCooldown = C_Spell.GetSpellCooldown(spellIdentifier)
     return (getCooldown.duration <= getGCD)

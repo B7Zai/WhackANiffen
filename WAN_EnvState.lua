@@ -24,6 +24,7 @@ local function OnEvent(self, event, ...)
 
     if event == "PLAYER_ENTERING_WORLD" then
         wan.PlayerState.GUID = UnitGUID("player")
+        wan.UnitMaxHealth["player"] = UnitHealthMax("player")
     end
 
     -- sets unit token for targeting
@@ -58,7 +59,7 @@ local function OnEvent(self, event, ...)
                     local validToken = wan.GUIDMap[groupGUID]
                     if not validToken or validToken ~= unit then
                         local unitToken = groupGUID and UnitTokenFromGUID(groupGUID)
-                        if unitToken then
+                        if unitToken and unitToken ~= "player" then
 
                             if not unitToken:find("^" .. groupType) then
                                 local unitNumber = unitToken:match("%d+")
@@ -108,9 +109,10 @@ local function OnEvent(self, event, ...)
         end
     end
 
-    if (event == "UNIT_MAXHEALTH" and ... == "player") or (event == "UNIT_MAXHEALTH" and wan.GroupUnitID[...])
-     or event == "PLAYER_ENTERING_WORLD" then
-        local unitToken = ... ~= true and ... or "player"
+    if (event == "UNIT_MAXHEALTH" and ... == "player") or (event == "UNIT_MAXHEALTH" and wan.GroupUnitID[...]) then
+        print("this fired")
+        local unitToken = ...
+        print(unitToken)
         local maxHealth = UnitHealthMax(unitToken)
         wan.UnitMaxHealth[unitToken] = maxHealth
     end

@@ -37,6 +37,7 @@ Druid\WAN_BristlingFur.lua
 Druid\WAN_CatForm.lua
 Druid\WAN_CelestialAlignment.lua
 Druid\WAN_ConvoketheSpirits.lua
+Druid\WAN_Efflorescence.lua
 Druid\WAN_FeralFrenzy.lua
 Druid\WAN_FerociousBite.lua
 Druid\WAN_ForceofNature.lua
@@ -70,6 +71,7 @@ Druid\WAN_Starsurge.lua
 Druid\WAN_Stellarflare.lua
 Druid\WAN_Sunfire.lua
 Druid\WAN_SurvivalInstincts.lua
+Druid\WAN_Swiftmend.lua
 Druid\WAN_Swipe.lua
 Druid\WAN_Thrash.lua
 Druid\WAN_TigersFury.lua

@@ -188,42 +188,6 @@ function wan.CheckAoEPotency(validUnitIDs)
     return math.min(calcPotency, 1)
 end
 
--- Counts units that have a specific debuff
-function wan.CheckClassBuff(buffName)
-    if wan.PlayerState.InHealerMode then
-        local nGroupUnits = GetNumGroupMembers()
-        local _, nGroupMembersInRange, idValidGroupMember = wan.ValidGroupMembers()
-        local countBuffed = 0
-        local nDisconnected = 0
-
-        for groupUnitID, _ in pairs(wan.GroupUnitID) do
-            local isOnline = UnitIsConnected(groupUnitID)
-            if not isOnline then
-                nDisconnected = nDisconnected + 1
-            end
-        end
-
-        local nGroupSize = (nGroupUnits - nDisconnected)
-
-        if nGroupSize ~= nGroupMembersInRange then
-            local aura = wan.auraData.player["buff_" .. buffName]
-            local remainingDuration = aura and (aura.expirationTime - GetTime())
-            return not aura or remainingDuration < 360 
-        else
-            for unitID, _ in pairs(idValidGroupMember or {}) do
-                local buffed = wan.auraData[unitID]["buff_" .. buffName]
-                if buffed then
-                    countBuffed = countBuffed + 1
-                end
-            end
-            return (nGroupUnits > 0 and nGroupMembersInRange > countBuffed)
-        end
-    end
-    local aura = wan.auraData.player["buff_" .. buffName]
-    local remainingDuration = aura and (aura.expirationTime - GetTime())
-    return not aura or remainingDuration < 360
-end
-
 -- Adjust ability dot value to unit health
 function wan.CheckDotPotency(initialValue)
     local baseValue = initialValue or 0
