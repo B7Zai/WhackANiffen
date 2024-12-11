@@ -83,9 +83,6 @@ local function AddonLoad(self, event, addonName)
                         wan.HotValue[groupUnitToken][wan.traitData.SpringBlossoms.traitkey] = cSprintBlossomsHotHeal
                     end
 
-                    -- max healing values
-                    local maxEfflorescenceHeal = cEfflorescenceInstantHeal + cEfflorescenceHotHeal +
-                    cSprintBlossomsHotHeal
                     -- max healing value under 1 cast
                     local cEfflorescenceHeal = cEfflorescenceInstantHeal + cEfflorescenceHotHeal + cSprintBlossomsHotHeal
 
@@ -95,39 +92,9 @@ local function AddonLoad(self, event, addonName)
                         cEfflorescenceHeal = cEfflorescenceHeal - hotValue
                     end
 
-                    -- exit early when ability doesn't contribute toward healing
-                    if cEfflorescenceHeal / maxEfflorescenceHeal < 0.5 then
-                        wan.UpdateHealingData(groupUnitToken, wan.spellData.Efflorescence.basename)
-                    else
-                        local unitHotValues = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
-                        local maxHealth = wan.UnitMaxHealth[groupUnitToken]
-                        local abilityPercentageValue = (cEfflorescenceHeal / maxHealth) or 0
-                        local hotPercentageValue = (unitHotValues / maxHealth) or 0
-                        local abilityValue = (math.floor(cEfflorescenceHeal) or 0) *
-                        wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename]
-
-                        -- check if the value of the healing ability exceeds the unit's missing health
-                        if (currentPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 and currentPercentHealth ~= 0 then
-                            unitsNeedHeal = unitsNeedHeal + 1
-                            wan.UpdateHealingData(groupUnitToken, wan.spellData.Efflorescence.basename, abilityValue,
-                                wan.spellData.Efflorescence.icon, wan.spellData.Efflorescence.name)
-
-                            -- check on units that are too lvl compared to the player
-                        elseif cEfflorescenceHeal > maxHealth and currentPercentHealth ~= 0 then
-                            unitsNeedHeal = unitsNeedHeal + 1
-
-                            -- convert heal scaling on player when group member is low lvl
-                            local playerMaxHealth = wan.UnitMaxHealth["player"]
-                            local abilityPercentageValueLowLvl = (cEfflorescenceHeal / playerMaxHealth) or 0
-                            local hotPercentageValueLowLvl = (unitHotValues / playerMaxHealth) or 0
-                            if (currentPercentHealth + abilityPercentageValueLowLvl + hotPercentageValueLowLvl) < 1 then
-                                wan.UpdateHealingData(groupUnitToken, wan.spellData.Efflorescence.basename, abilityValue,
-                                    wan.spellData.Efflorescence.icon, wan.spellData.Efflorescence.name)
-                            end
-                        else
-                            wan.UpdateHealingData(groupUnitToken, wan.spellData.Efflorescence.basename)
-                        end
-                    end
+                    local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cEfflorescenceHeal, currentPercentHealth, wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename])
+                    if abilityValue > 0 then unitsNeedHeal = unitsNeedHeal + 1 end
+                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Efflorescence.basename, abilityValue, wan.spellData.Efflorescence.icon, wan.spellData.Efflorescence.name)
                 else
                     wan.UpdateHealingData(groupUnitToken, wan.spellData.Efflorescence.basename)
                 end

@@ -58,7 +58,11 @@ local function AddonLoad(self, event, addonName)
             for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
                 if idValidGroupUnit[groupUnitToken] then
+
+                    -- check unit health
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
+
+                    -- init spell value
                     local cRejuvenationInstantHeal = 0
 
                     --check Thriving Vegetation trait layer
@@ -67,8 +71,10 @@ local function AddonLoad(self, event, addonName)
                         cRejuvenationInstantHeal = cRejuvenationInstantHeal + cThrivingVegetation
                     end
 
+                    -- calculate estimated instant value
                     cRejuvenationInstantHeal = cRejuvenationInstantHeal * critInstantValue
 
+                    -- init spell hot value
                     local cRejuvenationHotHeal = nRejuvenationHotHeal
                     local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth, cRejuvenationInstantHeal)
 
@@ -80,14 +86,16 @@ local function AddonLoad(self, event, addonName)
 
                     -- check cultivation trait layer
                     local cCultivation = 0
-                    if wan.traitData.Cultivation.known then
+                    if wan.traitData.Cultivation.known and currentPercentHealth >= 0.6 then
                         cCultivation = nCultivation
                     end
 
+                    -- calculate estimated hot value
                     cRejuvenationHotHeal = cRejuvenationHotHeal * critHotValue * hotPotency
                     cCultivation = cCultivation * critHotValue * hotPotency
                     cGerminationHotHeal = cGerminationHotHeal * critHotValue * hotPotency
 
+                    -- cache hot value on unit
                     wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
                     wan.HotValue[groupUnitToken][wan.spellData.Rejuvenation.basename] = cRejuvenationHotHeal
                     wan.HotValue[groupUnitToken][wan.traitData.Cultivation.traitkey] = cCultivation
@@ -97,12 +105,15 @@ local function AddonLoad(self, event, addonName)
                     if wan.spellData.MasteryHarmony.known then
                         local _, countHots = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
 
+                        -- add base mastery mod for ability's hot
                         if countHots == 0 then countHots = 1 end
 
+                        -- Harmonious Blooming trait layer
                         if wan.traitData.HarmoniousBlooming.known and wan.auraData[groupUnitToken].buff_Lifebloom then
                             countHots = countHots + nHarmoniousBlooming
                         end
 
+                        -- add mastery layer to hot values and update array with max hot values
                         local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
                         cRejuvenationHotHeal = cRejuvenationHotHeal * cMasteryHarmony
                         cCultivation = cCultivation * cMasteryHarmony
@@ -110,11 +121,6 @@ local function AddonLoad(self, event, addonName)
                         wan.HotValue[groupUnitToken][wan.spellData.Rejuvenation.basename] = cRejuvenationHotHeal
                         wan.HotValue[groupUnitToken][wan.traitData.Cultivation.traitkey] = cCultivation
                         wan.HotValue[groupUnitToken][sGerminationKey] = cGerminationHotHeal
-                    end
-
-                    -- add Cultivation layer
-                    if currentPercentHealth >= 0.6 then
-                        cCultivation = 0
                     end
 
                     -- max healing value if the ability
@@ -130,46 +136,21 @@ local function AddonLoad(self, event, addonName)
                         end
                     end
 
+                    -- cap heal values to 1 gcd
                     cRejuvenationHeal = math.min(cRejuvenationHeal, maxRejuvenationHeal)
 
-                    -- exit early when ability doesn't contribute toward healing
-                    if cRejuvenationHeal / maxRejuvenationHeal < 0.5 then
-                        wan.UpdateHealingData(groupUnitToken, wan.spellData.Rejuvenation.basename)
-                    else
-                        local unitHotValues = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
-                        local maxHealth = wan.UnitMaxHealth[groupUnitToken]
-                        local abilityPercentageValue = (cRejuvenationHeal / maxHealth) or 0
-                        local hotPercentageValue = (unitHotValues / maxHealth) or 0
-                        local abilityValue = math.floor(cRejuvenationHeal) or 0
-
-                        -- check if the value of the healing ability exceeds the unit's missing health
-                        if (currentPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
-                            wan.UpdateHealingData(groupUnitToken, wan.spellData.Rejuvenation.basename, abilityValue,
-                                wan.spellData.Rejuvenation.icon, wan.spellData.Rejuvenation.name)
-
-                            -- check on units that are too lvl compared to the player
-                        elseif cRejuvenationHeal > maxHealth then
-                            -- convert heal scaling on player when group member is low lvl
-                            local playerMaxHealth = wan.UnitMaxHealth["player"]
-                            local abilityPercentageValueLowLvl = (cRejuvenationHeal / playerMaxHealth) or 0
-                            local hotPercentageValueLowLvl = (unitHotValues / playerMaxHealth) or 0
-                            if (currentPercentHealth + abilityPercentageValueLowLvl + hotPercentageValueLowLvl) < 1 then
-                                wan.UpdateHealingData(groupUnitToken, wan.spellData.Rejuvenation.basename, abilityValue,
-                                    wan.spellData.Rejuvenation.icon, wan.spellData.Rejuvenation.name)
-                            end
-                        else
-                            wan.UpdateHealingData(groupUnitToken, wan.spellData.Rejuvenation.basename)
-                        end
-                    end
+                    -- update healing data
+                    local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cRejuvenationHeal, currentPercentHealth)
+                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Rejuvenation.basename, abilityValue, wan.spellData.Rejuvenation.icon, wan.spellData.Rejuvenation.name)
                 else
                     wan.UpdateHealingData(groupUnitToken, wan.spellData.Rejuvenation.basename)
                 end
             end
         else
+            -- init
             local unitToken = "player"
             local playerGUID =  wan.PlayerState.GUID
             local currentPercentHealth = playerGUID and UnitPercentHealthFromGUID(playerGUID) or 0
-
             local cRejuvenationInstantHeal = 0
 
             --check Thriving Vegetation trait layer
@@ -178,6 +159,7 @@ local function AddonLoad(self, event, addonName)
                 cRejuvenationInstantHeal = cRejuvenationInstantHeal + cThrivingVegetation
             end
 
+            -- calculate estimated instant value
             cRejuvenationInstantHeal = cRejuvenationInstantHeal * critInstantValue
 
             local cRejuvenationHotHeal = nRejuvenationHotHeal
@@ -191,14 +173,16 @@ local function AddonLoad(self, event, addonName)
 
             -- check cultivation trait layer
             local cCultivation = 0
-            if wan.traitData.Cultivation.known then
+            if wan.traitData.Cultivation.known and currentPercentHealth >= 0.6 then
                 cCultivation = nCultivation
             end
 
+            -- calculate estimated hot value
             cRejuvenationHotHeal = cRejuvenationHotHeal * critHotValue * hotPotency
             cCultivation = cCultivation * critHotValue * hotPotency
             cGerminationHotHeal = cGerminationHotHeal * critHotValue * hotPotency
 
+            -- cache hot value on unit
             wan.HotValue[unitToken] = wan.HotValue[unitToken] or {}
             wan.HotValue[unitToken][wan.spellData.Rejuvenation.basename] = cRejuvenationHotHeal
             wan.HotValue[unitToken][wan.traitData.Cultivation.traitkey] = cCultivation
@@ -208,12 +192,15 @@ local function AddonLoad(self, event, addonName)
             if wan.spellData.MasteryHarmony.known then
                 local _, countHots = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
 
+                -- add base mastery mod for ability's hot
                 if countHots == 0 then countHots = 1 end
 
+                -- Harmonious Blooming trait layer
                 if wan.traitData.HarmoniousBlooming.known and wan.auraData[unitToken].buff_Lifebloom then
                     countHots = countHots + nHarmoniousBlooming
                 end
 
+                -- add mastery layer to hot values and update array with max hot values
                 local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
                 cRejuvenationHotHeal = cRejuvenationHotHeal * cMasteryHarmony
                 cCultivation = cCultivation * cMasteryHarmony
@@ -221,11 +208,6 @@ local function AddonLoad(self, event, addonName)
                 wan.HotValue[unitToken][wan.spellData.Rejuvenation.basename] = cRejuvenationHotHeal
                 wan.HotValue[unitToken][wan.traitData.Cultivation.traitkey] = cCultivation
                 wan.HotValue[unitToken][sGerminationKey] = cGerminationHotHeal
-            end
-
-            -- add Cultivation layer
-            if currentPercentHealth >= 0.6 then
-                cCultivation = 0
             end
 
             -- max healing value
@@ -240,24 +222,12 @@ local function AddonLoad(self, event, addonName)
                 end
             end
 
+            -- cap heal values to 1 gcd
             cRejuvenationHeal = math.min(cRejuvenationHeal, maxRejuvenationHeal)
 
-            -- exit early when ability doesn't contribute toward healing
-            if cRejuvenationHeal / maxRejuvenationHeal < 0.5 then
-                wan.UpdateMechanicData(wan.spellData.Rejuvenation.basename)
-            else
-                local unitHotValues = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
-                local maxHealth = wan.UnitMaxHealth[unitToken]
-                local abilityPercentageValue = (cRejuvenationHeal / maxHealth) or 0
-                local hotPercentageValue = (unitHotValues / maxHealth) or 0
-                local abilityValue = math.floor(cRejuvenationHeal) or 0
-
-                if (currentPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
-                    wan.UpdateMechanicData(wan.spellData.Rejuvenation.basename, abilityValue, wan.spellData.Rejuvenation.icon, wan.spellData.Rejuvenation.name)
-                else
-                    wan.UpdateMechanicData(wan.spellData.Rejuvenation.basename)
-                end
-            end
+            -- update mechanics data
+            local abilityValue = wan.UnitAbilityHealValue(unitToken, cRejuvenationHeal, currentPercentHealth)
+            wan.UpdateMechanicData(wan.spellData.Rejuvenation.basename, abilityValue, wan.spellData.Rejuvenation.icon, wan.spellData.Rejuvenation.name)
         end
     end
 

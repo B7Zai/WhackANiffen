@@ -58,6 +58,7 @@ local function AddonLoad(self, event, addonName)
                     nLifebloomCount = nLifebloomCount + 1
                 end
             end
+
             if nLifebloomCount >= nLifebloomCap then
                 wan.UpdateHealingData(nil, wan.spellData.Lifebloom.basename)
                 return
@@ -106,45 +107,16 @@ local function AddonLoad(self, event, addonName)
                         wan.HotValue[groupUnitToken][hotKey] = cLifebloomHotHeal
                     end
 
-                    -- max healing values
-                    local maxLifebloomHeal = cLifebloomInstantHeal + cLifebloomHotHeal
                     local cLifebloomHeal = cLifebloomInstantHeal + cLifebloomHotHeal
 
-                    -- subtract healing value of ability's hot from ability's max healing value
                     if wan.auraData[groupUnitToken]["buff_" .. hotKey] then
                         local hotValue = wan.HotValue[groupUnitToken][hotKey]
                         cLifebloomHeal = cLifebloomHeal - hotValue
                     end
 
-                    -- exit early when ability doesn't contribute toward healing
-                    if cLifebloomHeal / maxLifebloomHeal < 0.5 then
-                        wan.UpdateHealingData(groupUnitToken, wan.spellData.Lifebloom.basename)
-                    else
-                        local unitHotValues = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
-                        local maxHealth = wan.UnitMaxHealth[groupUnitToken]
-                        local abilityPercentageValue = (cLifebloomHeal / maxHealth) or 0
-                        local hotPercentageValue = (unitHotValues / maxHealth) or 0
-                        local abilityValue = math.floor(cLifebloomHeal) or 0
-
-                        -- check if the sum of hot values present and ability's healing value is lower the the target's max health
-                        if (currentPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
-                            wan.UpdateHealingData(groupUnitToken, wan.spellData.Lifebloom.basename, abilityValue,
-                                wan.spellData.Lifebloom.icon, wan.spellData.Lifebloom.name)
-
-                            -- check on units that are too lvl compared to the player
-                        elseif cLifebloomHeal > maxHealth then
-                            -- convert heal scaling to player when group member is low lvl
-                            local playerMaxHealth = wan.UnitMaxHealth["player"]
-                            local abilityPercentageValueLowLvl = (cLifebloomHeal / playerMaxHealth) or 0
-                            local hotPercentageValueLowLvl = (unitHotValues / playerMaxHealth) or 0
-                            if (currentPercentHealth + abilityPercentageValueLowLvl + hotPercentageValueLowLvl) < 1 then
-                                wan.UpdateHealingData(groupUnitToken, wan.spellData.Lifebloom.basename, abilityValue,
-                                    wan.spellData.Lifebloom.icon, wan.spellData.Lifebloom.name)
-                            end
-                        else
-                            wan.UpdateHealingData(groupUnitToken, wan.spellData.Lifebloom.basename)
-                        end
-                    end
+                    -- update healing data
+                    local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cLifebloomHeal, currentPercentHealth)
+                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Lifebloom.basename, abilityValue, wan.spellData.Lifebloom.icon, wan.spellData.Lifebloom.name)
                 else
                     wan.UpdateHealingData(groupUnitToken, wan.spellData.Lifebloom.basename)
                 end
@@ -191,33 +163,16 @@ local function AddonLoad(self, event, addonName)
                 wan.HotValue[unitToken][wan.spellData.Lifebloom.basename] = cLifebloomHotHeal
             end
 
-            -- max healing values
-            local maxLifebloomHeal = cLifebloomInstantHeal + cLifebloomHotHeal 
             local cLifebloomHeal = cLifebloomInstantHeal + cLifebloomHotHeal
 
-            -- subtract healing value of ability's hot from ability's max healing value
             if wan.auraData[unitToken]["buff_" .. hotKey] then
                 local hotValue = wan.HotValue[unitToken][hotKey]
                 cLifebloomHeal = cLifebloomHeal - hotValue
             end
 
-            -- exit early when ability doesn't contribute toward healing
-            if cLifebloomHeal / maxLifebloomHeal < 0.5 then
-                wan.UpdateMechanicData(wan.spellData.Lifebloom.basename)
-            else
-                local unitHotValues = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
-                local maxHealth = wan.UnitMaxHealth[unitToken]
-                local abilityPercentageValue = (cLifebloomHeal / maxHealth) or 0
-                local hotPercentageValue = (unitHotValues / maxHealth) or 0
-                local abilityValue = math.floor(cLifebloomHeal) or 0
-
-                -- check if the sum of hot values present and ability's healing value is lower the the target's max health
-                if (currentPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
-                    wan.UpdateMechanicData(wan.spellData.Lifebloom.basename, abilityValue, wan.spellData.Lifebloom.icon, wan.spellData.Lifebloom.name)
-                else
-                    wan.UpdateMechanicData(wan.spellData.Lifebloom.basename)
-                end
-            end
+            -- update healing data
+            local abilityValue = wan.UnitAbilityHealValue(unitToken, cLifebloomHeal, currentPercentHealth)
+            wan.UpdateMechanicData(wan.spellData.Lifebloom.basename, abilityValue, wan.spellData.Lifebloom.icon, wan.spellData.Lifebloom.name)
         end
     end
 

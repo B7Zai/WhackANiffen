@@ -4,14 +4,14 @@ local _, wan = ...
 if wan.PlayerState.Class ~= "DRUID" then return end
 
 -- Init frame 
-local frameWildGrowth = CreateFrame("Frame")
+local frameTranquility = CreateFrame("Frame")
 local function AddonLoad(self, event, addonName)
     -- Early Exit
     if addonName ~= "WhackANiffen" then return end
 
     -- Init data
     local abilityActive = false
-    local nWildGrowthInstantHeal, nWildGrowthHotHeal, nWildGrowthUnitCap = 0, 0, 5
+    local nTranquilityInstantHeal, nTranquilityChannelTime, nTranquilityHotHeal, nTranquilitySoftCap = 0, 0, 0, 0
     local nMasteryHarmony = 0
 
     -- Init triat data
@@ -24,33 +24,23 @@ local function AddonLoad(self, event, addonName)
         if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
         or wan.auraData.player.buff_BearForm or wan.auraData.player.buff_MoonkinForm
         or not wan.PlayerState.InGroup or not wan.PlayerState.InHealerMode
-            or not wan.IsSpellUsable(wan.spellData.WildGrowth.id)
+            or not wan.IsSpellUsable(wan.spellData.Tranquility.id)
         then
-            wan.UpdateMechanicData(wan.spellData.WildGrowth.basename)
-            wan.UpdateHealingData(nil, wan.spellData.WildGrowth.basename)
+            wan.UpdateMechanicData(wan.spellData.Tranquility.basename)
+            wan.UpdateHealingData(nil, wan.spellData.Tranquility.basename)
             return
         end
        
         -- cast time layer
-        local castEfficiency = wan.CheckCastEfficiency(wan.spellData.WildGrowth.id, wan.spellData.WildGrowth.castTime)
+        local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Tranquility.id, nTranquilityChannelTime)
         if castEfficiency == 0 then
-            wan.UpdateMechanicData(wan.spellData.WildGrowth.basename)
-            wan.UpdateHealingData(nil, wan.spellData.WildGrowth.basename)
+            wan.UpdateMechanicData(wan.spellData.Tranquility.basename)
+            wan.UpdateHealingData(nil, wan.spellData.Tranquility.basename)
             return
         end
 
         local critChanceModHot = 0
-
-        -- update unit cap 
-        local cWildGrowthUnitCap = nWildGrowthUnitCap
-        if wan.traitData.ImprovedWildGrowth.known then
-            cWildGrowthUnitCap = cWildGrowthUnitCap + 1
-        end
-
-        -- update unit cap 
-        if wan.auraData.player.buff_IncarnationTreeofLife then
-            cWildGrowthUnitCap = cWildGrowthUnitCap + 2
-        end
+        local critChanceModInstant = 0
 
         -- check stategic infusion trait layer
         if wan.traitData.StrategicInfusion.known and wan.auraData.player.buff_StrategicInfusion then
@@ -58,16 +48,14 @@ local function AddonLoad(self, event, addonName)
             critChanceModHot = critChanceModHot + cStrategicInfusion
         end
 
-        -- array of hots applied by this ability as key value
-        local hotKey = wan.spellData.WildGrowth.basename
-
         -- check crit layer
         local critHotValue = wan.ValueFromCritical(wan.CritChance, critChanceModHot)
+        local critInstantValue = wan.ValueFromCritical(wan.CritChance, critChanceModInstant)
 
         -- init data for calculation
-        local _, _, idValidGroupUnit = wan.ValidGroupMembers()
+        local _, countValidGroupUnit, idValidGroupUnit = wan.ValidGroupMembers()
         local unitsNeedHeal = 0
-        wan.HealUnitCountAoE[hotKey] = wan.HealUnitCountAoE[hotKey] or unitsNeedHeal
+        wan.HealUnitCountAoE[wan.spellData.Tranquility.basename] = wan.HealUnitCountAoE[wan.spellData.Tranquility.basename] or unitsNeedHeal
 
         -- run check over all group units in range
         for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
@@ -78,17 +66,19 @@ local function AddonLoad(self, event, addonName)
                 local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
 
                 -- base values
-                local cWildGrowthInstantHeal = 0
-                local critChanceModInstant = 0
-                local cWildGrowthHotHeal = nWildGrowthHotHeal
-                local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth)
+                local cTranquilityInstantHeal = 0
+
+                cTranquilityInstantHeal = nTranquilityInstantHeal * critInstantValue
+
+                local cTranquilityHotHeal = nTranquilityHotHeal
+                local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth, cTranquilityInstantHeal)
 
                 -- calculate estimated hot value
-                cWildGrowthHotHeal = cWildGrowthHotHeal * critHotValue * hotPotency
+                cTranquilityHotHeal = cTranquilityHotHeal * critHotValue * hotPotency
 
                 -- cache hot value on unit
                 wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
-                wan.HotValue[groupUnitToken][hotKey] = cWildGrowthHotHeal
+                wan.HotValue[groupUnitToken][wan.spellData.Tranquility.basename] = cTranquilityHotHeal
 
                 -- add mastery layer
                 if wan.spellData.MasteryHarmony.known then
@@ -104,39 +94,41 @@ local function AddonLoad(self, event, addonName)
 
                     -- add mastery layer to hot value and update array with max hot value
                     local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
-                    cWildGrowthHotHeal = cWildGrowthHotHeal * cMasteryHarmony
-                    wan.HotValue[groupUnitToken][hotKey] = cWildGrowthHotHeal
+                    cTranquilityHotHeal = cTranquilityHotHeal * cMasteryHarmony
+                    wan.HotValue[groupUnitToken][wan.spellData.Tranquility.basename] = cTranquilityHotHeal
                 end
 
-                local cWildGrowthHeal = cWildGrowthInstantHeal + cWildGrowthHotHeal
+                local cTranquilityHeal = cTranquilityInstantHeal + cTranquilityHotHeal
 
                 -- subtract healing value of ability's hot from ability's max healing value
-                if wan.auraData[groupUnitToken]["buff_" .. hotKey] then
-                    local hotValue = wan.HotValue[groupUnitToken][hotKey]
-                    cWildGrowthHeal = cWildGrowthHeal - hotValue
+                if wan.auraData[groupUnitToken]["buff_" .. wan.spellData.Tranquility.basename] then
+                    local auraStacks = wan.auraData[groupUnitToken]["buff_" .. wan.spellData.Tranquility.basename].applications
+                    local hotValue = wan.HotValue[groupUnitToken][wan.spellData.Tranquility.basename]
+                    cTranquilityHeal = cTranquilityHeal - (hotValue * auraStacks)
                 end
 
                 -- add cast efficiency layer
-                cWildGrowthHeal = cWildGrowthHeal * castEfficiency
+                cTranquilityHeal = cTranquilityHeal * castEfficiency
 
-                local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cWildGrowthHeal, currentPercentHealth, wan.HealUnitCountAoE[hotKey])
+                local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cTranquilityHeal, currentPercentHealth, wan.HealUnitCountAoE[wan.spellData.Tranquility.basename])
                 if abilityValue > 0 then unitsNeedHeal = unitsNeedHeal + 1 end
-                wan.UpdateHealingData(groupUnitToken, wan.spellData.WildGrowth.basename, abilityValue, wan.spellData.WildGrowth.icon, wan.spellData.WildGrowth.name)
+                wan.UpdateHealingData(groupUnitToken, wan.spellData.Tranquility.basename, abilityValue, wan.spellData.Tranquility.icon, wan.spellData.Tranquility.name)
             else
-                wan.UpdateHealingData(groupUnitToken, wan.spellData.WildGrowth.basename)
+                wan.UpdateHealingData(groupUnitToken, wan.spellData.Tranquility.basename)
             end
         end
 
-        if unitsNeedHeal > cWildGrowthUnitCap then
-            unitsNeedHeal = cWildGrowthUnitCap
-        end
-        wan.HealUnitCountAoE[hotKey] = unitsNeedHeal
+        wan.HealUnitCountAoE[wan.spellData.Tranquility.basename] = unitsNeedHeal
     end
 
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            nWildGrowthHotHeal = wan.GetSpellDescriptionNumbers(wan.spellData.WildGrowth.id, { 3 })
+            local nTranquilityValues = wan.GetSpellDescriptionNumbers(wan.spellData.Tranquility.id, { 2, 3, 4, 6 })
+            nTranquilityInstantHeal = nTranquilityValues[1]
+            nTranquilityChannelTime = nTranquilityValues[2]
+            nTranquilityHotHeal = nTranquilityValues[3]
+            nTranquilitySoftCap = nTranquilityValues[4]
 
             nMasteryHarmony = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryHarmony.id, { 1 }) * 0.01
         end
@@ -146,9 +138,9 @@ local function AddonLoad(self, event, addonName)
     wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
         if event == "SPELL_DATA_READY" then
-            abilityActive = wan.spellData.WildGrowth.known and wan.spellData.WildGrowth.id
-            wan.BlizzardEventHandler(frameWildGrowth, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
-            wan.SetUpdateRate(frameWildGrowth, CheckAbilityValue, abilityActive)
+            abilityActive = wan.spellData.Tranquility.known and wan.spellData.Tranquility.id
+            wan.BlizzardEventHandler(frameTranquility, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
+            wan.SetUpdateRate(frameTranquility, CheckAbilityValue, abilityActive)
         end
 
         if event == "TRAIT_DATA_READY" then 
@@ -158,10 +150,10 @@ local function AddonLoad(self, event, addonName)
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
-            wan.SetUpdateRate(frameWildGrowth, CheckAbilityValue, abilityActive)
+            wan.SetUpdateRate(frameTranquility, CheckAbilityValue, abilityActive)
         end
     end)
 end
 
-frameWildGrowth:RegisterEvent("ADDON_LOADED")
-frameWildGrowth:SetScript("OnEvent", AddonLoad)
+frameTranquility:RegisterEvent("ADDON_LOADED")
+frameTranquility:SetScript("OnEvent", AddonLoad)

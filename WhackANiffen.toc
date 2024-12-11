@@ -2,7 +2,7 @@
 ## Title: Whack-A-Niffen
 ## Notes: Not much yet.
 ## Author: 7Banzai
-## Version: 0.1.2c
+## Version: 0.2.0
 ## SavedVariables: WhackANiffenDB
 ## SavedVariablesPerCharacter:
 ## X-Curse-Project-ID: 1143530
@@ -27,6 +27,7 @@ WAN_FrameUtil.lua
 WAN_DamageFrame.lua
 WAN_MechanicFrame.lua
 WAN_HealingFrame.lua
+WAN_SupportFrame.lua
 
 # Druid
 Druid\WAN_AdaptiveSwarm.lua
@@ -36,6 +37,7 @@ Druid\WAN_Berserk.lua
 Druid\WAN_BristlingFur.lua
 Druid\WAN_CatForm.lua
 Druid\WAN_CelestialAlignment.lua
+Druid\WAN_CenarionWard.lua
 Druid\WAN_ConvoketheSpirits.lua
 Druid\WAN_Efflorescence.lua
 Druid\WAN_FeralFrenzy.lua
@@ -43,6 +45,7 @@ Druid\WAN_FerociousBite.lua
 Druid\WAN_ForceofNature.lua
 Druid\WAN_FrenziedRegeneration.lua
 Druid\WAN_FuryofElune.lua
+Druid\WAN_Ironbark.lua
 Druid\WAN_Ironfur.lua
 Druid\WAN_Lifebloom.lua
 Druid\WAN_LunarBeam.lua
@@ -75,6 +78,7 @@ Druid\WAN_Swiftmend.lua
 Druid\WAN_Swipe.lua
 Druid\WAN_Thrash.lua
 Druid\WAN_TigersFury.lua
+Druid\WAN_Tranquility.lua
 Druid\WAN_WarriorofElune.lua
 Druid\WAN_WildGrowth.lua
 Druid\WAN_WildMushroom.lua

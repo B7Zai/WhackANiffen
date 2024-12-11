@@ -4,6 +4,7 @@ local _, wan = ...
 wan.AbilityData = {}    -- used for displaying damage values for player
 wan.MechanicData = {}   -- used for displaying defensive cooldowns, healing for player
 wan.HealingData = {}    -- used for displaying healing values in a group
+wan.SupportData = {}    -- used for displaying support values in a group
 wan.HotValue = {}       -- used for storing hot values over all valid group units
 wan.HealUnitCountAoE = {}  -- used for storing valid group unit count for aoe healing spells
 
@@ -75,6 +76,14 @@ end
 function wan.AbilityPercentageToValue(percentValue)
     local percentage = percentValue or 100
     local unitMaxHealth = UnitHealthMax("player")
+    return unitMaxHealth * (percentage / 100)
+end
+
+---- Checks if player is missing enough health
+function wan.UnitAbilityPercentageToValue(unitToken, percentValue)
+    local unit = unitToken or "player"
+    local percentage = percentValue or 100
+    local unitMaxHealth = UnitHealthMax(unit)
     return unitMaxHealth * (percentage / 100)
 end
 

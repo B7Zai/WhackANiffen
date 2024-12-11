@@ -262,3 +262,19 @@ function wan.GetHighestHealingValues()
 
     return highestValuesForUnitToken
 end
+
+function wan.GetHighestSupportValues()
+    local highestValuesForUnitToken = {}
+    for groupUnitToken, _ in pairs(wan.SupportData) do
+        local highestValue = 0
+        highestValuesForUnitToken[groupUnitToken] = {}
+        for _, supportValues in pairs(wan.SupportData[groupUnitToken]) do
+            if supportValues.value and supportValues.value >= highestValue then
+                highestValue = supportValues.value
+                highestValuesForUnitToken[groupUnitToken] = supportValues
+            end
+        end
+    end
+
+    return highestValuesForUnitToken
+end

@@ -30,6 +30,26 @@ function wan.UpdateHealingData(unitToken, abilityName, value, icon, name, desatu
     }
 end
 
+function wan.UpdateSupportData(unitToken, abilityName, value, icon, name, desaturation)
+    if not unitToken then
+        for unitID, _ in pairs(wan.SupportData) do
+            if wan.SupportData[unitID] then
+                wan.SupportData[unitID][abilityName] = {}
+            end
+        end
+        return
+    end
+
+    wan.SupportData[unitToken] = wan.SupportData[unitToken] or {}
+    if value == 0 then wan.SupportData[unitToken][abilityName] = {} return end
+    wan.SupportData[unitToken][abilityName] = {
+        value = value,
+        icon = icon,
+        name = name,
+        desat = desaturation,
+    }
+end
+
 -- Counts the number of group members in range
 function wan.ValidGroupMembers()
     if not IsInGroup() then return 1, 1, {} end
@@ -53,6 +73,7 @@ function wan.ValidGroupMembers()
 end
 
 function wan.GetUnitHotValues(unitToken, hotData)
+    if not unitToken or not hotData then return 0, 0 end
     local totalHotValues = 0
     local countHots = 0
     for formattedHotName, hotValue in pairs(hotData) do
@@ -62,6 +83,34 @@ function wan.GetUnitHotValues(unitToken, hotData)
         end
     end
     return totalHotValues, countHots
+end
+
+function wan.UnitAbilityHealValue(unitToken, abilityValue, unitPercentHealth, unitCountNeedsHealing)
+    if not unitToken or not abilityValue or not unitPercentHealth or abilityValue == 0 then return 0 end
+    if not unitCountNeedsHealing or unitCountNeedsHealing == 0 then unitCountNeedsHealing = 1 end
+    local value = 0
+    local unitHotValues = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
+    local maxHealth = wan.UnitMaxHealth[unitToken]
+    local abilityPercentageValue = (abilityValue / maxHealth) or 0
+    local hotPercentageValue = (unitHotValues / maxHealth) or 0
+
+    if (unitPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
+        value = math.floor(abilityValue) * unitCountNeedsHealing
+        return value
+    end
+
+    if abilityValue > maxHealth then -- check on units that are too lvl compared to the player
+        local playerMaxHealth = wan.UnitMaxHealth["player"]
+        local abilityPercentageValueLowLvl = (abilityValue / playerMaxHealth) or 0
+        local hotPercentageValueLowLvl = (unitHotValues / playerMaxHealth) or 0
+
+        if (unitPercentHealth + abilityPercentageValueLowLvl + hotPercentageValueLowLvl) < 1 then
+            value = math.floor(abilityValue) * unitCountNeedsHealing
+            return value
+        end
+    end
+
+    return value
 end
 
 function wan.HotPotency(unitToken, unitPercentHealth, initialValue)
@@ -91,6 +140,7 @@ function wan.HealThreshold()
     local unitMaxHealth = UnitHealthMax("player")
     return unitMaxHealth - unitHealth
 end
+
 
 -- Check and convert defensive cooldown to values
 function wan.DefensiveCooldownToValue(spellIndentifier)

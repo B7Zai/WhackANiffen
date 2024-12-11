@@ -87,43 +87,15 @@ local function AddonLoad(self, event, addonName)
                         wan.HotValue[groupUnitToken][sSymbioticBloomsKey] = cSymbioticBlooms
                     end
 
-                    local maxSwifmendHeal = cSwifmendInstantHeal + cSwiftmendHotHeal
-                    local cSwifmendHeal = cSwifmendInstantHeal + cSwiftmendHotHeal
+                    local cSwiftmendHeal = cSwifmendInstantHeal + cSwiftmendHotHeal
 
-                    -- subtract healing value of ability's hot from ability's max healing value
                     if wan.auraData[groupUnitToken]["buff_" .. wan.traitData.GroveTending.traitkey] then
                         local hotValue = wan.HotValue[groupUnitToken][wan.traitData.GroveTending.traitkey]
-                        cSwifmendHeal = cSwifmendHeal - hotValue
+                        cSwiftmendHeal = cSwiftmendHeal - hotValue
                     end
 
-                    -- exit early when ability doesn't contribute toward healing
-                    if cSwifmendHeal / maxSwifmendHeal < 0.5 then
-                        wan.UpdateHealingData(groupUnitToken, wan.spellData.Swiftmend.basename)
-                    else
-                        local unitHotValues = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
-                        local maxHealth = wan.UnitMaxHealth[groupUnitToken]
-                        local abilityPercentageValue = (cSwifmendHeal / maxHealth) or 0
-                        local hotPercentageValue = (unitHotValues / maxHealth) or 0
-                        local abilityValue = math.floor(cSwifmendHeal) or 0
-
-                        -- check if the value of the healing ability exceeds the unit's missing health
-                        if (currentPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
-                            wan.UpdateHealingData(groupUnitToken, wan.spellData.Swiftmend.basename, abilityValue,
-                                wan.spellData.Swiftmend.icon, wan.spellData.Swiftmend.name)
-                            -- check on units that are too lvl compared to the player
-                        elseif cSwifmendHeal > maxHealth then
-                            -- convert heal scaling on player when group member is low lvl
-                            local playerMaxHealth = wan.UnitMaxHealth["player"]
-                            local abilityPercentageValueLowLvl = (cSwifmendHeal / playerMaxHealth) or 0
-                            local hotPercentageValueLowLvl = (unitHotValues / playerMaxHealth) or 0
-                            if (currentPercentHealth + abilityPercentageValueLowLvl + hotPercentageValueLowLvl) < 1 then
-                                wan.UpdateHealingData(groupUnitToken, wan.spellData.Swiftmend.basename, abilityValue,
-                                    wan.spellData.Swiftmend.icon, wan.spellData.Swiftmend.name)
-                            end
-                        else
-                            wan.UpdateHealingData(groupUnitToken, wan.spellData.Swiftmend.basename)
-                        end
-                    end
+                    local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cSwiftmendHeal, currentPercentHealth)
+                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Swiftmend.basename, abilityValue, wan.spellData.Swiftmend.icon, wan.spellData.Swiftmend.name)
                 else
                     wan.UpdateHealingData(groupUnitToken, wan.spellData.Swiftmend.basename)
                 end
@@ -171,7 +143,6 @@ local function AddonLoad(self, event, addonName)
                     wan.HotValue[unitToken][sSymbioticBloomsKey] = cSymbioticBlooms
                 end
 
-                local maxSwiftmendHeal = cSwifmendInstantHeal + cSwiftmendHotHeal
                 local cSwiftmendHeal = cSwifmendInstantHeal + cSwiftmendHotHeal
 
                 -- subtract healing value of ability's hot from ability's max healing value
@@ -180,24 +151,8 @@ local function AddonLoad(self, event, addonName)
                     cSwiftmendHeal = cSwiftmendHeal - hotValue
                 end
 
-                -- exit early when ability doesn't contribute enough compared to it's own max healing
-                if cSwiftmendHeal / maxSwiftmendHeal < 0.5 then
-                    wan.UpdateMechanicData(wan.spellData.Swiftmend.basename)
-                else
-                    local unitHotValues = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
-                    local maxHealth = wan.UnitMaxHealth[unitToken]
-                    local abilityPercentageValue = (cSwiftmendHeal / maxHealth) or 0
-                    local hotPercentageValue = (unitHotValues / maxHealth) or 0
-                    local abilityValue = math.floor(cSwiftmendHeal) or 0
-
-                    -- check if the value of the healing ability exceeds the unit's missing health
-                    if (currentPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
-                        wan.UpdateMechanicData(wan.spellData.Swiftmend.basename, abilityValue, wan.spellData.Swiftmend
-                            .icon, wan.spellData.Swiftmend.name)
-                    else
-                        wan.UpdateMechanicData(wan.spellData.Swiftmend.basename)
-                    end
-                end
+                local abilityValue = wan.UnitAbilityHealValue(unitToken, cSwiftmendHeal, currentPercentHealth)
+                wan.UpdateMechanicData(wan.spellData.Swiftmend.basename, abilityValue, wan.spellData.Swiftmend.icon, wan.spellData.Swiftmend.name)
             else
                 wan.UpdateMechanicData(wan.spellData.Swiftmend.basename)
             end

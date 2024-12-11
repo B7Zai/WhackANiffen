@@ -435,7 +435,7 @@ local function OnEvent(self, event, addonname)
             end
 
             do  -- Horizontal Position Slider
-                wan.Options.Heal.HorizontalPosition = wan.Options.Heal.HorizontalPosition or 80
+                wan.Options.Heal.HorizontalPosition = wan.Options.Heal.HorizontalPosition or 85
                 local function GetValueHealHorizontalPosition() return wan.Options.Heal.HorizontalPosition end
                 local function SetValueHealHorizontalPosition(value)
                     wan.Options.Heal.HorizontalPosition = value
@@ -548,7 +548,7 @@ local function OnEvent(self, event, addonname)
             end
 
             do  -- Horizontal Position Slider
-                wan.Options.Support.HorizontalPosition = wan.Options.Support.HorizontalPosition or 120
+                wan.Options.Support.HorizontalPosition = wan.Options.Support.HorizontalPosition or 125
                 local function GetValueSupportHorizontalPosition() return wan.Options.Support.HorizontalPosition end
                 local function SetValueSupportHorizontalPosition(value)
                     wan.Options.Support.HorizontalPosition = value
@@ -572,7 +572,7 @@ local function OnEvent(self, event, addonname)
             end
 
             do  -- Vertical Position Slider
-                wan.Options.Support.VerticalPosition = wan.Options.Support.VerticalPosition or -30
+                wan.Options.Support.VerticalPosition = wan.Options.Support.VerticalPosition or 0
                 local function GetValueSupportVerticalPosition() return wan.Options.Support.VerticalPosition end
                 local function SetValueSupportVerticalPosition(value)
                     wan.Options.Support.VerticalPosition = value
@@ -661,7 +661,7 @@ local function OnEvent(self, event, addonname)
             end
 
             do  -- Horizontal Position Slider
-                wan.Options.PlayerHeal.HorizontalPosition = wan.Options.PlayerHeal.HorizontalPosition or 125
+                wan.Options.PlayerHeal.HorizontalPosition = wan.Options.PlayerHeal.HorizontalPosition or 130
                 local function GetValuePlayerHealHorizontalPosition() return wan.Options.PlayerHeal.HorizontalPosition end
                 local function SetValuePlayerHealHorizontalPosition(value)
                     wan.Options.PlayerHeal.HorizontalPosition = value
@@ -774,7 +774,7 @@ local function OnEvent(self, event, addonname)
             end
 
             do  -- Horizontal Position Slider
-                wan.Options.PlayerSupport.HorizontalPosition = wan.Options.PlayerSupport.HorizontalPosition or 120
+                wan.Options.PlayerSupport.HorizontalPosition = wan.Options.PlayerSupport.HorizontalPosition or 185
                 local function GetValuePlayerSupportHorizontalPosition() return wan.Options.PlayerSupport.HorizontalPosition end
                 local function SetValuePlayerSupportHorizontalPosition(value)
                     wan.Options.PlayerSupport.HorizontalPosition = value
@@ -798,7 +798,7 @@ local function OnEvent(self, event, addonname)
             end
 
             do  -- Vertical Position Slider
-                wan.Options.PlayerSupport.VerticalPosition = wan.Options.PlayerSupport.VerticalPosition or -30
+                wan.Options.PlayerSupport.VerticalPosition = wan.Options.PlayerSupport.VerticalPosition or -5
                 local function GetValuePlayerSupportVerticalPosition() return wan.Options.PlayerSupport.VerticalPosition end
                 local function SetValuePlayerSupportVerticalPosition(value)
                     wan.Options.PlayerSupport.VerticalPosition = value
