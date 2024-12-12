@@ -11,12 +11,13 @@ local function AddonLoad(self, event, addonName)
 
     -- Init data
     local abilityActive = false
-    local nLifebloomInstantHeal, nLifebloomHotHeal, nLifebloomHeal = 0, 0, 0
+    local nLifebloomInstantHeal, nLifebloomHotHeal, nLifebloomHotDuration, nLifebloomHotTickRate = 0, 0, 0, 1
     local nMasteryHarmony = 0
 
     -- Init triat data
     local nHarmoniousBlooming = 0
     local nStrategicInfusion = 0
+    local nPhotosynthesisProcChance = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -73,6 +74,15 @@ local function AddonLoad(self, event, addonName)
                     local cLifebloomInstantHeal = 0
                     local cLifebloomHotHeal = nLifebloomHotHeal
                     local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth)
+
+                    -- photosynthesis trait layer
+                    if wan.traitData.Photosynthesis.known then
+                        local nLifebloomHotTickModifier = wan.Haste * 0.01
+                        local nLifebloomHotTickRateMod = nLifebloomHotTickRate / (1 + nLifebloomHotTickModifier)
+                        local nLifebloomTickNumber = nLifebloomHotDuration / nLifebloomHotTickRateMod
+                        local cPhotosynthesisHeal = nLifebloomTickNumber * nPhotosynthesisProcChance * nLifebloomInstantHeal
+                        cLifebloomHotHeal = cLifebloomHotHeal + cPhotosynthesisHeal
+                    end
 
                     -- calculate estimated hot value
                     cLifebloomHotHeal = cLifebloomHotHeal * critHotValue * hotPotency
@@ -179,8 +189,10 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            local nLifebloomValues = wan.GetSpellDescriptionNumbers(wan.spellData.Lifebloom.id, { 1, 3 })
-            nLifebloomHotHeal = nLifebloomValues[1] + nLifebloomValues[2]
+            local nLifebloomValues = wan.GetSpellDescriptionNumbers(wan.spellData.Lifebloom.id, { 1, 2, 3 })
+            nLifebloomHotHeal = nLifebloomValues[1] + nLifebloomValues[3]
+            nLifebloomInstantHeal = nLifebloomValues[3]
+            nLifebloomHotDuration = nLifebloomValues[2]
 
             nMasteryHarmony = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryHarmony.id, { 1 }) * 0.01
         end
@@ -196,6 +208,8 @@ local function AddonLoad(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then 
+            nPhotosynthesisProcChance = wan.GetTraitDescriptionNumbers(wan.traitData.Photosynthesis.entryid, { 2 }) * 0.01
+
             nHarmoniousBlooming = wan.GetTraitDescriptionNumbers(wan.traitData.HarmoniousBlooming.entryid, { 1 }) - 1
 
             nStrategicInfusion = wan.GetTraitDescriptionNumbers(wan.traitData.StrategicInfusion.entryid, { 3 })

@@ -19,7 +19,7 @@ local function AddonLoad(self, event, addonName)
         -- Early exits
         if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
             or wan.auraData.player.buff_BearForm or wan.auraData.player.buff_MoonkinForm
-            or not wan.IsSpellUsable(wan.spellData.Ironbark.id)
+            or not wan.PlayerState.Combat or not wan.IsSpellUsable(wan.spellData.Ironbark.id)
         then
             wan.UpdateMechanicData(wan.spellData.Ironbark.basename)
             wan.UpdateSupportData(nil, wan.spellData.Ironbark.basename)
@@ -35,7 +35,7 @@ local function AddonLoad(self, event, addonName)
                 if idValidGroupUnit[groupUnitToken] and not wan.auraData[groupUnitToken].buff_Ironbark then
 
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
-                    local cIronbark = wan.UnitAbilityPercentageToValue(groupUnitToken, nIronbark)
+                    local cIronbark = wan.UnitDefensiveCooldownToValue(wan.spellData.Ironbark.id, groupUnitToken)
 
                     local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cIronbark, currentPercentHealth)
                     wan.UpdateSupportData(groupUnitToken, wan.spellData.Ironbark.basename, abilityValue, wan.spellData.Ironbark.icon, wan.spellData.Ironbark.name)
@@ -49,7 +49,7 @@ local function AddonLoad(self, event, addonName)
 
                 local playerGUID = wan.PlayerState.GUID
                 local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
-                local cIronbark = wan.UnitAbilityPercentageToValue(unitToken, nIronbark)
+                local cIronbark = wan.UnitDefensiveCooldownToValue(wan.spellData.Ironbark.id)
 
                 local abilityValue = wan.UnitAbilityHealValue(unitToken, cIronbark, currentPercentHealth)
                 wan.UpdateMechanicData(wan.spellData.Ironbark.basename, abilityValue, wan.spellData.Ironbark.icon, wan.spellData.Ironbark.name)

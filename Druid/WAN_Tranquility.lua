@@ -29,8 +29,8 @@ local function AddonLoad(self, event, addonName)
             wan.UpdateMechanicData(wan.spellData.Tranquility.basename)
             wan.UpdateHealingData(nil, wan.spellData.Tranquility.basename)
             return
-        end
-       
+        end       
+
         -- cast time layer
         local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Tranquility.id, nTranquilityChannelTime)
         if castEfficiency == 0 then

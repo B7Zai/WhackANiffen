@@ -138,7 +138,7 @@ function wan.CheckCastEfficiency(spellID, spellCastTime, canMoveCast)
     local valueModifier = 1
     local castTime = spellCastTime / 1000
 
-    if castTime == 0 then
+    if castTime <= 0 then
         return valueModifier
     end
 

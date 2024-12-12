@@ -21,6 +21,7 @@ local function AddonLoad(self, event, addonName)
     local nSaberJaws = 0
     local nDreadfulWound = 0
     local nBurstingGrowth, nBurstingGrowthSoftCap = 0, 0
+    local nMasterShapeshifter = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -42,7 +43,7 @@ local function AddonLoad(self, event, addonName)
         -- Combo checkers and early exit
         currentCombo = math.max(checkCombo, ((wan.auraData.player.buff_ApexPredatorsCraving and comboMax) or 0))
         comboPercentage = (currentCombo / comboMax) * 100
-        if comboPercentage < 80 then
+        if wan.traitData.MasterShapeshifter.known and currentCombo ~= nMasterShapeshifter or comboPercentage < 80 then
             wan.UpdateAbilityData(wan.spellData.FerociousBite.basename)
             return
         end
@@ -164,6 +165,7 @@ local function AddonLoad(self, event, addonName)
         if event == "TRAIT_DATA_READY" then
             nRampantFerocitySoftCap = wan.GetTraitDescriptionNumbers(wan.traitData.RampantFerocity.entryid, { 3 })
             nSaberJaws = wan.GetTraitDescriptionNumbers(wan.traitData.SaberJaws.entryid, { 1 }, wan.traitData.SaberJaws.rank) / 100
+            nMasterShapeshifter = wan.GetTraitDescriptionNumbers(wan.traitData.RampantFerocity.entryid, { 6 })
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

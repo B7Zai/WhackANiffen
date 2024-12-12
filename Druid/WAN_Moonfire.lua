@@ -46,8 +46,8 @@ local function AddonLoad(self, event, addonName)
             local cosmicRapidityMod = wan.traitData.CosmicRapidity.rank > 0 and nCosmicRapidity or 0
             local nMoonfireDotTickModifier = (wan.Haste + cosmicRapidityMod) * 0.01
             local nMoonfireDotTickRateMod = nMoonfireDotTickRate / (1 + nMoonfireDotTickModifier)
-            local nSunfireDotTickNumber = nMoonfireDotDuration / nMoonfireDotTickRateMod
-            local cShootingStarsDmg = nSunfireDotTickNumber * nShootingStarsProcChance * nShootingStarsDmg
+            local nMoonfireDotTickNumber = nMoonfireDotDuration / nMoonfireDotTickRateMod
+            local cShootingStarsDmg = nMoonfireDotTickNumber * nShootingStarsProcChance * nShootingStarsDmg
             cMoonfireDotDmg = cMoonfireDotDmg + cShootingStarsDmg
         end
 

@@ -310,8 +310,8 @@ local function OnEvent(self, event, addonName)
         end
     end)
 
-    SLASH_WANHVALUE1 = "/wanhv"
-    SlashCmdList["WANHVALUE"] = function()
+    SLASH_WANSVALUE1 = "/wansv"
+    SlashCmdList["WANSVALUE"] = function()
         for groupMember, _ in pairs(framePool) do
             wan.SetText2(framePool[groupMember])
         end

@@ -17,6 +17,8 @@ local function AddonLoad(self, event, addonName)
     -- Init trait data
     local nAbundance, nAbundanceCapValue = 0, 0
     local nImprovedRegrowth = 0
+    local nNourish, nNourishMastery = 0, 0
+    local nForestsFlow = 0
     local nHarmoniousBlooming = 0
     local nStrategicInfusion = 0
 
@@ -33,8 +35,11 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
+        local castTime = wan.spellData.Regrowth.castTime
+        if wan.auraData.player.buff_Clearcasting then castTime = 0 end
+
         -- Cast time layer
-        local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Regrowth.id, wan.spellData.Regrowth.castTime)
+        local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Regrowth.id, castTime)
         if castEfficiency == 0 then
             wan.UpdateMechanicData(wan.spellData.Regrowth.basename)
             wan.UpdateHealingData(nil, wan.spellData.Regrowth.basename)
@@ -71,10 +76,25 @@ local function AddonLoad(self, event, addonName)
                     local critChanceModInstant = 0
                     local cRegrowthInstantHeal = nRegrowthInstantHeal
 
+                    local countHots = 0
+                    if wan.spellData.MasteryHarmony.known then
+                        _, countHots = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
+                    end
+                    
                     -- add Improved Regrowth layer
                     if wan.traitData.ImprovedRegrowth.known and wan.auraData[groupUnitToken]["buff_" .. hotKey] then
                         local cImprovedRegrowth = nImprovedRegrowth
                         critChanceModInstant = critChanceModInstant + cImprovedRegrowth
+                    end
+
+                    if wan.traitData.ForestsFlow.known and wan.auraData.player.buff_Clearcasting then
+                        if wan.traitData.HarmoniousBlooming.known and wan.auraData[groupUnitToken].buff_Lifebloom then
+                            countHots = countHots + nHarmoniousBlooming
+                        end
+
+                        local cMasteryHarmony = (nMasteryHarmony * countHots) or 0
+                        local cForestFlow = (nNourish + (nNourish * cMasteryHarmony * nNourishMastery)) * nForestsFlow
+                        cRegrowthInstantHeal = cRegrowthInstantHeal + cForestFlow
                     end
 
                     local critInstantValue = wan.ValueFromCritical(wan.CritChance, critChanceModInstant)
@@ -89,8 +109,6 @@ local function AddonLoad(self, event, addonName)
                     wan.HotValue[groupUnitToken][hotKey] = cRegrowthHotHeal
 
                     if wan.spellData.MasteryHarmony.known then
-                        local _, countHots = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
-
                         if countHots == 0 then countHots = 1 end
 
                         if wan.traitData.HarmoniousBlooming.known and wan.auraData[groupUnitToken].buff_Lifebloom then
@@ -124,6 +142,11 @@ local function AddonLoad(self, event, addonName)
             local playerGUID = wan.PlayerState.GUID
             local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
 
+            local countHots = 0
+            if wan.spellData.MasteryHarmony.known then
+                _, countHots = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
+            end
+
             local critChanceModInstant = 0
             local cRegrowthInstantHeal = nRegrowthInstantHeal
 
@@ -131,6 +154,16 @@ local function AddonLoad(self, event, addonName)
             if wan.traitData.ImprovedRegrowth.known and wan.auraData[unitToken]["buff_" .. hotKey] then
                 local cImprovedRegrowth = nImprovedRegrowth
                 critChanceModInstant = critChanceModInstant + cImprovedRegrowth
+            end
+
+            if wan.traitData.ForestsFlow.known and wan.auraData.player.buff_Clearcasting then
+                if wan.traitData.HarmoniousBlooming.known and wan.auraData[unitToken].buff_Lifebloom then
+                    countHots = countHots + nHarmoniousBlooming
+                end
+
+                local cMasteryHarmony = (nMasteryHarmony * countHots) or 0
+                local cForestFlow = (nNourish + (nNourish * cMasteryHarmony * nNourishMastery)) * nForestsFlow
+                cRegrowthInstantHeal = cRegrowthInstantHeal + cForestFlow
             end
 
             local critInstantValue = wan.ValueFromCritical(wan.CritChance, critChanceModInstant)
@@ -146,8 +179,6 @@ local function AddonLoad(self, event, addonName)
             wan.HotValue[unitToken][hotKey] = cRegrowthHotHeal
 
             if wan.spellData.MasteryHarmony.known then
-                local _, countHots = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
-
                 if countHots == 0 then countHots = 1 end
 
                 if wan.traitData.HarmoniousBlooming.known and wan.auraData[unitToken].buff_Lifebloom then
@@ -183,6 +214,10 @@ local function AddonLoad(self, event, addonName)
             nRegrowthHotHeal = regrowthValues[2]
 
             nMasteryHarmony = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryHarmony.id, { 1 }) * 0.01
+
+            local nNourishValues = wan.GetTraitDescriptionNumbers(wan.traitData.Nourish.entryid, { 1, 2 })
+            nNourish = nNourishValues[1]
+            nNourishMastery = nNourishValues[2] * 0.01
         end
     end)
 
@@ -201,6 +236,8 @@ local function AddonLoad(self, event, addonName)
             nAbundanceCapValue = nAbundanceValues[2]
 
             nImprovedRegrowth = wan.GetTraitDescriptionNumbers(wan.traitData.ImprovedRegrowth.entryid, { 1 })
+
+            nForestsFlow = wan.GetTraitDescriptionNumbers(wan.traitData.ForestsFlow.entryid, { 1 }) * 0.01
 
             nHarmoniousBlooming = wan.GetTraitDescriptionNumbers(wan.traitData.HarmoniousBlooming.entryid, { 1 }) - 1
 

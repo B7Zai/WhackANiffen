@@ -16,6 +16,7 @@ local function AddonLoad(self, event, addonName)
 
     --Init trait data
     local nRipAndTear = 0
+    local nMasterShapeshifter = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -31,6 +32,11 @@ local function AddonLoad(self, event, addonName)
         -- Check for valid unit
         local isValidUnit = wan.ValidUnitBoolCounter(wan.spellData.Rip.id)
         if not isValidUnit then
+            wan.UpdateAbilityData(wan.spellData.Rip.basename)
+            return
+        end
+
+        if wan.traitData.MasterShapeshifter.known and currentCombo ~= nMasterShapeshifter or comboPercentage < 80 then
             wan.UpdateAbilityData(wan.spellData.Rip.basename)
             return
         end
@@ -92,6 +98,7 @@ local function AddonLoad(self, event, addonName)
 
         if event == "TRAIT_DATA_READY" then
             nRipAndTear = wan.GetTraitDescriptionNumbers(wan.traitData.RipandTear.entryid, { 1 }) / 100
+            nMasterShapeshifter = wan.GetTraitDescriptionNumbers(wan.traitData.RampantFerocity.entryid, { 6 })
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

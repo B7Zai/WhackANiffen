@@ -94,6 +94,10 @@ function wan.UnitAbilityHealValue(unitToken, abilityValue, unitPercentHealth, un
     local abilityPercentageValue = (abilityValue / maxHealth) or 0
     local hotPercentageValue = (unitHotValues / maxHealth) or 0
 
+    if abilityPercentageValue < 0.01 then -- exit early when the spell doesn't contribute enough
+        return value
+    end
+
     if (unitPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
         value = math.floor(abilityValue) * unitCountNeedsHealing
         return value
@@ -137,7 +141,7 @@ end
 ---- Checks if player is missing enough health
 function wan.HealThreshold()
     local unitHealth = UnitHealth("player")
-    local unitMaxHealth = UnitHealthMax("player")
+    local unitMaxHealth = wan.UnitMaxHealth["player"]
     return unitMaxHealth - unitHealth
 end
 
@@ -146,7 +150,21 @@ end
 function wan.DefensiveCooldownToValue(spellIndentifier)
     local cooldownMS, _ = GetSpellBaseCooldown(spellIndentifier)
     local maxCooldown = math.ceil(cooldownMS / 1000 / 60)
-    local maxHealth = UnitHealthMax("player")
+    local maxHealth = wan.UnitMaxHealth["player"]
+    local healthThresholds = maxHealth * 0.1
+    local cooldownValue = (maxCooldown <= 1 and healthThresholds * 3)
+    or (maxCooldown > 1 and maxCooldown <= 2 and healthThresholds * 5)
+    or (maxCooldown >= 2 and healthThresholds * 7)
+    or healthThresholds
+    return cooldownValue or math.huge
+end
+
+-- Check and convert defensive cooldown to values
+function wan.UnitDefensiveCooldownToValue(spellIndentifier, unitToken)
+    local unit = unitToken or "player"
+    local cooldownMS, _ = GetSpellBaseCooldown(spellIndentifier)
+    local maxCooldown = math.ceil(cooldownMS / 1000 / 60)
+    local maxHealth = wan.UnitMaxHealth[unit]
     local healthThresholds = maxHealth * 0.1
     local cooldownValue = (maxCooldown <= 1 and healthThresholds * 3)
     or (maxCooldown > 1 and maxCooldown <= 2 and healthThresholds * 5)

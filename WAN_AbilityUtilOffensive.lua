@@ -138,7 +138,7 @@ function wan.OffensiveCooldownToValue(spellIndentifier)
     if cooldownMS <= 1000 then cooldownMS = cooldownMS * 100 end
     if cooldownMS == 0 then cooldownMS = 120000 end
     local maxCooldown = cooldownMS / 1000 / 60
-    local maxHealth = UnitHealthMax("player")
+    local maxHealth = wan.UnitMaxHealth["player"]
     return (maxHealth * maxCooldown) or math.huge
 end
 
@@ -180,7 +180,7 @@ function wan.CheckAoEPotency(validUnitIDs)
         totalNameplateHealth = totalNameplateHealth + targetHealth
     end
 
-    local maxHealth = UnitHealthMax("player")
+    local maxHealth = wan.UnitMaxHealth["player"]
     local damagePotency = (totalNameplateHealth / maxHealth)
     local validGroupMembers = wan.ValidGroupMembers()
     local calcPotency = damagePotency / validGroupMembers

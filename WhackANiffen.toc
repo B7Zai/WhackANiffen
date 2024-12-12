@@ -45,6 +45,7 @@ Druid\WAN_FerociousBite.lua
 Druid\WAN_ForceofNature.lua
 Druid\WAN_FrenziedRegeneration.lua
 Druid\WAN_FuryofElune.lua
+Druid\WAN_GroveGuardians.lua
 Druid\WAN_Ironbark.lua
 Druid\WAN_Ironfur.lua
 Druid\WAN_Lifebloom.lua
@@ -55,6 +56,7 @@ Druid\WAN_Maul.lua
 Druid\WAN_Moonfire.lua
 Druid\WAN_MoonkinForm.lua
 Druid\WAN_MoonMoon.lua
+Druid\WAN_Nourish.lua
 Druid\WAN_PrimalWrath.lua
 Druid\WAN_Prowl.lua
 Druid\WAN_Pulverize.lua
