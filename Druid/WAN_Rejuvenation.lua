@@ -20,6 +20,7 @@ local function AddonLoad(self, event, addonName)
     local nHarmoniousBlooming = 2
     local sGerminationKey = "RejuvenationGermination"
     local nStrategicInfusion = 0
+    local nDreamSurge = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -46,6 +47,24 @@ local function AddonLoad(self, event, addonName)
             critChanceModHot = critChanceModHot + cStrategicInfusion
         end
 
+        --check Thriving Vegetation trait layer
+        local cThrivingVegetation = 0
+        if wan.traitData.ThrivingVegetation.known then
+            cThrivingVegetation = nRejuvenationHotHeal * nThrivingVegetation
+        end
+
+        -- check Germination trait layer
+        local cGerminationHotHeal = 0
+        if wan.traitData.Germination.known then
+            cGerminationHotHeal = nRejuvenationHotHeal
+        end
+
+        -- add Dream Surge trait layer
+        local cDreamSurge = 0
+        if wan.traitData.DreamSurge.known and wan.auraData.player.buff_DreamSurge then
+            cDreamSurge = nDreamSurge
+        end
+
         -- add crit layer
         local critHotValue = wan.ValueFromCritical(wan.CritChance, critChanceModHot)
         local critInstantValue = wan.ValueFromCritical(wan.CritChance)
@@ -63,13 +82,7 @@ local function AddonLoad(self, event, addonName)
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
 
                     -- init spell value
-                    local cRejuvenationInstantHeal = 0
-
-                    --check Thriving Vegetation trait layer
-                    if wan.traitData.ThrivingVegetation.known then
-                        local cThrivingVegetation = nRejuvenationHotHeal * nThrivingVegetation
-                        cRejuvenationInstantHeal = cRejuvenationInstantHeal + cThrivingVegetation
-                    end
+                    local cRejuvenationInstantHeal = cThrivingVegetation + cDreamSurge
 
                     -- calculate estimated instant value
                     cRejuvenationInstantHeal = cRejuvenationInstantHeal * critInstantValue
@@ -77,12 +90,6 @@ local function AddonLoad(self, event, addonName)
                     -- init spell hot value
                     local cRejuvenationHotHeal = nRejuvenationHotHeal
                     local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth, cRejuvenationInstantHeal)
-
-                    -- check Germination trait layer
-                    local cGerminationHotHeal = 0
-                    if wan.traitData.Germination.known then
-                        cGerminationHotHeal = nRejuvenationHotHeal
-                    end
 
                     -- check cultivation trait layer
                     local cCultivation = 0
@@ -151,25 +158,15 @@ local function AddonLoad(self, event, addonName)
             local unitToken = "player"
             local playerGUID =  wan.PlayerState.GUID
             local currentPercentHealth = playerGUID and UnitPercentHealthFromGUID(playerGUID) or 0
-            local cRejuvenationInstantHeal = 0
 
-            --check Thriving Vegetation trait layer
-            if wan.traitData.ThrivingVegetation.known then
-                local cThrivingVegetation = nRejuvenationHotHeal * nThrivingVegetation
-                cRejuvenationInstantHeal = cRejuvenationInstantHeal + cThrivingVegetation
-            end
+            -- init spell value
+            local cRejuvenationInstantHeal = cThrivingVegetation + cDreamSurge
 
             -- calculate estimated instant value
             cRejuvenationInstantHeal = cRejuvenationInstantHeal * critInstantValue
 
             local cRejuvenationHotHeal = nRejuvenationHotHeal
             local hotPotency = wan.HotPotency(unitToken, currentPercentHealth, cRejuvenationInstantHeal)
-
-            -- check Germination trait layer
-            local cGerminationHotHeal = 0
-            if wan.traitData.Germination.known then
-                cGerminationHotHeal = nRejuvenationHotHeal
-            end
 
             -- check cultivation trait layer
             local cCultivation = 0
@@ -240,6 +237,8 @@ local function AddonLoad(self, event, addonName)
             nMasteryHarmony = nMasteryHarmonyValue * 0.01
 
             nCultivation = wan.GetTraitDescriptionNumbers(wan.traitData.Cultivation.entryid, { 1 })
+
+            nDreamSurge = wan.GetTraitDescriptionNumbers(wan.traitData.DreamSurge.entryid, { 3 })
         end
     end)
 

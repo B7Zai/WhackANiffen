@@ -110,11 +110,10 @@ local function OnEvent(self, event, ...)
     end
 
     if (event == "UNIT_MAXHEALTH" and ... == "player") or (event == "UNIT_MAXHEALTH" and wan.GroupUnitID[...]) then
-        print("this fired")
         local unitToken = ...
-        print(unitToken)
         local maxHealth = UnitHealthMax(unitToken)
         wan.UnitMaxHealth[unitToken] = maxHealth
+        print(wan.UnitMaxHealth[unitToken])
     end
 
     if event == "PLAYER_ALIVE" or event == "PLAYER_DEAD" or event == "PLAYER_ENTERING_WORLD" then

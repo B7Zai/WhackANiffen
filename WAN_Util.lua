@@ -87,8 +87,6 @@ function wan.FormatFractionalNumber(value)
     return math.floor(value * 10 + 0.5) / 10
 end
 
-
-
 -- Checks gcd value
 function wan.GetSpellGcdValue(spellID)
     local gcdValue = 1.5

@@ -17,6 +17,7 @@ local function AddonLoad(self, event, addonName)
     -- Init trait data
     local nHarmoniousBlooming = 0
     local nWildSynthesis = 0
+    local nDreamSurge = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -36,6 +37,11 @@ local function AddonLoad(self, event, addonName)
             wan.UpdateMechanicData(wan.spellData.Nourish.basename)
             wan.UpdateHealingData(nil, wan.spellData.Nourish.basename)
             return
+        end
+
+        local cDreamSurge = 0
+        if wan.traitData.DreamSurge.known and wan.auraData.player.buff_DreamSurge then
+            cDreamSurge = nDreamSurge
         end
 
         -- Update ability data
@@ -65,7 +71,7 @@ local function AddonLoad(self, event, addonName)
                     end
 
                     local cMasteryHarmony = ((nMasteryHarmony + cWildSynthesis) * countHots) or 0
-                    local cNourishInstantHeal = (nNourishInstantHeal + (nNourishInstantHeal * cMasteryHarmony * nNourishMastery)) * critInstantValue
+                    local cNourishInstantHeal = (nNourishInstantHeal + (nNourishInstantHeal * cMasteryHarmony * nNourishMastery) + cDreamSurge) * critInstantValue
 
                     -- add cast efficiency layer
                     local cNourishHeal = cNourishInstantHeal * castEfficiency
@@ -99,7 +105,7 @@ local function AddonLoad(self, event, addonName)
             end
 
             local cMasteryHarmony = ((nMasteryHarmony + cWildSynthesis) * countHots) or 0
-            local cNourishInstantHeal = (nNourishInstantHeal + (nNourishInstantHeal * cMasteryHarmony * nNourishMastery)) * critInstantValue
+            local cNourishInstantHeal = (nNourishInstantHeal + (nNourishInstantHeal * cMasteryHarmony * nNourishMastery) + cDreamSurge) * critInstantValue
 
             local cNourishHeal = cNourishInstantHeal * castEfficiency
 
@@ -116,6 +122,8 @@ local function AddonLoad(self, event, addonName)
             nNourishMastery = nNourishValues[2] * 0.01
 
             nMasteryHarmony = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryHarmony.id, { 1 }) * 0.01
+
+            nDreamSurge = wan.GetTraitDescriptionNumbers(wan.traitData.DreamSurge.entryid, { 3 })
         end
     end)
 

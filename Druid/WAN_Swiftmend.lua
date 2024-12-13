@@ -20,6 +20,7 @@ local function AddonLoad(self, event, addonName)
     local nStrategicInfusion = 0
     local nSymbioticBlooms = 0
     local sSymbioticBloomsKey = "SymbioticBlooms"
+    local nDreamSurge = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -42,6 +43,11 @@ local function AddonLoad(self, event, addonName)
             critChanceModHot = critChanceModHot + cStrategicInfusion
         end
 
+        local cDreamSurge = 0
+        if wan.traitData.DreamSurge.known and wan.auraData.player.buff_DreamSurge then
+            cDreamSurge = nDreamSurge
+        end
+
         -- add crit layer
         local critHotValue = wan.ValueFromCritical(wan.CritChance, critChanceModHot)
         local critInstantValue = wan.ValueFromCritical(wan.CritChance)
@@ -52,12 +58,13 @@ local function AddonLoad(self, event, addonName)
 
             for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
-                if idValidGroupUnit[groupUnitToken] and (wan.auraData[groupUnitToken].buff_WildGrowth
-                        or wan.auraData[groupUnitToken].buff_Regrowth
-                        or wan.auraData[groupUnitToken].buff_Rejuvenation) then
+                if idValidGroupUnit[groupUnitToken] and
+                 (wan.auraData[groupUnitToken].buff_WildGrowth and wan.auraData[groupUnitToken].buff_WildGrowth.spellId == wan.spellData.WildGrowth.id
+                        or wan.auraData[groupUnitToken].buff_Regrowth and wan.auraData[groupUnitToken].buff_Regrowth == wan.spellData.Regrowth.id
+                        or wan.auraData[groupUnitToken].buff_Rejuvenation and wan.auraData[groupUnitToken].buff_Rejuvenation == wan.spellData.Rejuvenation.id) then
 
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
-                    local cSwifmendInstantHeal = nSwifmendInstantHeal
+                    local cSwifmendInstantHeal = nSwifmendInstantHeal + cDreamSurge
 
                     cSwifmendInstantHeal = nSwifmendInstantHeal * critInstantValue
 
@@ -102,16 +109,16 @@ local function AddonLoad(self, event, addonName)
             end
         else
             local unitToken = "player"
-            if (wan.auraData[unitToken].buff_WildGrowth
-                    or wan.auraData[unitToken].buff_Regrowth
-                    or wan.auraData[unitToken].buff_Rejuvenation) then
+            if (wan.auraData[unitToken].buff_WildGrowth and wan.auraData[unitToken].buff_WildGrowth.spellId == wan.spellData.WildGrowth.id
+            or wan.auraData[unitToken].buff_Regrowth and wan.auraData[unitToken].buff_Regrowth == wan.spellData.Regrowth.id
+            or wan.auraData[unitToken].buff_Rejuvenation and wan.auraData[unitToken].buff_Rejuvenation == wan.spellData.Rejuvenation.id) then
 
 
                 local playerGUID = wan.PlayerState.GUID
                 local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
 
                 local critChanceModInstant = 0
-                local cSwifmendInstantHeal = nSwifmendInstantHeal
+                local cSwifmendInstantHeal = nSwifmendInstantHeal + cDreamSurge
 
                 local critInstantValue = wan.ValueFromCritical(wan.CritChance, critChanceModInstant)
                 cSwifmendInstantHeal = nSwifmendInstantHeal * critInstantValue
@@ -169,6 +176,8 @@ local function AddonLoad(self, event, addonName)
             nMasteryHarmony = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryHarmony.id, { 1 }) * 0.01
 
             nSymbioticBlooms = wan.GetTraitDescriptionNumbers(wan.traitData.ThrivingGrowth.entryid, { 3 })
+
+            nDreamSurge = wan.GetTraitDescriptionNumbers(wan.traitData.DreamSurge.entryid, { 3 })
         end
     end)
 

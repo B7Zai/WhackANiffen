@@ -11,13 +11,15 @@ local function AddonLoad(self, event, addonName)
 
     -- Init data
     local abilityActive = false
-    local nLifebloomInstantHeal, nLifebloomHotHeal, nLifebloomHotDuration, nLifebloomHotTickRate = 0, 0, 0, 1
+    local nLifebloomInstantHeal, nLifeBloomHotHealFraction, nLifebloomHotHeal, nLifebloomHotDuration, nLifebloomHotTickRate = 0, 0, 0, 0, 1
     local nMasteryHarmony = 0
 
     -- Init triat data
     local nHarmoniousBlooming = 0
     local nStrategicInfusion = 0
+    local nBuddingLeaves = 0
     local nPhotosynthesisProcChance = 0
+    local nDreamSurge = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -35,6 +37,7 @@ local function AddonLoad(self, event, addonName)
         local hotKey = wan.spellData.Lifebloom.basename
 
         local critChanceModHot = 0
+        local critChanceModInstant = 0
 
         -- setting the cap for max number of targets lifebloom can apply to
         local nLifebloomCap = wan.traitData.Undergrowth.known and 2 or 1
@@ -47,6 +50,26 @@ local function AddonLoad(self, event, addonName)
 
         -- check crit layer
         local critHotValue = wan.ValueFromCritical(wan.CritChance, critChanceModHot)
+        local critInstantValue =  wan.ValueFromCritical(wan.CritChance, critChanceModInstant)
+
+        -- photosynthesis trait layer
+        local cPhotosynthesisHeal = 0
+        if wan.traitData.Photosynthesis.known then
+            local nLifebloomHotTickModifier = wan.Haste * 0.01
+            local nLifebloomHotTickRateMod = nLifebloomHotTickRate / (1 + nLifebloomHotTickModifier)
+            local nLifebloomTickNumber = nLifebloomHotDuration / nLifebloomHotTickRateMod
+            cPhotosynthesisHeal = nLifebloomTickNumber * nPhotosynthesisProcChance * nLifebloomInstantHeal
+        end
+
+        local cBuddingLeaves = 0
+        if wan.traitData.BuddingLeaves.known then
+            cBuddingLeaves = nLifeBloomHotHealFraction * nBuddingLeaves
+        end
+
+        local cDreamSurge = 0
+        if wan.traitData.DreamSurge.known and wan.auraData.player.buff_DreamSurge then
+            cDreamSurge = nDreamSurge
+        end
 
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
@@ -71,18 +94,16 @@ local function AddonLoad(self, event, addonName)
                 if idValidGroupUnit[groupUnitToken] then
                     -- check unit health
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
-                    local cLifebloomInstantHeal = 0
+                    local cLifebloomInstantHeal = cDreamSurge
+
+                    -- calculate estimated hot value
+                    cLifebloomInstantHeal = cLifebloomInstantHeal * critInstantValue
+
                     local cLifebloomHotHeal = nLifebloomHotHeal
                     local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth)
 
-                    -- photosynthesis trait layer
-                    if wan.traitData.Photosynthesis.known then
-                        local nLifebloomHotTickModifier = wan.Haste * 0.01
-                        local nLifebloomHotTickRateMod = nLifebloomHotTickRate / (1 + nLifebloomHotTickModifier)
-                        local nLifebloomTickNumber = nLifebloomHotDuration / nLifebloomHotTickRateMod
-                        local cPhotosynthesisHeal = nLifebloomTickNumber * nPhotosynthesisProcChance * nLifebloomInstantHeal
-                        cLifebloomHotHeal = cLifebloomHotHeal + cPhotosynthesisHeal
-                    end
+                    -- trait layers
+                    cLifebloomHotHeal = cLifebloomHotHeal + cPhotosynthesisHeal + cBuddingLeaves
 
                     -- calculate estimated hot value
                     cLifebloomHotHeal = cLifebloomHotHeal * critHotValue * hotPotency
@@ -137,7 +158,7 @@ local function AddonLoad(self, event, addonName)
             local playerGUID =  wan.PlayerState.GUID
             local currentPercentHealth = playerGUID and UnitPercentHealthFromGUID(playerGUID) or 0
             local hotPotency = wan.HotPotency(unitToken, currentPercentHealth)
-            local cLifebloomInstantHeal = 0
+            local cLifebloomInstantHeal = cDreamSurge
             local cLifebloomHotHeal = nLifebloomHotHeal
 
             -- calculate estimated hot value
@@ -191,10 +212,13 @@ local function AddonLoad(self, event, addonName)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local nLifebloomValues = wan.GetSpellDescriptionNumbers(wan.spellData.Lifebloom.id, { 1, 2, 3 })
             nLifebloomHotHeal = nLifebloomValues[1] + nLifebloomValues[3]
+            nLifeBloomHotHealFraction = nLifebloomValues[1]
             nLifebloomInstantHeal = nLifebloomValues[3]
             nLifebloomHotDuration = nLifebloomValues[2]
 
             nMasteryHarmony = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryHarmony.id, { 1 }) * 0.01
+
+            nDreamSurge = wan.GetTraitDescriptionNumbers(wan.traitData.DreamSurge.entryid, { 3 })
         end
     end)
 
@@ -209,6 +233,8 @@ local function AddonLoad(self, event, addonName)
 
         if event == "TRAIT_DATA_READY" then 
             nPhotosynthesisProcChance = wan.GetTraitDescriptionNumbers(wan.traitData.Photosynthesis.entryid, { 2 }) * 0.01
+
+            nBuddingLeaves = wan.GetTraitDescriptionNumbers(wan.traitData.BuddingLeaves.entryid, { 2 }, wan.traitData.BuddingLeaves.rank) * 0.01
 
             nHarmoniousBlooming = wan.GetTraitDescriptionNumbers(wan.traitData.HarmoniousBlooming.entryid, { 1 }) - 1
 

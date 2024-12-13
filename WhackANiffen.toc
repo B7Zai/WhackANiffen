@@ -42,10 +42,12 @@ Druid\WAN_ConvoketheSpirits.lua
 Druid\WAN_Efflorescence.lua
 Druid\WAN_FeralFrenzy.lua
 Druid\WAN_FerociousBite.lua
+Druid\WAN_Flourish.lua
 Druid\WAN_ForceofNature.lua
 Druid\WAN_FrenziedRegeneration.lua
 Druid\WAN_FuryofElune.lua
 Druid\WAN_GroveGuardians.lua
+Druid\WAN_Invigorate.lua
 Druid\WAN_Ironbark.lua
 Druid\WAN_Ironfur.lua
 Druid\WAN_Lifebloom.lua
@@ -57,6 +59,7 @@ Druid\WAN_Moonfire.lua
 Druid\WAN_MoonkinForm.lua
 Druid\WAN_MoonMoon.lua
 Druid\WAN_Nourish.lua
+Druid\WAN_Overgrowth.lua
 Druid\WAN_PrimalWrath.lua
 Druid\WAN_Prowl.lua
 Druid\WAN_Pulverize.lua
@@ -81,6 +84,7 @@ Druid\WAN_Swipe.lua
 Druid\WAN_Thrash.lua
 Druid\WAN_TigersFury.lua
 Druid\WAN_Tranquility.lua
+Druid\WAN_TreeofLife.lua
 Druid\WAN_WarriorofElune.lua
 Druid\WAN_WildGrowth.lua
 Druid\WAN_WildMushroom.lua

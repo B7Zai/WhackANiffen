@@ -44,17 +44,13 @@ local function AddonLoad(self, event, addonName)
             end
         else
             local unitToken = "player"
-            if not wan.auraData[unitToken].buff_Ironbark then
+            local playerGUID = wan.PlayerState.GUID
+            local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
+            local cGroveGuardians = wan.UnitDefensiveCooldownToValue(wan.spellData.GroveGuardians.id)
 
-                local playerGUID = wan.PlayerState.GUID
-                local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
-                local cGroveGuardians = wan.UnitDefensiveCooldownToValue(wan.spellData.GroveGuardians.id)
-
-                local abilityValue = wan.UnitAbilityHealValue(unitToken, cGroveGuardians, currentPercentHealth)
-                wan.UpdateMechanicData(wan.spellData.GroveGuardians.basename, abilityValue, wan.spellData.GroveGuardians.icon, wan.spellData.GroveGuardians.name)
-            else
-                wan.UpdateMechanicData(wan.spellData.GroveGuardians.basename)
-            end
+            local abilityValue = wan.UnitAbilityHealValue(unitToken, cGroveGuardians, currentPercentHealth)
+            wan.UpdateMechanicData(wan.spellData.GroveGuardians.basename, abilityValue, wan.spellData.GroveGuardians
+            .icon, wan.spellData.GroveGuardians.name)
         end
     end
 

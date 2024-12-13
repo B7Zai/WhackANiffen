@@ -26,8 +26,10 @@ local function UpdateAuras(unitID, updateInfo)
         for i = 1, 40 do
             local aura = C_UnitAuras.GetAuraDataByIndex(unitID, i, "HELPFUL")
             if not aura then break end
-            if unitID == "player" or unitID == wan.TargetUnitID or wan.NameplateUnitID[unitID]
-                or (wan.GroupUnitID[unitID] and (aura.canApplyAura or wan.IsAI[unitID])) then
+            if unitID == "player" and wan.spellDataID[aura.spellId]
+                or unitID == wan.TargetUnitID
+                or wan.NameplateUnitID[unitID]
+                or (wan.GroupUnitID[unitID] and (wan.spellDataID[aura.spellId] or wan.IsAI[unitID] or aura.isRaid)) then
                 local spellName = wan.FormatNameForKey(aura.name)
                 local key = spellName and "buff_" .. spellName
                 if key then
@@ -43,7 +45,7 @@ local function UpdateAuras(unitID, updateInfo)
             if unitID == "player"
                 or (unitID == wan.TargetUnitID and aura.sourceUnit == "player")
                 or (wan.NameplateUnitID[unitID] and aura.sourceUnit == "player")
-                or (wan.GroupUnitID[unitID] and aura.isHarmful) then
+                or (wan.GroupUnitID[unitID] and aura.isRaid) then
                 local spellName = wan.FormatNameForKey(aura.name)
                 local key = spellName and "debuff_" .. spellName
                 if key then
@@ -57,10 +59,10 @@ local function UpdateAuras(unitID, updateInfo)
 
     if updateInfo.addedAuras then -- Aura update when auras get added
         for _, aura in pairs(updateInfo.addedAuras) do
-            if unitID == "player"
+            if unitID == "player" and (wan.spellDataID[aura.spellId] or aura.isRaid)
             or (unitID == wan.TargetUnitID and (aura.isHelpful or aura.sourceUnit == "player"))
             or (wan.NameplateUnitID[unitID] and (aura.isHelpful or aura.sourceUnit == "player"))
-            or (wan.GroupUnitID[unitID] and (aura.isHelpful and (aura.canApplyAura or wan.IsAI[unitID]) or aura.isHarmful))
+            or (wan.GroupUnitID[unitID] and (wan.spellDataID[aura.spellId] or wan.IsAI[unitID] or aura.isRaid))
              then
                 local spellName = wan.FormatNameForKey(aura.name)
                 if spellName then

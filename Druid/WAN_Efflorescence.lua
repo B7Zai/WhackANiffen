@@ -23,12 +23,17 @@ local function AddonLoad(self, event, addonName)
         -- Early exits
         if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
         or wan.auraData.player.buff_BearForm or wan.auraData.player.buff_MoonkinForm
-        or not wan.PlayerState.InGroup or not wan.PlayerState.InHealerMode
+        or not wan.PlayerState.InGroup or not wan.PlayerState.InHealerMode or not wan.PlayerState.Combat
         or wan.auraData.player.buff_Efflorescence or not wan.IsSpellUsable(wan.spellData.Efflorescence.id)
         then
             wan.UpdateMechanicData(wan.spellData.Efflorescence.basename)
             wan.UpdateHealingData(nil, wan.spellData.Efflorescence.basename)
             return
+        end
+
+        local cSprintBlossomsHotHeal = 0
+        if wan.traitData.SprintBlossoms.known then
+            cSprintBlossomsHotHeal = nSpringBlossoms
         end
 
         -- check crit layer
@@ -37,6 +42,7 @@ local function AddonLoad(self, event, addonName)
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
+            local unitTokenAoE = "allGroupUnitTokens"
 
             local unitsNeedHeal = 0
             wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename] = wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename] or unitsNeedHeal
@@ -50,11 +56,6 @@ local function AddonLoad(self, event, addonName)
                     local cEfflorescenceInstantHeal = 0
                     local cEfflorescenceHotHeal = nEfflorescenceHotHeal
                     local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth)
-
-                    local cSprintBlossomsHotHeal = 0
-                    if wan.traitData.SprintBlossoms.known then
-                        cSprintBlossomsHotHeal = nSpringBlossoms
-                    end
 
                     -- calculate estimated hot value
                     cEfflorescenceHotHeal = cEfflorescenceHotHeal * critMod * hotPotency
@@ -94,9 +95,9 @@ local function AddonLoad(self, event, addonName)
 
                     local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cEfflorescenceHeal, currentPercentHealth, wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename])
                     if abilityValue > 0 then unitsNeedHeal = unitsNeedHeal + 1 end
-                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Efflorescence.basename, abilityValue, wan.spellData.Efflorescence.icon, wan.spellData.Efflorescence.name)
+                    wan.UpdateHealingData(unitTokenAoE, wan.spellData.Efflorescence.basename, abilityValue, wan.spellData.Efflorescence.icon, wan.spellData.Efflorescence.name)
                 else
-                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Efflorescence.basename)
+                    wan.UpdateHealingData(unitTokenAoE, wan.spellData.Efflorescence.basename)
                 end
             end
 

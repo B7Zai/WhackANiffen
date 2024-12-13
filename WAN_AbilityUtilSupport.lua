@@ -20,6 +20,20 @@ function wan.UpdateHealingData(unitToken, abilityName, value, icon, name, desatu
         return
     end
 
+    if unitToken == "allGroupUnitTokens" then
+        local unitsNeedHeal = wan.HealUnitCountAoE[abilityName] or 1
+            for unitID, _ in pairs(wan.HealingData) do
+                if not value or value == 0 then wan.HealingData[unitID][abilityName] = {} return end
+                wan.HealingData[unitID][abilityName] = {
+                    value = value * unitsNeedHeal,
+                    icon = icon,
+                    name = name,
+                    desat = desaturation,
+                }
+            end
+        return
+    end
+
     wan.HealingData[unitToken] = wan.HealingData[unitToken] or {}
     if value == 0 then wan.HealingData[unitToken][abilityName] = {} return end
     wan.HealingData[unitToken][abilityName] = {
@@ -37,6 +51,20 @@ function wan.UpdateSupportData(unitToken, abilityName, value, icon, name, desatu
                 wan.SupportData[unitID][abilityName] = {}
             end
         end
+        return
+    end
+
+    if unitToken == "allGroupUnitTokens" then
+        local unitsNeedHeal = wan.HealUnitCountAoE[abilityName] or 1
+            for unitID, _ in pairs(wan.SupportData) do
+                if not value or value == 0 then wan.SupportData[unitID][abilityName] = {} return end
+                wan.SupportData[unitID][abilityName] = {
+                    value = value * unitsNeedHeal,
+                    icon = icon,
+                    name = name,
+                    desat = desaturation,
+                }
+            end
         return
     end
 
@@ -85,21 +113,20 @@ function wan.GetUnitHotValues(unitToken, hotData)
     return totalHotValues, countHots
 end
 
-function wan.UnitAbilityHealValue(unitToken, abilityValue, unitPercentHealth, unitCountNeedsHealing)
+function wan.UnitAbilityHealValue(unitToken, abilityValue, unitPercentHealth)
     if not unitToken or not abilityValue or not unitPercentHealth or abilityValue == 0 then return 0 end
-    if not unitCountNeedsHealing or unitCountNeedsHealing == 0 then unitCountNeedsHealing = 1 end
     local value = 0
     local unitHotValues = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
     local maxHealth = wan.UnitMaxHealth[unitToken]
     local abilityPercentageValue = (abilityValue / maxHealth) or 0
     local hotPercentageValue = (unitHotValues / maxHealth) or 0
 
-    if abilityPercentageValue < 0.01 then -- exit early when the spell doesn't contribute enough
+    if abilityPercentageValue < hotPercentageValue then -- exit early when the spell doesn't contribute enough
         return value
     end
 
     if (unitPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
-        value = math.floor(abilityValue) * unitCountNeedsHealing
+        value = math.floor(abilityValue)
         return value
     end
 
@@ -109,7 +136,7 @@ function wan.UnitAbilityHealValue(unitToken, abilityValue, unitPercentHealth, un
         local hotPercentageValueLowLvl = (unitHotValues / playerMaxHealth) or 0
 
         if (unitPercentHealth + abilityPercentageValueLowLvl + hotPercentageValueLowLvl) < 1 then
-            value = math.floor(abilityValue) * unitCountNeedsHealing
+            value = math.floor(abilityValue)
             return value
         end
     end
@@ -119,10 +146,10 @@ end
 
 function wan.HotPotency(unitToken, unitPercentHealth, initialValue)
     local currentPercentHealth = unitPercentHealth or 0
-    local baseValue = initialValue or 0
+    local baseValue = ((initialValue or 0) + wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])) or 0
     local maxHealth = wan.UnitMaxHealth[unitToken] or 0
-    local targetHealth = maxHealth * currentPercentHealth
-    local healPotency = (targetHealth / maxHealth)
+    local targetHealth = (maxHealth * currentPercentHealth)
+    local healPotency = ((targetHealth + baseValue) / maxHealth)
 
     return math.min(healPotency, 1)
 end

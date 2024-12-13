@@ -21,6 +21,7 @@ local function AddonLoad(self, event, addonName)
     local nForestsFlow = 0
     local nHarmoniousBlooming = 0
     local nStrategicInfusion = 0
+    local nDreamSurge = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -35,11 +36,8 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
-        local castTime = wan.spellData.Regrowth.castTime
-        if wan.auraData.player.buff_Clearcasting then castTime = 0 end
-
         -- Cast time layer
-        local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Regrowth.id, castTime)
+        local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Regrowth.id, wan.spellData.Regrowth.castTime)
         if castEfficiency == 0 then
             wan.UpdateMechanicData(wan.spellData.Regrowth.basename)
             wan.UpdateHealingData(nil, wan.spellData.Regrowth.basename)
@@ -63,6 +61,11 @@ local function AddonLoad(self, event, addonName)
             critChanceModHot = critChanceModHot + cAtrategicInfusion
         end
 
+        local cDreamSurge = 0
+        if wan.traitData.DreamSurge.known and wan.auraData.player.buff_DreamSurge then
+            cDreamSurge = nDreamSurge
+        end
+
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
@@ -74,7 +77,7 @@ local function AddonLoad(self, event, addonName)
                 if idValidGroupUnit[groupUnitToken] then
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
                     local critChanceModInstant = 0
-                    local cRegrowthInstantHeal = nRegrowthInstantHeal
+                    local cRegrowthInstantHeal = nRegrowthInstantHeal + cDreamSurge
 
                     local countHots = 0
                     if wan.spellData.MasteryHarmony.known then
@@ -148,7 +151,7 @@ local function AddonLoad(self, event, addonName)
             end
 
             local critChanceModInstant = 0
-            local cRegrowthInstantHeal = nRegrowthInstantHeal
+            local cRegrowthInstantHeal = nRegrowthInstantHeal + cDreamSurge 
 
             -- add Improved Regrowth layer
             if wan.traitData.ImprovedRegrowth.known and wan.auraData[unitToken]["buff_" .. hotKey] then
@@ -218,6 +221,8 @@ local function AddonLoad(self, event, addonName)
             local nNourishValues = wan.GetTraitDescriptionNumbers(wan.traitData.Nourish.entryid, { 1, 2 })
             nNourish = nNourishValues[1]
             nNourishMastery = nNourishValues[2] * 0.01
+
+            nDreamSurge = wan.GetTraitDescriptionNumbers(wan.traitData.DreamSurge.entryid, { 3 })
         end
     end)
 
