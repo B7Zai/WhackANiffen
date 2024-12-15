@@ -27,8 +27,8 @@ local function AddonLoad(self, event, addonName)
         end
 
         local countTotalHots = 0
-        local unitTokenAoE = "allGroupUnitTokens"
         local cFlourish = nFlourish * 0.1
+        local allGroupUnitToken = "allGroupUnitTokens"
 
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
@@ -44,7 +44,7 @@ local function AddonLoad(self, event, addonName)
 
             local cFlourishHeal = cFlourish * countTotalHots
             local abilityValue = math.floor((cFlourishHeal > nFlourish and cFlourishHeal) or 0)
-            wan.UpdateSupportData(unitTokenAoE, wan.spellData.Flourish.basename, abilityValue, wan.spellData.Flourish.icon, wan.spellData.Flourish.name)
+            wan.UpdateSupportData(allGroupUnitToken, wan.spellData.Flourish.basename, abilityValue, wan.spellData.Flourish.icon, wan.spellData.Flourish.name)
         else
             local unitToken = "player"
             local playerGUID = wan.PlayerState.GUID

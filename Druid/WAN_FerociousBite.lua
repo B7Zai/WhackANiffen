@@ -43,7 +43,10 @@ local function AddonLoad(self, event, addonName)
         -- Combo checkers and early exit
         currentCombo = math.max(checkCombo, ((wan.auraData.player.buff_ApexPredatorsCraving and comboMax) or 0))
         comboPercentage = (currentCombo / comboMax) * 100
-        if wan.traitData.MasterShapeshifter.known and currentCombo ~= nMasterShapeshifter or comboPercentage < 80 then
+        if wan.traitData.MasterShapeshifter.known and currentCombo ~= nMasterShapeshifter then
+            wan.UpdateAbilityData(wan.spellData.FerociousBite.basename)
+            return
+        elseif comboPercentage < 80  then
             wan.UpdateAbilityData(wan.spellData.FerociousBite.basename)
             return
         end

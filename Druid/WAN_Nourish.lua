@@ -66,12 +66,12 @@ local function AddonLoad(self, event, addonName)
 
                     local cWildSynthesis = 0
                     if wan.traitData.WildSynthesis.known and wan.auraData.player.buff_WildSynthesis then
-                        local cWildSynthesisStacks = wan.auraData.player.buff_WildSynthesis.applications
+                        local cWildSynthesisStacks = wan.auraData.player.buff_WildSynthesis.applications or 1
                         cWildSynthesis = nWildSynthesis * cWildSynthesisStacks
                     end
 
                     local cMasteryHarmony = ((nMasteryHarmony + cWildSynthesis) * countHots) or 0
-                    local cNourishInstantHeal = (nNourishInstantHeal + (nNourishInstantHeal * cMasteryHarmony * nNourishMastery) + cDreamSurge) * critInstantValue
+                    local cNourishInstantHeal = (nNourishInstantHeal + (nNourishInstantHeal * cMasteryHarmony * nNourishMastery) + cDreamSurge) * critInstantValue * wan.UnitState.LevelScale[groupUnitToken]
 
                     -- add cast efficiency layer
                     local cNourishHeal = cNourishInstantHeal * castEfficiency

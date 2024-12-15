@@ -75,7 +75,7 @@ end
 ---- Checks if player is missing enough health
 function wan.AbilityPercentageToValue(percentValue)
     local percentage = percentValue or 100
-    local unitMaxHealth = UnitHealthMax("player")
+    local unitMaxHealth = wan.UnitState.MaxHealth.player
     return unitMaxHealth * (percentage / 100)
 end
 
@@ -83,7 +83,7 @@ end
 function wan.UnitAbilityPercentageToValue(unitToken, percentValue)
     local unit = unitToken or "player"
     local percentage = percentValue or 100
-    local unitMaxHealth = UnitHealthMax(unit)
+    local unitMaxHealth = wan.UnitState.MaxHealth.player
     return unitMaxHealth * (percentage / 100)
 end
 

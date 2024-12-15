@@ -60,7 +60,7 @@ local function AddonLoad(self, event, addonName)
                     local cCenarionWardHotHeal = nCenarionWardHotHeal
                     local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth, cCenarionWardInstantHeal)
 
-                    cCenarionWardHotHeal = cCenarionWardHotHeal * critHotValue * hotPotency
+                    cCenarionWardHotHeal = cCenarionWardHotHeal * critHotValue * hotPotency * wan.UnitState.LevelScale[groupUnitToken] 
 
                     wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
                     wan.HotValue[groupUnitToken][wan.traitData.CenarionWard.traitkey] = cCenarionWardHotHeal

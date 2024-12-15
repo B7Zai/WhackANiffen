@@ -25,10 +25,12 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
+        local unitsNeedHeal = 0
+        wan.HealUnitCountAoE[wan.spellData.Tranquility.basename] = wan.HealUnitCountAoE[wan.spellData.Tranquility.basename] or 1
+
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
-            local unitTokenAoE = "allGroupUnitTokens"
 
             for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
@@ -38,10 +40,17 @@ local function AddonLoad(self, event, addonName)
                     local cTranquility = wan.UnitDefensiveCooldownToValue(wan.spellData.Tranquility.id, groupUnitToken)
 
                     local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cTranquility, currentPercentHealth)
-                    wan.UpdateSupportData(unitTokenAoE, wan.spellData.Tranquility.basename, abilityValue, wan.spellData.Tranquility.icon, wan.spellData.Tranquility.name)
+                    if abilityValue > 0 then unitsNeedHeal = unitsNeedHeal + 1 end
+                    wan.UpdateSupportData(groupUnitToken, wan.spellData.Tranquility.basename, abilityValue, wan.spellData.Tranquility.icon, wan.spellData.Tranquility.name)
                 else
-                    wan.UpdateSupportData(unitTokenAoE, wan.spellData.Tranquility.basename)
+                    wan.UpdateSupportData(groupUnitToken, wan.spellData.Tranquility.basename)
                 end
+            end
+
+            if unitsNeedHeal > 0 then
+                wan.HealUnitCountAoE[wan.spellData.Tranquility.basename] = unitsNeedHeal
+            else
+                wan.HealUnitCountAoE[wan.spellData.Tranquility.basename] = 1
             end
         end
     end

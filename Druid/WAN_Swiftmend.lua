@@ -66,14 +66,14 @@ local function AddonLoad(self, event, addonName)
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
                     local cSwifmendInstantHeal = nSwifmendInstantHeal + cDreamSurge
 
-                    cSwifmendInstantHeal = nSwifmendInstantHeal * critInstantValue
+                    cSwifmendInstantHeal = nSwifmendInstantHeal * critInstantValue * wan.UnitState.LevelScale[groupUnitToken]
 
                     local cSwiftmendHotHeal = wan.traitData.GroveTending.known and nGroveTending or 0
                     local cSymbioticBlooms = wan.traitData.ThrivingGrowth.known and nSymbioticBlooms or 0
                     local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth, cSwifmendInstantHeal)
 
-                    cSwiftmendHotHeal = cSwiftmendHotHeal * critHotValue * hotPotency
-                    cSymbioticBlooms = cSymbioticBlooms * critHotValue * hotPotency
+                    cSwiftmendHotHeal = cSwiftmendHotHeal * critHotValue * hotPotency * wan.UnitState.LevelScale[groupUnitToken]
+                    cSymbioticBlooms = cSymbioticBlooms * critHotValue * hotPotency * wan.UnitState.LevelScale[groupUnitToken]
 
                     wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
                     wan.HotValue[groupUnitToken][wan.traitData.GroveTending.traitkey] = cSwiftmendHotHeal

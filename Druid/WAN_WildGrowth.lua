@@ -16,6 +16,7 @@ local function AddonLoad(self, event, addonName)
 
     -- Init triat data
     local nHarmoniousBlooming = 0
+    local nEmbraceoftheDream = 0
     local nStrategicInfusion = 0
 
     -- Ability value calculation
@@ -64,28 +65,37 @@ local function AddonLoad(self, event, addonName)
 
         -- check crit layer
         local critHotValue = wan.ValueFromCritical(wan.CritChance, critChanceModHot)
+        local critInstantValue = wan.ValueFromCritical(wan.CritChance, critChanceModHot)
 
         -- init data for calculation
         local _, _, idValidGroupUnit = wan.ValidGroupMembers()
         local unitsNeedHeal = 0
-        wan.HealUnitCountAoE[hotKey] = wan.HealUnitCountAoE[hotKey] or unitsNeedHeal
-        local unitTokenAoE = "allGroupUnitTokens"
+        wan.HealUnitCountAoE[hotKey] = wan.HealUnitCountAoE[hotKey] or 1
 
         -- run check over all group units in range
         for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
             if idValidGroupUnit[groupUnitToken] then
-                
+
                 -- check unit health
                 local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
 
+                -- add Embrace of the Dream layer
+                local cEmbraceoftheDream = 0
+                if wan.traitData.EmbraceoftheDream.known and (wan.auraData[groupUnitToken].buff_Rejuvenation or wan.auraData[groupUnitToken].buff_Regrowth) then
+                    cEmbraceoftheDream = cEmbraceoftheDream + nEmbraceoftheDream
+                end
+
                 -- base values
-                local cWildGrowthInstantHeal = 0
+                local cWildGrowthInstantHeal = cEmbraceoftheDream
+
+                cWildGrowthInstantHeal = cWildGrowthInstantHeal * critInstantValue * wan.UnitState.LevelScale[groupUnitToken]
+
                 local cWildGrowthHotHeal = nWildGrowthHotHeal
                 local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth)
 
                 -- calculate estimated hot value
-                cWildGrowthHotHeal = cWildGrowthHotHeal * critHotValue * hotPotency
+                cWildGrowthHotHeal = cWildGrowthHotHeal * critHotValue * hotPotency * wan.UnitState.LevelScale[groupUnitToken]
 
                 -- cache hot value on unit
                 wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
@@ -118,20 +128,24 @@ local function AddonLoad(self, event, addonName)
                 end
 
                 -- add cast efficiency layer
-                cWildGrowthHeal = cWildGrowthHeal * castEfficiency
+                cWildGrowthHeal = cWildGrowthHeal * castEfficiency * wan.HealUnitCountAoE[hotKey]
 
                 local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cWildGrowthHeal, currentPercentHealth, wan.HealUnitCountAoE[hotKey])
                 if abilityValue > 0 then unitsNeedHeal = unitsNeedHeal + 1 end
-                wan.UpdateHealingData(unitTokenAoE, wan.spellData.WildGrowth.basename, abilityValue, wan.spellData.WildGrowth.icon, wan.spellData.WildGrowth.name)
+                wan.UpdateHealingData(groupUnitToken, wan.spellData.WildGrowth.basename, abilityValue, wan.spellData.WildGrowth.icon, wan.spellData.WildGrowth.name)
             else
-                wan.UpdateHealingData(unitTokenAoE, wan.spellData.WildGrowth.basename)
+                wan.UpdateHealingData(groupUnitToken, wan.spellData.WildGrowth.basename)
             end
         end
 
-        if unitsNeedHeal > cWildGrowthUnitCap then
-            unitsNeedHeal = cWildGrowthUnitCap
+        if unitsNeedHeal > 0 then
+            if unitsNeedHeal > cWildGrowthUnitCap then
+                unitsNeedHeal = cWildGrowthUnitCap
+            end
+            wan.HealUnitCountAoE[hotKey] = unitsNeedHeal
+        else
+            wan.HealUnitCountAoE[hotKey] = 1
         end
-        wan.HealUnitCountAoE[hotKey] = unitsNeedHeal
     end
 
     -- Data update on events
@@ -140,6 +154,8 @@ local function AddonLoad(self, event, addonName)
             nWildGrowthHotHeal = wan.GetSpellDescriptionNumbers(wan.spellData.WildGrowth.id, { 3 })
 
             nMasteryHarmony = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryHarmony.id, { 1 }) * 0.01
+
+            nEmbraceoftheDream = wan.GetTraitDescriptionNumbers(wan.traitData.EmbraceoftheDream.entryid, { 1 })
         end
     end)
 

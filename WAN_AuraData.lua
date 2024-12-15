@@ -23,13 +23,15 @@ local function UpdateAuras(unitID, updateInfo)
         wan.auraData[unitID] = {}
         wan.instanceIDMap[unitID] = {}
 
+        print("full update for: ", unitID)
+
         for i = 1, 40 do
             local aura = C_UnitAuras.GetAuraDataByIndex(unitID, i, "HELPFUL")
             if not aura then break end
             if unitID == "player" and wan.spellDataID[aura.spellId]
                 or unitID == wan.TargetUnitID
                 or wan.NameplateUnitID[unitID]
-                or (wan.GroupUnitID[unitID] and (wan.spellDataID[aura.spellId] or wan.IsAI[unitID] or aura.isRaid)) then
+                or (wan.GroupUnitID[unitID] and (wan.spellDataID[aura.spellId] or wan.UnitState.IsAI[unitID] or aura.isRaid)) then
                 local spellName = wan.FormatNameForKey(aura.name)
                 local key = spellName and "buff_" .. spellName
                 if key then
@@ -42,7 +44,7 @@ local function UpdateAuras(unitID, updateInfo)
         for i = 1, 40 do
             local aura = C_UnitAuras.GetAuraDataByIndex(unitID, i, "HARMFUL")
             if not aura then break end
-            if unitID == "player"
+            if unitID == "player" and aura.isRaid
                 or (unitID == wan.TargetUnitID and aura.sourceUnit == "player")
                 or (wan.NameplateUnitID[unitID] and aura.sourceUnit == "player")
                 or (wan.GroupUnitID[unitID] and aura.isRaid) then
@@ -58,11 +60,12 @@ local function UpdateAuras(unitID, updateInfo)
     end
 
     if updateInfo.addedAuras then -- Aura update when auras get added
+    print("adding auras for: ", unitID)
         for _, aura in pairs(updateInfo.addedAuras) do
             if unitID == "player" and (wan.spellDataID[aura.spellId] or aura.isRaid)
             or (unitID == wan.TargetUnitID and (aura.isHelpful or aura.sourceUnit == "player"))
             or (wan.NameplateUnitID[unitID] and (aura.isHelpful or aura.sourceUnit == "player"))
-            or (wan.GroupUnitID[unitID] and (wan.spellDataID[aura.spellId] or wan.IsAI[unitID] or aura.isRaid))
+            or (wan.GroupUnitID[unitID] and (wan.spellDataID[aura.spellId] or wan.UnitState.IsAI[unitID] or aura.isRaid))
              then
                 local spellName = wan.FormatNameForKey(aura.name)
                 if spellName then
@@ -122,10 +125,12 @@ local function AuraUpdate(self, event, unitID, updateInfo)
     end
 
     -- update aura data for the player
-    if unitID == "player" and not wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
+    if unitID == "player" then
         UpdateAuras("player", updateInfo)
-    elseif unitID == "player" and not wan.PlayerState.InHealerMode then
-        UpdateAuras("player", updateInfo)
+    end
+
+    if event == "PLAYER_ALIVE" then
+        UpdateAuras("player", { isFullUpdate = true })
     end
 
     -- update aura data on target when switching targets
@@ -154,7 +159,7 @@ local function AuraUpdate(self, event, unitID, updateInfo)
     end
 
     -- update aura data on group members
-    if wan.PlayerState.InHealerMode and wan.GroupUnitID[unitID] then
+    if unitID ~= "player" and wan.PlayerState.InHealerMode and wan.GroupUnitID[unitID] then
         if updateInfo and updateInfo.updatedAuraInstanceIDs then
             -- update rate for updatedAuraInstanceIDs, this will tank fps if not throttled for each unit token
             local lastUpdate = wan.instanceIDThrottler[unitID]
@@ -163,8 +168,10 @@ local function AuraUpdate(self, event, unitID, updateInfo)
                 wan.instanceIDThrottler[unitID] = GetTime()
                 UpdateAuras(unitID, updateInfo)
             end
-        elseif updateInfo and (updateInfo.isFullUpdate or updateInfo.addedAuras or updateInfo.removedAuraInstanceIDs) then
+        elseif updateInfo and (updateInfo.addedAuras or updateInfo.removedAuraInstanceIDs) then
             UpdateAuras(unitID, updateInfo)
+        else
+            UpdateAuras(unitID, { isFullUpdate = true })
         end
     end
 end
@@ -177,7 +184,6 @@ wan.RegisterBlizzardEvents(
     "PLAYER_ENTERING_WORLD",
     "NAME_PLATE_UNIT_ADDED",
     "NAME_PLATE_UNIT_REMOVED",
-    "GROUP_ROSTER_UPDATE",
-    "PLAYER_LOGOUT"
+    "PLAYER_ALIVE"
 )
 auraFrame:SetScript("OnEvent", AuraUpdate)

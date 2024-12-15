@@ -42,10 +42,9 @@ local function AddonLoad(self, event, addonName)
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
-            local unitTokenAoE = "allGroupUnitTokens"
 
             local unitsNeedHeal = 0
-            wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename] = wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename] or unitsNeedHeal
+            wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename] = wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename] or 1
 
             -- run check over all group units in range
             for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
@@ -58,12 +57,11 @@ local function AddonLoad(self, event, addonName)
                     local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth)
 
                     -- calculate estimated hot value
-                    cEfflorescenceHotHeal = cEfflorescenceHotHeal * critMod * hotPotency
-                    cSprintBlossomsHotHeal = cSprintBlossomsHotHeal * critMod * hotPotency
+                    cEfflorescenceHotHeal = cEfflorescenceHotHeal * critMod * hotPotency * wan.UnitState.LevelScale[groupUnitToken] 
+                    cSprintBlossomsHotHeal = cSprintBlossomsHotHeal * critMod * hotPotency * wan.UnitState.LevelScale[groupUnitToken] 
 
                     -- cache hot value on unit
                     wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
-                    wan.HotValue[groupUnitToken][wan.spellData.Efflorescence.basename] = cEfflorescenceHotHeal
                     wan.HotValue[groupUnitToken][wan.traitData.SpringBlossoms.traitkey] = cSprintBlossomsHotHeal
 
                     -- add mastery layer
@@ -93,18 +91,24 @@ local function AddonLoad(self, event, addonName)
                         cEfflorescenceHeal = cEfflorescenceHeal - hotValue
                     end
 
+                    cEfflorescenceHeal = cEfflorescenceHeal * wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename]
+
                     local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cEfflorescenceHeal, currentPercentHealth, wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename])
                     if abilityValue > 0 then unitsNeedHeal = unitsNeedHeal + 1 end
-                    wan.UpdateHealingData(unitTokenAoE, wan.spellData.Efflorescence.basename, abilityValue, wan.spellData.Efflorescence.icon, wan.spellData.Efflorescence.name)
+                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Efflorescence.basename, abilityValue, wan.spellData.Efflorescence.icon, wan.spellData.Efflorescence.name)
                 else
-                    wan.UpdateHealingData(unitTokenAoE, wan.spellData.Efflorescence.basename)
+                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Efflorescence.basename)
                 end
             end
 
-            if unitsNeedHeal > nEfflorescenceUnitCap then
-                unitsNeedHeal = nEfflorescenceUnitCap
+            if unitsNeedHeal > 0 then
+                if unitsNeedHeal > nEfflorescenceUnitCap  then
+                    unitsNeedHeal = nEfflorescenceUnitCap 
+                end
+                wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename] = unitsNeedHeal
+            else
+                wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename] = 1
             end
-            wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename] = unitsNeedHeal
         end
     end
 

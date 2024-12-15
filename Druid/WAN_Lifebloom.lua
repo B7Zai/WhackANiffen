@@ -97,7 +97,7 @@ local function AddonLoad(self, event, addonName)
                     local cLifebloomInstantHeal = cDreamSurge
 
                     -- calculate estimated hot value
-                    cLifebloomInstantHeal = cLifebloomInstantHeal * critInstantValue
+                    cLifebloomInstantHeal = cLifebloomInstantHeal * critInstantValue * wan.UnitState.LevelScale[groupUnitToken] 
 
                     local cLifebloomHotHeal = nLifebloomHotHeal
                     local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth)
@@ -106,7 +106,7 @@ local function AddonLoad(self, event, addonName)
                     cLifebloomHotHeal = cLifebloomHotHeal + cPhotosynthesisHeal + cBuddingLeaves
 
                     -- calculate estimated hot value
-                    cLifebloomHotHeal = cLifebloomHotHeal * critHotValue * hotPotency
+                    cLifebloomHotHeal = cLifebloomHotHeal * critHotValue * hotPotency * wan.UnitState.LevelScale[groupUnitToken] 
 
                     -- cache hot value on unit
                     wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}

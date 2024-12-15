@@ -101,12 +101,12 @@ local function AddonLoad(self, event, addonName)
                     end
 
                     local critInstantValue = wan.ValueFromCritical(wan.CritChance, critChanceModInstant)
-                    cRegrowthInstantHeal = nRegrowthInstantHeal * critInstantValue
+                    cRegrowthInstantHeal = nRegrowthInstantHeal * critInstantValue * wan.UnitState.LevelScale[groupUnitToken]
 
                     local cRegrowthHotHeal = nRegrowthHotHeal
                     local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth, cRegrowthInstantHeal)
 
-                    cRegrowthHotHeal = cRegrowthHotHeal * critHotValue * hotPotency
+                    cRegrowthHotHeal = cRegrowthHotHeal * critHotValue * hotPotency * wan.UnitState.LevelScale[groupUnitToken]
 
                     wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
                     wan.HotValue[groupUnitToken][hotKey] = cRegrowthHotHeal

@@ -85,7 +85,7 @@ local function AddonLoad(self, event, addonName)
                     local cRejuvenationInstantHeal = cThrivingVegetation + cDreamSurge
 
                     -- calculate estimated instant value
-                    cRejuvenationInstantHeal = cRejuvenationInstantHeal * critInstantValue
+                    cRejuvenationInstantHeal = cRejuvenationInstantHeal * critInstantValue * wan.UnitState.LevelScale[groupUnitToken]
 
                     -- init spell hot value
                     local cRejuvenationHotHeal = nRejuvenationHotHeal
@@ -98,9 +98,9 @@ local function AddonLoad(self, event, addonName)
                     end
 
                     -- calculate estimated hot value
-                    cRejuvenationHotHeal = cRejuvenationHotHeal * critHotValue * hotPotency
-                    cCultivation = cCultivation * critHotValue * hotPotency
-                    cGerminationHotHeal = cGerminationHotHeal * critHotValue * hotPotency
+                    cRejuvenationHotHeal = cRejuvenationHotHeal * critHotValue * hotPotency * wan.UnitState.LevelScale[groupUnitToken]
+                    cCultivation = cCultivation * critHotValue * hotPotency * wan.UnitState.LevelScale[groupUnitToken]
+                    cGerminationHotHeal = cGerminationHotHeal * critHotValue * hotPotency * wan.UnitState.LevelScale[groupUnitToken]
 
                     -- cache hot value on unit
                     wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}

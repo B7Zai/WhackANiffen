@@ -138,7 +138,7 @@ function wan.OffensiveCooldownToValue(spellIndentifier)
     if cooldownMS <= 1000 then cooldownMS = cooldownMS * 100 end
     if cooldownMS == 0 then cooldownMS = 120000 end
     local maxCooldown = cooldownMS / 1000 / 60
-    local maxHealth = wan.UnitMaxHealth["player"]
+    local maxHealth = wan.UnitState.MaxHealth.player
     return (maxHealth * maxCooldown) or math.huge
 end
 
@@ -180,7 +180,7 @@ function wan.CheckAoEPotency(validUnitIDs)
         totalNameplateHealth = totalNameplateHealth + targetHealth
     end
 
-    local maxHealth = wan.UnitMaxHealth["player"]
+    local maxHealth = wan.UnitState.MaxHealth.player
     local damagePotency = (totalNameplateHealth / maxHealth)
     local validGroupMembers = wan.ValidGroupMembers()
     local calcPotency = damagePotency / validGroupMembers
@@ -191,7 +191,7 @@ end
 -- Adjust ability dot value to unit health
 function wan.CheckDotPotency(initialValue)
     local baseValue = initialValue or 0
-    local maxHealth = wan.UnitMaxHealth.player or 0
+    local maxHealth = wan.UnitState.MaxHealth.player
     local targetHealth = math.max((UnitCanAttack("player", wan.TargetUnitID) and UnitHealth(wan.TargetUnitID) or 0)- baseValue, 0)
     local damagePotency = (targetHealth / maxHealth)
     local validGroupMembers = wan.ValidGroupMembers()
@@ -218,7 +218,7 @@ function wan.CheckDotPotencyAoE(auraData, validUnitIDs, debuffName, maxStacks, i
         end
     end
 
-    local maxHealth = wan.UnitMaxHealth.player or 0
+    local maxHealth = wan.UnitState.MaxHealth.player or 0
     local damagePotency = (totalNameplateHealth / maxHealth)
     local validGroupMembers = wan.ValidGroupMembers()
     local calcPotency = damagePotency / validGroupMembers

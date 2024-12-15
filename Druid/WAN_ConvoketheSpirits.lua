@@ -17,7 +17,7 @@ local function AddonLoad(self, event, addonName)
     local function CheckAbilityValue()
         -- Early exits
         if not wan.PlayerState.Status or wan.auraData.player.buff_Prowl
-            or not wan.IsSpellUsable(wan.spellData.ConvoketheSpirits.id)
+        or not wan.PlayerState.Combat or not wan.IsSpellUsable(wan.spellData.ConvoketheSpirits.id)
         then
             wan.UpdateAbilityData(wan.spellData.ConvoketheSpirits.basename)
             wan.UpdateMechanicData(wan.spellData.ConvoketheSpirits.basename)
@@ -25,22 +25,31 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
+        local unitsNeedHeal = 0
+        wan.HealUnitCountAoE[wan.spellData.ConvoketheSpirits.basename] = wan.HealUnitCountAoE[wan.spellData.ConvoketheSpirits.basename] or 1
+
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
-            local unitTokenAoE = "allGroupUnitTokens"
 
             for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
                 if idValidGroupUnit[groupUnitToken] then
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
-                    local cConvoketheSpirits = wan.UnitDefensiveCooldownToValue(wan.spellData.ConvoketheSpirits.id, groupUnitToken)
+                    local cConvoketheSpirits = wan.UnitDefensiveCooldownToValue(wan.spellData.ConvoketheSpirits.id, groupUnitToken) * wan.UnitState.LevelScale[groupUnitToken]
 
                     local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cConvoketheSpirits, currentPercentHealth)
-                    wan.UpdateSupportData(unitTokenAoE, wan.spellData.ConvoketheSpirits.basename, abilityValue, wan.spellData.ConvoketheSpirits.icon, wan.spellData.ConvoketheSpirits.name)
+                    if abilityValue > 0 then unitsNeedHeal = unitsNeedHeal + 1 end
+                    wan.UpdateSupportData(groupUnitToken, wan.spellData.ConvoketheSpirits.basename, abilityValue, wan.spellData.ConvoketheSpirits.icon, wan.spellData.ConvoketheSpirits.name)
                 else
-                    wan.UpdateSupportData(unitTokenAoE, wan.spellData.ConvoketheSpirits.basename)
+                    wan.UpdateSupportData(groupUnitToken, wan.spellData.ConvoketheSpirits.basename)
                 end
+            end
+
+            if unitsNeedHeal > 0 then
+                wan.HealUnitCountAoE[wan.spellData.ConvoketheSpirits.basename] = unitsNeedHeal
+            else
+                wan.HealUnitCountAoE[wan.spellData.ConvoketheSpirits.basename] = 1
             end
         else
             -- Base offensive value
