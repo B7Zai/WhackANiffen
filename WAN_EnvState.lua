@@ -10,9 +10,11 @@ wan.PlayerState = {}
 wan.PlayerState.InHealerMode = false
 wan.PlayerState.Class = UnitClassBase("player") or "UNKNOWN"
 wan.PlayerState.InGroup = false
+wan.PlayerState.InRaid = false
 wan.PlayerState.Status = false
 wan.PlayerState.Combat = false
 wan.PlayerState.GUID = "guid"
+wan.PlayerState.Role = "DAMAGER"
 wan.CritChance = GetCritChance() or 0
 wan.Haste = GetHaste() or 0
 
@@ -21,6 +23,7 @@ wan.UnitState.MaxHealth = {}
 wan.UnitState.IsAI = {}
 wan.UnitState.Level = {}
 wan.UnitState.LevelScale = {}
+wan.UnitState.Role = {}
 
 local isDeadOrGhost, isMounted, inVehicle
 local function OnEvent(self, event, ...)
@@ -48,55 +51,83 @@ local function OnEvent(self, event, ...)
     end
 
     -- assigns group unit tokens for group
-    if event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
-        print("group update")
+    if event == "GROUP_ROSTER_UPDATE" or event == "ROLE_CHANGED_INFORM" or event == "PLAYER_ENTERING_WORLD" then
         local groupType = UnitInRaid("player") and "raid" or "party"
-        local nGroupUnits = GetNumGroupMembers()
+        wan.PlayerState.InRaid = groupType == "raid" or false
         local _, _, _, difficultyName = GetInstanceInfo()
         local isLevelScaling = difficultyName and difficultyName == "Timewalking" or false
+        local nGroupMembers = GetNumGroupMembers()
         local activeUnits = {}
 
-        -- noticable performance drop when the game assigns group unit tokens en masse
-        -- haven't found a way to go around this yet...
-        if nGroupUnits > 0 then
+        if nGroupMembers > 0 then
             wan.PlayerState.InGroup = true
-            for i = 1, nGroupUnits do
-                local unit = groupType .. i
-                local groupGUID = UnitGUID(unit)
-                if groupGUID then
-                    local unitToken = UnitTokenFromGUID(groupGUID)
-                    if unitToken ~= "player" then
-                        if not unitToken:find("^" .. groupType) then
-                            local unitNumber = unitToken:match("%d+")
-                            unitToken = unitNumber and groupType .. unitNumber
+            if groupType == "raid" then
+                if EditModeManagerFrame:ShouldRaidFrameShowSeparateGroups() then
+                    local parentFrame = "CompactRaidGroup"
+                    local groupUIParent = "Member"
+                    for raidGroupIndex = 1, 8 do
+                        local raidGroups = _G[parentFrame .. raidGroupIndex]
+                        if raidGroups then
+                            local groupIndex = parentFrame .. raidGroupIndex
+                            for raidSubGroupIndex = 1, 5 do
+                                local groupMemberIndex = groupIndex .. groupUIParent .. raidSubGroupIndex
+                                local groupUIMember = _G[groupMemberIndex]
+                                if groupUIMember then
+                                    local active = wan.AssignUnitState(groupUIMember, isLevelScaling)
+                                    for guid, token in pairs(active) do
+                                        activeUnits[guid] = token
+                                    end
+                                end
+                            end
                         end
-
-                        local isAI = UnitInPartyIsAI(unitToken) or false
-                        local maxHealth = UnitHealthMax(unitToken) or 0
-                        local unitLevel = UnitLevel(unitToken) or wan.UnitState.Level.player
-
-                        wan.GroupUnitID[unitToken] = groupGUID
-                        activeUnits[groupGUID] = unitToken
-
-                        wan.UnitState.LevelScale[unitToken] = 1
-                        wan.UnitState.MaxHealth[unitToken] = maxHealth
-                        wan.UnitState.Level[unitToken] = unitLevel
-                        wan.UnitState.IsAI[unitToken] = isAI
-
-                        if isLevelScaling then
-                            if wan.UnitState.Level[unitToken] ~= wan.UnitState.Level.player then
-                                local levelScaleValue = wan.UnitState.MaxHealth[unitToken] / wan.UnitState.MaxHealth.player
-                                wan.UnitState.LevelScale[unitToken] = levelScaleValue
+                    end
+                else
+                    local groupUIParent = "CompactRaidFrame"
+                    for i = 1, nGroupMembers do
+                        local frameName = groupUIParent .. i
+                        local groupUIMember = _G[frameName]
+                        if groupUIMember then
+                            local active = wan.AssignUnitState(groupUIMember, isLevelScaling)
+                            for guid, token in pairs(active) do
+                                activeUnits[guid] = token
                             end
                         end
                     end
                 end
-            end
-            local playerGUID = wan.PlayerState.GUID
-            local playerUnitToken = "player"
-            if playerGUID then
-                wan.GroupUnitID[playerUnitToken] = playerGUID
-                activeUnits[playerGUID] = playerUnitToken
+            elseif groupType == "party" then
+                if EditModeManagerFrame:UseRaidStylePartyFrames() then
+                    local groupUIParent = "CompactPartyFrameMember"
+                    for i = 1, nGroupMembers do
+                        local frameName = groupUIParent .. i
+                        local groupUIMember = _G[frameName]
+                        if groupUIMember then
+                            local active = wan.AssignUnitState(groupUIMember, isLevelScaling)
+                            for guid, token in pairs(active) do
+                                activeUnits[guid] = token
+                            end
+                        end
+                    end
+                else
+                    local playerUIParent = _G["PlayerFrame"]
+                    if playerUIParent then
+                        local active = wan.AssignUnitState(playerUIParent, isLevelScaling)
+                        for guid, token in pairs(active) do
+                            activeUnits[guid] = token
+                        end
+                    end
+
+                    local parentFrame = _G["PartyFrame"]
+                    local groupUIParent = "MemberFrame"
+                    for i = 1, nGroupMembers do
+                        local groupUIMember = parentFrame[groupUIParent .. i]
+                        if groupUIMember then
+                            local active = wan.AssignUnitState(playerUIParent, isLevelScaling)
+                            for guid, token in pairs(active) do
+                                activeUnits[guid] = token
+                            end
+                        end
+                    end
+                end
             end
         else
             wan.PlayerState.InGroup = false
@@ -108,7 +139,6 @@ local function OnEvent(self, event, ...)
         -- wipe data on removed group units
         for unitToken, unitGUID in pairs(wan.GroupUnitID) do
             if not activeUnits[unitGUID] then
-
                 wan.GroupUnitID[unitToken] = nil
 
                 wan.auraData[unitToken] = nil
@@ -123,12 +153,12 @@ local function OnEvent(self, event, ...)
                 wan.UnitState.MaxHealth[unitToken] = nil
                 wan.UnitState.Level[unitToken] = nil
                 wan.UnitState.LevelScale[unitToken] = nil
+                wan.UnitState.Role[unitToken] = nil
             end
         end
     end
 
     if event == "UPDATE_INSTANCE_INFO" or event == "UNIT_LEVEL"then
-        print("updating instance info")
         local _, _, _, difficultyName = GetInstanceInfo()
         local isLevelScaling = difficultyName and difficultyName == "Timewalking" or false
         for groupUnitToken, _ in pairs(wan.GroupUnitID) do
@@ -196,6 +226,7 @@ end
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     if event == "TRAIT_DATA_READY" or event == "HEALERMODE_FRAME_TOGGLE" then
         local _, _, _, _, role = wan.GetTraitInfo()
+        wan.PlayerState.Role = role
         wan.PlayerState.InHealerMode = role == "HEALER" or wan.Options.HealerMode.Toggle
     end
 end)
@@ -217,6 +248,7 @@ wan.RegisterBlizzardEvents(stateFrame,
     "NAME_PLATE_UNIT_ADDED",
     "NAME_PLATE_UNIT_REMOVED",
     "GROUP_ROSTER_UPDATE",
+    "ROLE_CHANGED_INFORM",
     "UNIT_MAXHEALTH",
     "UNIT_LEVEL"
 )

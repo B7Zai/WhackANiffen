@@ -54,6 +54,7 @@ local function GetTraitData(dataArray)
                                 rank = nodeInfo.currentRank,
                                 traitkey = keyName
                             }
+
                         end
                     end
                 end

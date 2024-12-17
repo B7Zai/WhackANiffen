@@ -69,6 +69,8 @@ local function AddonLoad(self, event, addonName)
         local critHotValue = wan.ValueFromCritical(wan.CritChance, critChanceModHot)
         local critInstantValue = wan.ValueFromCritical(wan.CritChance)
 
+        local currentTime = GetTime()
+
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
@@ -137,9 +139,15 @@ local function AddonLoad(self, event, addonName)
 
                     -- subtract healing value of ability's hot from ability's max healing value
                     for _, auraKey in pairs(hotKeys) do
-                        if wan.auraData[groupUnitToken]["buff_" .. auraKey] then
-                            local hotValue = wan.HotValue[groupUnitToken][auraKey]
-                            cRejuvenationHeal = cRejuvenationHeal - hotValue
+                        local aura = wan.auraData[groupUnitToken]["buff_" .. auraKey]
+                        if aura then
+                            local reminingDuration = aura.expirationTime - currentTime
+                            if reminingDuration < 0 then
+                                wan.auraData[groupUnitToken]["buff_" .. auraKey] = nil
+                            else
+                                local hotValue = wan.HotValue[groupUnitToken][auraKey]
+                                cRejuvenationHeal = cRejuvenationHeal - hotValue
+                            end
                         end
                     end
 
@@ -213,9 +221,15 @@ local function AddonLoad(self, event, addonName)
 
             -- subtract healing value of ability's hot from ability's max healing value
             for _, auraKey in pairs(hotKeys) do
-                if wan.auraData[unitToken]["buff_" .. auraKey] then
-                    local hotValue = wan.HotValue[unitToken][auraKey]
-                    cRejuvenationHeal = cRejuvenationHeal - hotValue
+                local aura = wan.auraData[unitToken]["buff_" .. auraKey]
+                if aura then
+                    local reminingDuration = aura.expirationTime - currentTime
+                    if reminingDuration < 0 then
+                        wan.auraData[unitToken]["buff_" .. auraKey] = nil
+                    else
+                        local hotValue = wan.HotValue[unitToken][auraKey]
+                        cRejuvenationHeal = cRejuvenationHeal - hotValue
+                    end
                 end
             end
 

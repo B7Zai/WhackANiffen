@@ -8,6 +8,7 @@ wan.SupportData = {}    -- used for displaying support values in a group
 wan.HotValue = {}       -- used for storing hot values over all valid group units
 wan.HealUnitCountAoE = {}  -- used for storing valid group unit count for aoe healing spells
 
+
 -- Parses spell description and converts string numbers to numeric values.
 -- Returns specified numbers indexed by `indexes`.
 -- Returns 0 if no valid numbers are found for the specified indexes.
@@ -83,15 +84,17 @@ end
 function wan.UnitAbilityPercentageToValue(unitToken, percentValue)
     local unit = unitToken or "player"
     local percentage = percentValue or 100
-    local unitMaxHealth = wan.UnitState.MaxHealth.player
+    local unitMaxHealth = wan.UnitState.MaxHealth[unit]
     return unitMaxHealth * (percentage / 100)
 end
 
 -- Check on player's specialization 
 function wan.GetTraitInfo()
     local currentSpec = GetSpecialization()
-    local id, name, description, icon, role, primaryStat = GetSpecializationInfo(currentSpec)
-    return id, name, description, icon, role, primaryStat 
+    if currentSpec then
+        local id, name, description, icon, role, primaryStat = GetSpecializationInfo(currentSpec)
+        return id, name, description, icon, role, primaryStat
+    end
 end
 
 -- Checks if a spell is usable and not on cooldown

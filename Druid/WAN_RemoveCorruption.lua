@@ -11,32 +11,50 @@ local function AddonLoad(self, event, addonName)
 
     -- Init data
     local abilityActive = false
-    local nRemoveCorruption = 0
-    local dispelType = { Curse = true, Poison = true}
+    local nRemoveCorruption = 10
+    local dispelType = {}
 
     -- Ability value calculation
     local function CheckAbilityValue()
         -- Early exits
-        if not wan.PlayerState.Status or not wan.CheckDispelBool(wan.auraData, "player", dispelType)
-            or not wan.IsSpellUsable(wan.spellData.RemoveCorruption.id)
+        if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.RemoveCorruption.id)
         then
             wan.UpdateMechanicData(wan.spellData.RemoveCorruption.basename)
+            wan.UpdateSupportData(nil, wan.spellData.RemoveCorruption.basename)
             return
         end
 
-        -- Base values
-        local cRemoveCorruption = nRemoveCorruption
+        if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
+            local _, _, idValidGroupUnit = wan.ValidGroupMembers()
 
-        -- Update ability data
-        local abilityValue = math.floor(cRemoveCorruption)
-        wan.UpdateMechanicData(wan.spellData.RemoveCorruption.basename, abilityValue, wan.spellData.RemoveCorruption.icon, wan.spellData.RemoveCorruption.name)
+            for groupUnitToken, _ in pairs(wan.GroupUnitID) do
+
+                if idValidGroupUnit[groupUnitToken]then
+
+                    local cRemoveCorruption = wan.AbilityPercentageToValue(nRemoveCorruption)
+                    local dispelValue = wan.GetDispelValue(wan.auraData, groupUnitToken, dispelType)
+
+                    cRemoveCorruption = nRemoveCorruption * dispelValue
+
+                    local abilityValue = math.floor(cRemoveCorruption)
+                    wan.UpdateSupportData(groupUnitToken, wan.spellData.RemoveCorruption.basename, abilityValue, wan.spellData.RemoveCorruption.icon, wan.spellData.RemoveCorruption.name)
+                else
+                    wan.UpdateSupportData(groupUnitToken, wan.spellData.RemoveCorruption.basename)
+                end
+            end
+        else
+            local unitToken = "player"
+            local dispelValue = wan.GetDispelValue(wan.auraData, unitToken, dispelType)
+            local cRemoveCorruption = nRemoveCorruption * dispelValue
+            local abilityValue = math.floor(cRemoveCorruption)
+            wan.UpdateMechanicData(wan.spellData.RemoveCorruption.basename, abilityValue,
+                wan.spellData.RemoveCorruption.icon, wan.spellData.RemoveCorruption.name)
+        end
     end
 
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
-            local removeCorruptionValue = 25
-            nRemoveCorruption = wan.AbilityPercentageToValue(removeCorruptionValue)
         end
     end)
 
@@ -47,6 +65,8 @@ local function AddonLoad(self, event, addonName)
             abilityActive = wan.spellData.RemoveCorruption.known and wan.spellData.RemoveCorruption.id
             wan.BlizzardEventHandler(frameRemoveCorruption, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
             wan.SetUpdateRate(frameRemoveCorruption, CheckAbilityValue, abilityActive)
+
+            dispelType = wan.CheckDispelType(wan.spellData.RemoveCorruption.id)
         end
 
         if event == "TRAIT_DATA_READY" then end

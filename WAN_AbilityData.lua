@@ -1,7 +1,6 @@
 local _, wan = ...
 
 wan.spellData = {}
-wan.spellDataID = {}
 setmetatable(wan.spellData, {
     __index = function(t, key)
         local default = {
@@ -20,9 +19,8 @@ setmetatable(wan.spellData, {
     end
 })
 
-local function GetSpellData(spellDataArray, spellDataIDArray)
+local function GetSpellData(spellDataArray)
     wan.WipeTable(spellDataArray)
-    wan.WipeTable(spellDataIDArray)
     local spellBookItemSpellBank = Enum.SpellBookSpellBank.Player
 
     for i = 1, C_SpellBook.GetNumSpellBookSkillLines() do
@@ -54,8 +52,6 @@ local function GetSpellData(spellDataArray, spellDataIDArray)
                             basename = keyName,
                             known = true
                         }
-
-                        spellDataIDArray[spellInfo.spellID] = spellInfo.spellID
                     end
                 end
             end
@@ -73,6 +69,6 @@ wan.RegisterBlizzardEvents(frameAbilityData,
 
 frameAbilityData:SetScript("OnEvent", function(self, event, ...)
     if event == "SPELLS_CHANGED" or (event == "UNIT_AURA" and ... == "player") or event == "PLAYER_ENTERING_WORLD" then
-        GetSpellData(wan.spellData, wan.spellDataID)
+        GetSpellData(wan.spellData)
     end
 end)

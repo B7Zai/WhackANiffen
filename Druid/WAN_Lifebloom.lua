@@ -71,21 +71,31 @@ local function AddonLoad(self, event, addonName)
             cDreamSurge = nDreamSurge
         end
 
+        local currentTime = GetTime()
+
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
 
             -- exit early when a lifebloom is at the target cap
             local nLifebloomCount = 0
-            for groupUnitToken, _ in pairs(idValidGroupUnit) do
-                if wan.auraData[groupUnitToken].buff_Lifebloom then
-                    nLifebloomCount = nLifebloomCount + 1
-                end
-            end
+            for groupUnitToken, _ in pairs(wan.GroupUnitID) do
+                local aura = wan.auraData[groupUnitToken].buff_Lifebloom
+                if aura then
+                    local remainingDuration = aura.expirationTime - currentTime
+                    if remainingDuration < 0 then
+                        wan.auraData[groupUnitToken]["buff_" .. hotKey] = nil
+                    else
+                        if aura.sourceUnit == "player" then
+                            nLifebloomCount = nLifebloomCount + 1
+                        end
 
-            if nLifebloomCount >= nLifebloomCap then
-                wan.UpdateHealingData(nil, wan.spellData.Lifebloom.basename)
-                return
+                        if nLifebloomCount >= nLifebloomCap then
+                            wan.UpdateHealingData(nil, wan.spellData.Lifebloom.basename)
+                            return
+                        end
+                    end
+                end
             end
 
             -- run check over all group units in range
@@ -140,9 +150,16 @@ local function AddonLoad(self, event, addonName)
 
                     local cLifebloomHeal = cLifebloomInstantHeal + cLifebloomHotHeal
 
-                    if wan.auraData[groupUnitToken]["buff_" .. hotKey] then
-                        local hotValue = wan.HotValue[groupUnitToken][hotKey]
-                        cLifebloomHeal = cLifebloomHeal - hotValue
+                    -- subtract healing value of ability's hot from ability's max healing value
+                    local aura = wan.auraData[groupUnitToken]["buff_" .. hotKey]
+                    if aura then
+                        local remainingDuration = aura.expirationTime - currentTime
+                        if remainingDuration < 0 then
+                            wan.auraData[groupUnitToken]["buff_" .. hotKey] = nil
+                        else
+                            local hotValue = wan.HotValue[groupUnitToken][hotKey]
+                            cLifebloomHeal = cLifebloomHeal - hotValue
+                        end
                     end
 
                     -- update healing data
@@ -196,9 +213,15 @@ local function AddonLoad(self, event, addonName)
 
             local cLifebloomHeal = cLifebloomInstantHeal + cLifebloomHotHeal
 
-            if wan.auraData[unitToken]["buff_" .. hotKey] then
-                local hotValue = wan.HotValue[unitToken][hotKey]
-                cLifebloomHeal = cLifebloomHeal - hotValue
+            local aura = wan.auraData[unitToken]["buff_" .. hotKey]
+            if aura then
+                local remainingDuration = aura.expirationTime - currentTime
+                if remainingDuration < 0 then
+                    wan.auraData[unitToken]["buff_" .. hotKey] = nil
+                else
+                    local hotValue = wan.HotValue[unitToken][hotKey]
+                    cLifebloomHeal = cLifebloomHeal - hotValue
+                end
             end
 
             -- update healing data

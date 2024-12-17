@@ -87,6 +87,36 @@ function wan.FormatFractionalNumber(value)
     return math.floor(value * 10 + 0.5) / 10
 end
 
+function wan.AssignUnitState(frameCallback, isLevelScaling)
+    local activeUnits = {}
+    local unitToken = frameCallback and frameCallback.unit
+    local unitGUID = unitToken and UnitGUID(unitToken)
+    if unitGUID and unitToken then
+        local isAI = UnitInPartyIsAI(unitToken) or false
+        local maxHealth = UnitHealthMax(unitToken) or 0
+        local unitLevel = UnitLevel(unitToken) or wan.UnitState.Level.player
+        local role = UnitGroupRolesAssigned(unitToken)
+
+        wan.GroupUnitID[unitToken] = unitGUID
+        activeUnits[unitGUID] = unitToken
+
+        wan.UnitState.LevelScale[unitToken] = 1
+        wan.UnitState.MaxHealth[unitToken] = maxHealth
+        wan.UnitState.Level[unitToken] = unitLevel
+        wan.UnitState.IsAI[unitToken] = isAI
+        wan.UnitState.Role[unitToken] = role or "DAMAGER"
+
+        if isLevelScaling then
+            if wan.UnitState.Level[unitToken] ~= wan.UnitState.Level.player then
+                local levelScaleValue = wan.UnitState.MaxHealth[unitToken] / wan.UnitState.MaxHealth.player
+                wan.UnitState.LevelScale[unitToken] = levelScaleValue
+            end
+        end
+    end
+
+    return activeUnits
+end
+
 -- Checks gcd value
 function wan.GetSpellGcdValue(spellID)
     local gcdValue = 1.5

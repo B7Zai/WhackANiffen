@@ -50,7 +50,9 @@ local function AddonLoad(self, event, addonName)
 
         -- add crit layer
         local critHotValue = wan.ValueFromCritical(wan.CritChance, critChanceModHot)
-        local critInstantValue = wan.ValueFromCritical(wan.CritChance)
+        local critInstantValue = wan.ValueFromCritical(wan.CritChance, critChanceModInstant)
+
+        local currentTime = GetTime()
 
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
@@ -96,73 +98,76 @@ local function AddonLoad(self, event, addonName)
 
                     local cSwiftmendHeal = cSwifmendInstantHeal + cSwiftmendHotHeal
 
-                    if wan.auraData[groupUnitToken]["buff_" .. wan.traitData.GroveTending.traitkey] then
-                        local hotValue = wan.HotValue[groupUnitToken][wan.traitData.GroveTending.traitkey]
-                        cSwiftmendHeal = cSwiftmendHeal - hotValue
+                    local aura = wan.auraData[groupUnitToken]["buff_" .. wan.traitData.GroveTending.traitkey]
+                    if aura then
+                        local remainingDuration = aura.expirationTime - currentTime
+                        if remainingDuration < 0 then
+                            wan.auraData[groupUnitToken]["buff_" .. wan.traitData.GroveTending.traitkey] = nil
+                        else
+                            local hotValue = wan.HotValue[groupUnitToken][wan.traitData.GroveTending.traitkey]
+                            cSwiftmendHeal = cSwiftmendHeal - hotValue
+                        end
                     end
 
                     local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cSwiftmendHeal, currentPercentHealth)
-                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Swiftmend.basename, abilityValue, wan.spellData.Swiftmend.icon, wan.spellData.Swiftmend.name)
+                    wan.UpdateHealingData(groupUnitToken, wan.spellData.Swiftmend.basename, abilityValue,
+                    wan.spellData.Swiftmend.icon, wan.spellData.Swiftmend.name)
                 else
                     wan.UpdateHealingData(groupUnitToken, wan.spellData.Swiftmend.basename)
                 end
             end
         else
+
             local unitToken = "player"
-            if (wan.auraData[unitToken].buff_WildGrowth and wan.auraData[unitToken].buff_WildGrowth.spellId == wan.spellData.WildGrowth.id
-            or wan.auraData[unitToken].buff_Regrowth and wan.auraData[unitToken].buff_Regrowth == wan.spellData.Regrowth.id
-            or wan.auraData[unitToken].buff_Rejuvenation and wan.auraData[unitToken].buff_Rejuvenation == wan.spellData.Rejuvenation.id) then
+            local playerGUID = wan.PlayerState.GUID
+            local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
+            local cSwifmendInstantHeal = nSwifmendInstantHeal + cDreamSurge
 
+            cSwifmendInstantHeal = nSwifmendInstantHeal * critInstantValue
 
-                local playerGUID = wan.PlayerState.GUID
-                local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
+            local cSwiftmendHotHeal = wan.traitData.GroveTending.known and nGroveTending or 0
+            local cSymbioticBlooms = wan.traitData.ThrivingGrowth.known and nSymbioticBlooms or 0
+            local hotPotency = wan.HotPotency(unitToken, currentPercentHealth, cSwifmendInstantHeal)
 
-                local critChanceModInstant = 0
-                local cSwifmendInstantHeal = nSwifmendInstantHeal + cDreamSurge
+            cSwiftmendHotHeal = cSwiftmendHotHeal * critHotValue * hotPotency
+            cSymbioticBlooms = cSymbioticBlooms * critHotValue * hotPotency
 
-                local critInstantValue = wan.ValueFromCritical(wan.CritChance, critChanceModInstant)
-                cSwifmendInstantHeal = nSwifmendInstantHeal * critInstantValue
+            wan.HotValue[unitToken] = wan.HotValue[unitToken] or {}
+            wan.HotValue[unitToken][wan.traitData.GroveTending.traitkey] = cSwiftmendHotHeal
+            wan.HotValue[unitToken][sSymbioticBloomsKey] = cSymbioticBlooms
 
-                local cSwiftmendHotHeal = wan.traitData.GroveTending.known and nGroveTending or 0
-                local cSymbioticBlooms = wan.traitData.ThrivingGrowth.known and nSymbioticBlooms or 0
-                local hotPotency = wan.HotPotency(unitToken, currentPercentHealth, cSwifmendInstantHeal)
+            if wan.spellData.MasteryHarmony.known then
+                local _, countHots = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
 
-                cSwiftmendHotHeal = cSwiftmendHotHeal * critHotValue * hotPotency
-                cSymbioticBlooms = cSymbioticBlooms * critHotValue * hotPotency
+                if countHots == 0 then countHots = 1 end
 
-                wan.HotValue[unitToken] = wan.HotValue[unitToken] or {}
-                wan.HotValue[unitToken][wan.traitData.GroveTending.traitkey] = cSwiftmendHotHeal
-                wan.HotValue[unitToken][sSymbioticBloomsKey] = cSymbioticBlooms
-
-                if wan.spellData.MasteryHarmony.known then
-                    local _, countHots = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
-
-                    if countHots == 0 then countHots = 1 end
-
-                    if wan.traitData.HarmoniousBlooming.known and wan.auraData[unitToken].buff_Lifebloom then
-                        countHots = countHots + nHarmoniousBlooming
-                    end
-
-                    local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
-                    cSwiftmendHotHeal = cSwiftmendHotHeal * cMasteryHarmony
-                    cSymbioticBlooms = cSymbioticBlooms * cMasteryHarmony
-                    wan.HotValue[unitToken][wan.traitData.GroveTending.traitkey] = cSwiftmendHotHeal
-                    wan.HotValue[unitToken][sSymbioticBloomsKey] = cSymbioticBlooms
+                if wan.traitData.HarmoniousBlooming.known and wan.auraData[unitToken].buff_Lifebloom then
+                    countHots = countHots + nHarmoniousBlooming
                 end
 
-                local cSwiftmendHeal = cSwifmendInstantHeal + cSwiftmendHotHeal
+                local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
+                cSwiftmendHotHeal = cSwiftmendHotHeal * cMasteryHarmony
+                cSymbioticBlooms = cSymbioticBlooms * cMasteryHarmony
+                wan.HotValue[unitToken][wan.traitData.GroveTending.traitkey] = cSwiftmendHotHeal
+                wan.HotValue[unitToken][sSymbioticBloomsKey] = cSymbioticBlooms
+            end
 
-                -- subtract healing value of ability's hot from ability's max healing value
-                if wan.auraData[unitToken]["buff_" .. wan.traitData.GroveTending.traitkey] then
+            local cSwiftmendHeal = cSwifmendInstantHeal + cSwiftmendHotHeal
+
+            local aura = wan.auraData[unitToken]["buff_" .. wan.traitData.GroveTending.traitkey]
+            if aura then
+                local remainingDuration = aura.expirationTime - currentTime
+                if remainingDuration < 0 then
+                    wan.auraData[unitToken]["buff_" .. wan.traitData.GroveTending.traitkey] = nil
+                else
                     local hotValue = wan.HotValue[unitToken][wan.traitData.GroveTending.traitkey]
                     cSwiftmendHeal = cSwiftmendHeal - hotValue
                 end
-
-                local abilityValue = wan.UnitAbilityHealValue(unitToken, cSwiftmendHeal, currentPercentHealth)
-                wan.UpdateMechanicData(wan.spellData.Swiftmend.basename, abilityValue, wan.spellData.Swiftmend.icon, wan.spellData.Swiftmend.name)
-            else
-                wan.UpdateMechanicData(wan.spellData.Swiftmend.basename)
             end
+
+            local abilityValue = wan.UnitAbilityHealValue(unitToken, cSwiftmendHeal, currentPercentHealth)
+            wan.UpdateMechanicData(wan.spellData.Swiftmend.basename, abilityValue, wan.spellData.Swiftmend.icon,
+                wan.spellData.Swiftmend.name)
         end
     end
 

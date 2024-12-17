@@ -66,7 +66,7 @@ local function AddonLoad(self, event, addonName)
 
                     local cWildSynthesis = 0
                     if wan.traitData.WildSynthesis.known and wan.auraData.player.buff_WildSynthesis then
-                        local cWildSynthesisStacks = wan.auraData.player.buff_WildSynthesis.applications or 1
+                        local cWildSynthesisStacks = wan.auraData.player.buff_WildSynthesis.applications or 0
                         cWildSynthesis = nWildSynthesis * cWildSynthesisStacks
                     end
 

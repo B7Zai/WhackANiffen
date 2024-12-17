@@ -26,7 +26,15 @@ local function AddonLoad(self, event, addonName)
         or not wan.PlayerState.InGroup or not wan.PlayerState.InHealerMode or not wan.PlayerState.Combat
         or wan.auraData.player.buff_Efflorescence or not wan.IsSpellUsable(wan.spellData.Efflorescence.id)
         then
-            wan.UpdateMechanicData(wan.spellData.Efflorescence.basename)
+            wan.UpdateHealingData(nil, wan.spellData.Efflorescence.basename)
+            return
+        end
+
+        local castTime = 0.1
+
+        -- Cast time layer
+        local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Efflorescence.id, castTime)
+        if castEfficiency == 0 then
             wan.UpdateHealingData(nil, wan.spellData.Efflorescence.basename)
             return
         end
@@ -38,6 +46,8 @@ local function AddonLoad(self, event, addonName)
 
         -- check crit layer
         local critMod = wan.ValueFromCritical(wan.CritChance)
+
+        local currentTime = GetTime()
 
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
@@ -86,9 +96,15 @@ local function AddonLoad(self, event, addonName)
                     local cEfflorescenceHeal = cEfflorescenceInstantHeal + cEfflorescenceHotHeal + cSprintBlossomsHotHeal
 
                     -- subtract healing value of ability's hot from ability's max healing value
-                    if wan.auraData[groupUnitToken]["buff_" .. wan.traitData.SpringBlossoms.traitkey] then
-                        local hotValue = wan.HotValue[groupUnitToken][wan.traitData.SpringBlossoms.traitkey]
-                        cEfflorescenceHeal = cEfflorescenceHeal - hotValue
+                    local aura = wan.auraData[groupUnitToken]["buff_" .. wan.traitData.SpringBlossoms.traitkey]
+                    if aura then
+                        local remainingDuration = aura.expirationTime - currentTime
+                        if remainingDuration < 0 then
+                            wan.auraData[groupUnitToken]["buff_" .. wan.traitData.SpringBlossoms.traitkey] = nil
+                        else
+                            local hotValue = wan.HotValue[groupUnitToken][wan.traitData.SpringBlossoms.traitkey]
+                            cEfflorescenceHeal = cEfflorescenceHeal - hotValue
+                        end
                     end
 
                     cEfflorescenceHeal = cEfflorescenceHeal * wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename]

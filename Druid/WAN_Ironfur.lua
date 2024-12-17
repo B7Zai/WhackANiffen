@@ -15,6 +15,7 @@ local function AddonLoad(self, event, addonName)
 
     -- Init trait data
     local nThornsOfIron, nThornsOfIronValue, nThornsOfIronMaxRange, nThornsOfIronSoftCap = 0, 0, 0, 0
+    local nMasterShapeshifter = 0
 
 
     -- Ability value calculation
@@ -31,6 +32,11 @@ local function AddonLoad(self, event, addonName)
         -- Base values
         local cIronfurHeal = nIronfurHeal
         local cIronfurDmg = 0
+
+        if wan.traitData.MasterShapeshifter.known then
+            local cMasterShapeshifter = cIronfurHeal * nMasterShapeshifter
+            cIronfurHeal = cIronfurHeal + cMasterShapeshifter
+        end
 
         -- Thorns of Iron
         if wan.traitData.ThornsofIron.known then
@@ -79,6 +85,8 @@ local function AddonLoad(self, event, addonName)
             nThornsOfIronValue = thornsOfIronValues[1] / 100
             nThornsOfIronMaxRange = thornsOfIronValues[2]
             nThornsOfIronSoftCap = thornsOfIronValues[3]
+
+            nMasterShapeshifter = wan.GetTraitDescriptionNumbers(wan.traitData.MasterShapeshifter.entryid, { 5 }) * 0.01
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

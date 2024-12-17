@@ -1,0 +1,7 @@
+-- make aura updates as efficient as possible
+-- add better event coverage for aura data updates
+
+-- maybe add a cast potency to low health group units so instant cast abilities will become top priority
+-- add separate settings for raid frames ?
+-- add mastery layer for balance druid
+-- auto hide one of the text if texts overlap on each other

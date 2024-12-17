@@ -16,7 +16,7 @@ local function AddonLoad(self, event, addonName)
 
     --Init trait data
     local nRipAndTear = 0
-    local nMasterShapeshifter = 0
+    local nMasterShapeshifter, nMasterShapeshifterCombo = 0, 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -36,7 +36,7 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
-        if wan.traitData.MasterShapeshifter.known and currentCombo ~= nMasterShapeshifter or comboPercentage < 80 then
+        if wan.traitData.MasterShapeshifter.known and currentCombo ~= nMasterShapeshifterCombo or comboPercentage < 80 then
             wan.UpdateAbilityData(wan.spellData.Rip.basename)
             return
         end
@@ -46,6 +46,12 @@ local function AddonLoad(self, event, addonName)
         local cRipDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Rip and (nRipDotDmg * comboCorrection * dotPotency)) or 0
 
         local cRipDmg = cRipDotDmg
+
+        -- Master Shapeshifter
+        if wan.traitData.MasterShapeshifter.known and currentCombo == nMasterShapeshifterCombo then
+            local cMasterShapeshifter = cRipDmg * nMasterShapeshifter
+            cRipDmg = cRipDmg + cMasterShapeshifter
+        end
 
         -- Rip and Tear
         if wan.traitData.RipandTear.known then
@@ -98,7 +104,10 @@ local function AddonLoad(self, event, addonName)
 
         if event == "TRAIT_DATA_READY" then
             nRipAndTear = wan.GetTraitDescriptionNumbers(wan.traitData.RipandTear.entryid, { 1 }) / 100
-            nMasterShapeshifter = wan.GetTraitDescriptionNumbers(wan.traitData.RampantFerocity.entryid, { 6 })
+            
+            local nMasterShapeshifterValues = wan.GetTraitDescriptionNumbers(wan.traitData.MasterShapeshifter.entryid, { 9, 11 })
+            nMasterShapeshifter = nMasterShapeshifterValues[1] * 0.01
+            nMasterShapeshifterCombo = nMasterShapeshifterValues[2]
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

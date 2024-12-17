@@ -72,6 +72,8 @@ local function AddonLoad(self, event, addonName)
         local unitsNeedHeal = 0
         wan.HealUnitCountAoE[hotKey] = wan.HealUnitCountAoE[hotKey] or 1
 
+        local currentTime = GetTime()
+
         -- run check over all group units in range
         for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
@@ -122,9 +124,15 @@ local function AddonLoad(self, event, addonName)
                 local cWildGrowthHeal = cWildGrowthInstantHeal + cWildGrowthHotHeal
 
                 -- subtract healing value of ability's hot from ability's max healing value
-                if wan.auraData[groupUnitToken]["buff_" .. hotKey] then
-                    local hotValue = wan.HotValue[groupUnitToken][hotKey]
-                    cWildGrowthHeal = cWildGrowthHeal - hotValue
+                local aura = wan.auraData[groupUnitToken]["buff_" .. hotKey]
+                if aura then
+                    local remainingDuration = aura.expirationTime - currentTime
+                    if remainingDuration < 0 then
+                        wan.auraData[groupUnitToken]["buff_" .. hotKey] = nil
+                    else
+                        local hotValue = wan.HotValue[groupUnitToken][hotKey]
+                        cWildGrowthHeal = cWildGrowthHeal - hotValue
+                    end
                 end
 
                 -- add cast efficiency layer

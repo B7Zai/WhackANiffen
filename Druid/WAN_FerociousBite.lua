@@ -21,7 +21,7 @@ local function AddonLoad(self, event, addonName)
     local nSaberJaws = 0
     local nDreadfulWound = 0
     local nBurstingGrowth, nBurstingGrowthSoftCap = 0, 0
-    local nMasterShapeshifter = 0
+    local nMasterShapeshifter, nMasterShapeshifterCombo = 0, 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -43,10 +43,7 @@ local function AddonLoad(self, event, addonName)
         -- Combo checkers and early exit
         currentCombo = math.max(checkCombo, ((wan.auraData.player.buff_ApexPredatorsCraving and comboMax) or 0))
         comboPercentage = (currentCombo / comboMax) * 100
-        if wan.traitData.MasterShapeshifter.known and currentCombo ~= nMasterShapeshifter then
-            wan.UpdateAbilityData(wan.spellData.FerociousBite.basename)
-            return
-        elseif comboPercentage < 80  then
+        if wan.traitData.MasterShapeshifter.known and currentCombo ~= nMasterShapeshifterCombo or comboPercentage < 80 then
             wan.UpdateAbilityData(wan.spellData.FerociousBite.basename)
             return
         end
@@ -65,7 +62,13 @@ local function AddonLoad(self, event, addonName)
         -- Remove physical layer
         local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(wan.classificationData)
         local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, wan.spellData.FerociousBite.id)
-        local cFerociousBiteDmg = ((nFerociousBiteDmg * currentCombo) + bonusDmgFromEnergy) * checkPhysicalDR                                                                                       -- Base value
+        local cFerociousBiteDmg = ((nFerociousBiteDmg * currentCombo) + bonusDmgFromEnergy) * checkPhysicalDR  
+        
+        -- Master Shapeshifter 
+        if wan.traitData.MasterShapeshifter.known and currentCombo == nMasterShapeshifterCombo then
+            local cMasterShapeshifter = cFerociousBiteDmg * nMasterShapeshifter
+            cFerociousBiteDmg = cFerociousBiteDmg + cMasterShapeshifter
+        end   
 
         -- Rampant Ferocity
         if wan.traitData.RampantFerocity.known and countValidUnit > 1 then
@@ -167,8 +170,12 @@ local function AddonLoad(self, event, addonName)
 
         if event == "TRAIT_DATA_READY" then
             nRampantFerocitySoftCap = wan.GetTraitDescriptionNumbers(wan.traitData.RampantFerocity.entryid, { 3 })
+
             nSaberJaws = wan.GetTraitDescriptionNumbers(wan.traitData.SaberJaws.entryid, { 1 }, wan.traitData.SaberJaws.rank) / 100
-            nMasterShapeshifter = wan.GetTraitDescriptionNumbers(wan.traitData.RampantFerocity.entryid, { 6 })
+
+            local nMasterShapeshifterValues = wan.GetTraitDescriptionNumbers(wan.traitData.MasterShapeshifter.entryid, { 9, 11 })
+            nMasterShapeshifter = nMasterShapeshifterValues[1] * 0.01
+            nMasterShapeshifterCombo = nMasterShapeshifterValues[2]
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

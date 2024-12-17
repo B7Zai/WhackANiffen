@@ -11,8 +11,8 @@ local function AddonLoad(self, event, addonName)
 
     -- Init data
     local abilityActive = false
+    local nFlourishHeal = 0
     local nFlourish = 0
-
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -26,34 +26,35 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
-        local countTotalHots = 0
-        local cFlourish = nFlourish * 0.1
-        local allGroupUnitToken = "allGroupUnitTokens"
-
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
             local _, _, idValidGroupUnit = wan.ValidGroupMembers()
 
-            for groupUnitToken, _ in pairs(wan.GroupUnitID) do
+            for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
                 if idValidGroupUnit[groupUnitToken] then
+
+                    local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID)
                     local _, countHots = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
-                    countTotalHots = countTotalHots + countHots
+                    local cFlourishHeal = wan.UnitAbilityPercentageToValue(groupUnitToken, nFlourishHeal)
+                    cFlourishHeal = cFlourishHeal * countHots 
+                    cFlourishHeal = nFlourish <= cFlourishHeal and cFlourishHeal or 0
+
+                    local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cFlourishHeal, currentPercentHealth)
+                    wan.UpdateSupportData(groupUnitToken, wan.spellData.Flourish.basename, abilityValue, wan.spellData.Flourish.icon, wan.spellData.Flourish.name)
+                else
+                    wan.UpdateSupportData(groupUnitToken, wan.spellData.Flourish.basename)
                 end
             end
-
-            local cFlourishHeal = cFlourish * countTotalHots
-            local abilityValue = math.floor((cFlourishHeal > nFlourish and cFlourishHeal) or 0)
-            wan.UpdateSupportData(allGroupUnitToken, wan.spellData.Flourish.basename, abilityValue, wan.spellData.Flourish.icon, wan.spellData.Flourish.name)
         else
             local unitToken = "player"
-            local playerGUID = wan.PlayerState.GUID
-            local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
+            local currentPercentHealth = UnitPercentHealthFromGUID(unitToken)
             local _, countHots = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
-            local cFlourish = (wan.DefensiveCooldownToValue(wan.spellData.Flourish.id))
-            local cFlourishHeal = ((cFlourish * 0.1) * countHots > cFlourish) or 0
+            local cFlourishHeal = wan.UnitAbilityPercentageToValue(unitToken, nFlourishHeal)
+            cFlourishHeal = cFlourishHeal * countHots
+            cFlourishHeal = cFlourishHeal >= nFlourish and cFlourishHeal or 0
 
-            local abilityValue = wan.UnitAbilityHealValue(unitToken, cFlourish, currentPercentHealth)
+            local abilityValue = wan.UnitAbilityHealValue(unitToken, cFlourishHeal, currentPercentHealth)
             wan.UpdateMechanicData(wan.spellData.Flourish.basename, abilityValue, wan.spellData.Flourish.icon, wan.spellData.Flourish.name)
         end
     end
@@ -61,6 +62,7 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
+            nFlourishHeal = wan.GetSpellDescriptionNumbers(wan.spellData.Flourish.id, { 3 })
             nFlourish = wan.DefensiveCooldownToValue(wan.spellData.Flourish.id)
         end
     end)

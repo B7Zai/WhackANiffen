@@ -61,10 +61,13 @@ local function AddonLoad(self, event, addonName)
             critChanceModHot = critChanceModHot + cAtrategicInfusion
         end
 
+        -- check dream surge trait layer
         local cDreamSurge = 0
         if wan.traitData.DreamSurge.known and wan.auraData.player.buff_DreamSurge then
             cDreamSurge = nDreamSurge
         end
+
+        local currentTime = GetTime()
 
         -- Update ability data
         if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
@@ -126,9 +129,15 @@ local function AddonLoad(self, event, addonName)
                     local cRegrowthHeal = cRegrowthInstantHeal + cRegrowthHotHeal
 
                     -- subtract healing value of ability's hot from ability's max healing value
-                    if wan.auraData[groupUnitToken]["buff_" .. hotKey] then
-                        local hotValue = wan.HotValue[groupUnitToken][hotKey]
-                        cRegrowthHeal = cRegrowthHeal - hotValue
+                    local aura = wan.auraData[groupUnitToken]["buff_" .. hotKey]
+                    if aura then
+                        local remainingDuration = aura.expirationTime - currentTime
+                        if remainingDuration < 0 then
+                            wan.auraData[groupUnitToken]["buff_" .. hotKey] = nil
+                        else
+                            local hotValue = wan.HotValue[groupUnitToken][hotKey]
+                            cRegrowthHeal = cRegrowthHeal - hotValue
+                        end
                     end
 
                     -- add cast efficiency layer
@@ -196,9 +205,15 @@ local function AddonLoad(self, event, addonName)
             local cRegrowthHeal = cRegrowthInstantHeal + cRegrowthHotHeal
 
             -- subtract healing value of ability's hot from ability's max healing value
-            if wan.auraData[unitToken]["buff_" .. hotKey] then
-                local hotValue = wan.HotValue[unitToken][hotKey]
-                cRegrowthHeal = cRegrowthHeal - hotValue
+            local aura = wan.auraData[unitToken]["buff_" .. hotKey]
+            if aura then
+                local remainingDuration = aura.expirationTime - currentTime
+                if remainingDuration < 0 then
+                    wan.auraData[unitToken]["buff_" .. hotKey] = nil
+                else
+                    local hotValue = wan.HotValue[unitToken][hotKey]
+                    cRegrowthHeal = cRegrowthHeal - hotValue
+                end
             end
 
             -- add cast efficiency layer
