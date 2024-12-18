@@ -19,7 +19,8 @@ local function AddonLoad(self, event, addonName)
     local function CheckAbilityValue()
         -- Early exits
         if not wan.PlayerState.Status or wan.auraData.player.buff_BearForm
-            or specName ~= currentSpecName or not wan.IsSpellUsable(wan.spellData.BearForm.id)
+            or wan.auraData.player.buff_Prowl or specName ~= currentSpecName
+            or not wan.IsSpellUsable(wan.spellData.BearForm.id)
         then
             wan.UpdateMechanicData(wan.spellData.BearForm.basename)
             return

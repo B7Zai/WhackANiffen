@@ -28,7 +28,7 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Check for valid unit
-        local _, countValidUnit = wan.ValidUnitBoolCounter(nil, maxRange)
+        local _, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, maxRange)
         if countValidUnit == 0 then
             wan.UpdateAbilityData(wan.spellData.Raze.basename)
             return
@@ -45,7 +45,7 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Remove physical layer
-        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, nil, maxRange)
+        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(idValidUnit)
         cRazeDmg = cRazeDmg * checkPhysicalDRAoE
 
         -- Crit layer

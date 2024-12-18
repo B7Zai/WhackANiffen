@@ -55,7 +55,7 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Remove physical layer
-        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(wan.classificationData)
+        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
         cShredDmg = cShredDmg * checkPhysicalDR
 
         --Thrashing Claws

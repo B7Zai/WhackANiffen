@@ -50,7 +50,7 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Remove physical layer
-        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, nil, wan.spellData.Swipe.maxRange)                                                                                             -- Remove physical layer
+        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(idValidUnit)                                                                                             -- Remove physical layer
         cSwipeDmg = cSwipeDmg * checkPhysicalDRAoE
 
          -- Thrashing Claws

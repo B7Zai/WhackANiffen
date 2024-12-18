@@ -60,8 +60,8 @@ local function AddonLoad(self, event, addonName)
         if currentEnergy < nFerociousBiteFullCost then bFerociousBiteDesat = true end
 
         -- Remove physical layer
-        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(wan.classificationData)
-        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, wan.spellData.FerociousBite.id)
+        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
+        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(idValidUnit)
         local cFerociousBiteDmg = ((nFerociousBiteDmg * currentCombo) + bonusDmgFromEnergy) * checkPhysicalDR  
         
         -- Master Shapeshifter 

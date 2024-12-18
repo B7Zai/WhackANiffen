@@ -40,8 +40,8 @@ local function AddonLoad(self, event, addonName)
 
         -- Thorns of Iron
         if wan.traitData.ThornsofIron.known then
-            local _, countValidUnit = wan.ValidUnitBoolCounter(nil, nThornsOfIronMaxRange)
-            local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, nil, nThornsOfIronMaxRange) -- Remove physical layer
+            local _, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, nThornsOfIronMaxRange)
+            local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(idValidUnit) -- Remove physical layer
             local softCappedValidUnit = wan.AdjustSoftCapUnitOverflow(nThornsOfIronSoftCap, countValidUnit)
             local cThornsOfIron = (nThornsOfIron / countValidUnit) * checkPhysicalDRAoE * softCappedValidUnit
             cIronfurDmg = cIronfurDmg + cThornsOfIron

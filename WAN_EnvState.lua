@@ -24,6 +24,7 @@ wan.UnitState.IsAI = {}
 wan.UnitState.Level = {}
 wan.UnitState.LevelScale = {}
 wan.UnitState.Role = {}
+wan.UnitState.Classification = {}
 
 local isDeadOrGhost, isMounted, inVehicle
 local function OnEvent(self, event, ...)
@@ -44,10 +45,15 @@ local function OnEvent(self, event, ...)
     -- adds and removes nameplate unit tokens
     if event == "NAME_PLATE_UNIT_ADDED" then
         local unitID = ...
+        local unitClassification = UnitClassification(unitID)
+        if unitClassification then
+            wan.UnitState.Classification[unitID] = unitClassification
+        end
         wan.NameplateUnitID[unitID] = unitID
     elseif event == "NAME_PLATE_UNIT_REMOVED" then
         local unitID = ...
         wan.NameplateUnitID[unitID] = nil
+        wan.UnitState.Classification[unitID] = nil
     end
 
     -- assigns group unit tokens for group
@@ -158,7 +164,7 @@ local function OnEvent(self, event, ...)
         end
     end
 
-    if event == "UPDATE_INSTANCE_INFO" or event == "UNIT_LEVEL"then
+    if event == "UPDATE_INSTANCE_INFO" or event == "UNIT_LEVEL" then
         local _, _, _, difficultyName = GetInstanceInfo()
         local isLevelScaling = difficultyName and difficultyName == "Timewalking" or false
         for groupUnitToken, _ in pairs(wan.GroupUnitID) do

@@ -30,7 +30,7 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Remove physical layer
-        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(wan.classificationData)
+        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
         local cFeralFrenzyInstantDmg = nFeralFrenzyInstantDmg * checkPhysicalDR
 
         -- Dot value

@@ -18,6 +18,7 @@
         "SlashCmdList",
         "UISpecialFrames",
         "Settings",
-        "MinimalSliderWithSteppersMixin"
+        "MinimalSliderWithSteppersMixin",
+        "EditModeManagerFrame"
     ]
 }

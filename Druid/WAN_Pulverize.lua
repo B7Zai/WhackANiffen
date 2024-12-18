@@ -37,7 +37,7 @@ local function AddonLoad(self, event, addonName)
         local cPulverizeHeal = nPulverizeDR / countValidUnit
 
         -- Remove physical layer
-        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(wan.classificationData)
+        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
         cPulverizeDmg = cPulverizeDmg * checkPhysicalDR
 
         -- Crit layer

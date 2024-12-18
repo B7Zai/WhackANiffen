@@ -36,7 +36,7 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Base values
-        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, nil, wan.spellData.PrimalWrath.maxRange)
+        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(idValidUnit)
         local cPrimalWrathInstantDmg = nPrimalWrathInstantDmg * countValidUnit * comboCorrection * checkPhysicalDRAoE
 
         -- Dot value

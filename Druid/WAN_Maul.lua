@@ -49,12 +49,12 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Remove physical layer
-        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(wan.classificationData)
+        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
         cMaulDmg = cMaulDmg * checkPhysicalDR
 
         --Ravage AoE
         if wan.traitData.Ravage.known and wan.auraData.player.buff_Ravage and countValidUnit > 1 then
-            local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, wan.spellData.Maul.id)
+            local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(idValidUnit)
             local ravageUnitAoE = countValidUnit - 1
             local cleaveRavageDmg = nMaulDmgAoE * ravageUnitAoE * checkPhysicalDRAoE
 

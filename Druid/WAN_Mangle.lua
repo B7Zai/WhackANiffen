@@ -54,7 +54,7 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Remove physical layer
-        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(wan.classificationData)
+        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
         cMangleDmg = cMangleDmg * checkPhysicalDR
 
         -- Incarnation: Guardian of Ursoc
@@ -72,7 +72,7 @@ local function AddonLoad(self, event, addonName)
             end
 
              -- Remove physical layer
-            local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(wan.classificationData, wan.spellData.Mangle.id)
+            local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(idValidUnit)
             cIncarnation = cIncarnation * checkPhysicalDRAoE
             cMangleDmg = cMangleDmg + cIncarnation
         end

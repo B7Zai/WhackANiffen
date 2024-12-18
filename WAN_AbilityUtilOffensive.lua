@@ -1,13 +1,13 @@
 local _, wan = ...
 
 wan.classificationData = {
-    WorldBoss = { classification = "worldboss", dmgreduc = 0.68 },
-    RareElite = { classification = "rareelite", dmgreduc = 0.70 },
-    Elite = { classification = "elite", dmgreduc = 0.70 },
-    Rare = { classification = "rare", dmgreduc = 0.70 },
-    Normal = { classification = "normal", dmgreduc = 0.72 },
-    Minus = { classification = "minus", dmgreduc = 0.74 },
-    Trivial = { classification = "trivial", dmgreduc = 0.90 },
+    worldboss = 0.68,
+    rareelite = 0.70,
+    elite = 0.70,
+    rare = 0.70,
+    normal = 0.72,
+    minus = 0.74,
+    trivial  = 0.90,
 }
 
 function wan.UpdateAbilityData(abilityName, value, icon, name, desaturation)
@@ -95,33 +95,24 @@ end
 
 
 -- Checks classification and returns the damage reduction values of unit
-function wan.CheckUnitPhysicalDamageReduction(classificationDataArray)
+function wan.CheckUnitPhysicalDamageReduction()
     local unitClassification = UnitClassification(wan.TargetUnitID)
-    for _, data in pairs(classificationDataArray) do
-        if unitClassification == data.classification then
-            return data.dmgreduc
-        end
+    if wan.classificationData[unitClassification] then
+        return wan.classificationData[unitClassification]
     end
     return 1
 end
 
 -- Checks classification and returns the damage reduction values of units
-function wan.CheckUnitPhysicalDamageReductionAoE(classificationDataArray, spellIndentifier, maxRange)
+function wan.CheckUnitPhysicalDamageReductionAoE(unitTokensInRange)
     local totalDamageReduction = 0
     local count = 0
 
-    for i = 1, 40 do
-        local unit = "nameplate" .. i
-
-        if wan.ValidUnitInRangeAoE(unit, spellIndentifier, maxRange) then
-            local unitClassification = UnitClassification(unit)
-
-            for _, data in pairs(classificationDataArray) do
-                if unitClassification == data.classification then
-                    totalDamageReduction = totalDamageReduction + data.dmgreduc
-                    count = count + 1
-                end
-            end
+    for unitTokenNameplate, _ in pairs(unitTokensInRange) do
+        local unitClassification = wan.UnitState.Classification[unitTokenNameplate]
+        if wan.classificationData[unitClassification] then
+            totalDamageReduction = totalDamageReduction + wan.classificationData[unitClassification]
+            count = count + 1
         end
     end
 

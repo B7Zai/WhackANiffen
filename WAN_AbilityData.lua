@@ -14,7 +14,7 @@ setmetatable(wan.spellData, {
             basename = "Unknown",
             known = false
         }
-        t[key] = default  -- Cache the default value for future accesses
+        t[key] = default
         return default
     end
 })
