@@ -48,6 +48,10 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
+        -- Base value
+        local cFerociousBiteInstantDmg = nFerociousBiteDmg * currentCombo
+        local cFerociousBiteDotDmg = 0
+
         -- Energy and damage value scaling with energy
         checkEnergy = UnitPower("player", 3) or 0
         currentEnergy = math.max(checkEnergy, ((wan.auraData.player.buff_ApexPredatorsCraving and nFerociousBiteFullCost) or 0))
@@ -55,69 +59,88 @@ local function AddonLoad(self, event, addonName)
         local bonusDmgPerEnergy = ((nFerociousBiteFullCost / nFerociousBiteCost) * energyMod) / (nFerociousBiteFullCost * 2)
         local bonusDmgFromEnergy = nFerociousBiteDmg * currentCombo * bonusDmgPerEnergy
 
-        -- Set icon desaturation below full cost
-        local bFerociousBiteDesat = false
-        if currentEnergy < nFerociousBiteFullCost then bFerociousBiteDesat = true end
+        local cFerociousBiteInstantDmgAoE = 0
+        local cFerociousBiteDotDmgAoE = 0
+        if countValidUnit > 1 then
 
-        -- Remove physical layer
-        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
-        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(idValidUnit)
-        local cFerociousBiteDmg = ((nFerociousBiteDmg * currentCombo) + bonusDmgFromEnergy) * checkPhysicalDR  
-        
-        -- Master Shapeshifter 
-        if wan.traitData.MasterShapeshifter.known and currentCombo == nMasterShapeshifterCombo then
-            local cMasterShapeshifter = cFerociousBiteDmg * nMasterShapeshifter
-            cFerociousBiteDmg = cFerociousBiteDmg + cMasterShapeshifter
-        end   
+            local nRampantFerocityUnitOverflow = wan.SoftCapOverflow(nRampantFerocitySoftCap, countValidUnit)
+            local cBurstingGrowthUnitOverflow = wan.SoftCapOverflow(nBurstingGrowthSoftCap, countValidUnit)
 
-        -- Rampant Ferocity
-        if wan.traitData.RampantFerocity.known and countValidUnit > 1 then
-            local ripDebuffedUnitAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Rip.name)
+            for unitToken, unitGUID in pairs(idValidUnit) do
 
-            if wan.auraData[wan.TargetUnitID].debuff_Rip then ripDebuffedUnitAoE = ripDebuffedUnitAoE - 1 end
+                local cRampantFerocityDmg = 0
+                local cRavageAoE = 0
+                local cBurstingGrowthDmg = 0
+                
+                if unitGUID ~= wan.UnitState.GUID[wan.TargetUnitID] then
 
-            local validUnitSoftCappedAoE = wan.AdjustSoftCapUnitOverflow(nRampantFerocitySoftCap, ripDebuffedUnitAoE)
-            local cRampantFerocityDmg = nRampantFerocity * currentCombo * bonusDmgPerEnergy * validUnitSoftCappedAoE * checkPhysicalDRAoE
-            cFerociousBiteDmg = cFerociousBiteDmg + cRampantFerocityDmg
+                    local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(unitToken)
+
+                    -- add Rampant Ferocity trait layer
+                    if wan.traitData.RampantFerocity.known then
+                        local checkRipDebuff = wan.auraData[unitToken]["debuff_" .. wan.spellData.Rip.basename]
+                        if checkRipDebuff then
+                            local cRampantFerocityBonusDamageFromEnergy = nRampantFerocity * bonusDmgPerEnergy
+                            cRampantFerocityDmg = (nRampantFerocity + cRampantFerocityBonusDamageFromEnergy) *
+                                currentCombo * nRampantFerocityUnitOverflow * checkUnitPhysicalDR
+                        end
+                    end
+
+                    -- add Ravage trait layer
+                    if wan.traitData.Ravage.known and wan.auraData.player.buff_Ravage then
+                        cRavageAoE = nFerociousBiteDmgAoE * currentCombo * checkUnitPhysicalDR
+                    end
+
+                    -- add Bursting Growth trait layer
+                    if wan.traitData.BurstingGrowth.known and wan.auraData[wan.TargetUnitID].debuff_BloodseekerVines then
+                        cBurstingGrowthDmg = nBurstingGrowth * checkUnitPhysicalDR * cBurstingGrowthUnitOverflow
+                    end
+                end
+
+                -- add Dreadful Wound trait layer
+                local cDreadfulWoundDmg = 0
+                if wan.traitData.DreadfulWound.known and wan.auraData.player.buff_Ravage then
+                    local checkDreadfulWoundDebuff = wan.auraData[unitToken]["debuff_" .. wan.traitData.DreadfulWound.traitkey]
+                    if not checkDreadfulWoundDebuff then
+                        local checkDotPotency = wan.CheckDotPotency(cFerociousBiteInstantDmg, unitToken)
+                        cDreadfulWoundDmg = nDreadfulWound * checkDotPotency
+                    end
+                end
+
+                cFerociousBiteInstantDmgAoE = cFerociousBiteInstantDmgAoE + (cRampantFerocityDmg + cRavageAoE + cBurstingGrowthDmg)
+                cFerociousBiteDotDmgAoE = cFerociousBiteDotDmgAoE + cDreadfulWoundDmg
+            end
         end
 
-         -- Saber Jaws
+        -- Saber Jaws
         if wan.traitData.SaberJaws.rank > 0 then
-            local cSaberJawsDmg = bonusDmgFromEnergy * nSaberJaws * checkPhysicalDR
-
-            cFerociousBiteDmg = cFerociousBiteDmg + cSaberJawsDmg
+            bonusDmgFromEnergy = bonusDmgFromEnergy * (1 + nSaberJaws)
         end
 
-        --Ravage AoE
-        if wan.traitData.Ravage.known and wan.auraData.player.buff_Ravage and countValidUnit > 1 then
-            local ravageUnitAoE = countValidUnit - 1
-            local cleaveRavageDmg = nFerociousBiteDmgAoE * ravageUnitAoE * checkPhysicalDRAoE
-
-            cFerociousBiteDmg = cFerociousBiteDmg + cleaveRavageDmg
+        -- Master Shapeshifter
+        local cMasterShapeshifter = 1
+        if wan.traitData.MasterShapeshifter.known and currentCombo == nMasterShapeshifterCombo then
+            cMasterShapeshifter = cMasterShapeshifter + nMasterShapeshifter
         end
 
-        -- Dreadful Wound
-        if wan.traitData.DreadfulWound.known and wan.auraData.player.buff_Ravage then
-            local cDreadfulWoundDmg = nDreadfulWound * countValidUnit
-
-            cFerociousBiteDmg = cFerociousBiteDmg + cDreadfulWoundDmg
-        end
-
-        -- Bursting Growth
-        if wan.traitData.BurstingGrowth.known and wan.auraData[wan.TargetUnitID].debuff_BloodseekerVines
-            and countValidUnit > 1 then
-            local burstingGrowthUnitAoE = countValidUnit - 1
-            local validUnitSoftCappedAoE = wan.AdjustSoftCapUnitOverflow(nBurstingGrowthSoftCap, burstingGrowthUnitAoE)
-            local cBurstingGrowthDmg = nBurstingGrowth * validUnitSoftCappedAoE * checkPhysicalDRAoE
-
-            cFerociousBiteDmg = cFerociousBiteDmg + cBurstingGrowthDmg
-        end
+        -- add physical layer
+        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
 
         -- Crit layer
-        cFerociousBiteDmg = cFerociousBiteDmg * wan.ValueFromCritical(wan.CritChance)
+        local cFerociousBiteCritValue = wan.ValueFromCritical(wan.CritChance)
+
+        cFerociousBiteInstantDmg = (cFerociousBiteInstantDmg + bonusDmgFromEnergy) * checkPhysicalDR * cMasterShapeshifter * cFerociousBiteCritValue
+        cFerociousBiteDotDmg = cFerociousBiteDotDmg * cMasterShapeshifter * cFerociousBiteCritValue
+        cFerociousBiteInstantDmgAoE = cFerociousBiteInstantDmgAoE * cMasterShapeshifter * cFerociousBiteCritValue
+        cFerociousBiteDotDmgAoE = cFerociousBiteDotDmgAoE * cMasterShapeshifter * cFerociousBiteCritValue
+
+        local cFerociousBiteDmg = cFerociousBiteInstantDmg + cFerociousBiteDotDmg + cFerociousBiteInstantDmgAoE + cFerociousBiteDotDmgAoE
 
         -- Update ability data
         local abilityValue = math.floor(cFerociousBiteDmg)
+
+        -- Set icon desaturation below full cost
+        local bFerociousBiteDesat = currentEnergy < nFerociousBiteFullCost and true or false
         wan.UpdateAbilityData(wan.spellData.FerociousBite.basename, abilityValue, wan.spellData.FerociousBite.icon, wan.spellData.FerociousBite.name, bFerociousBiteDesat)
     end
 
@@ -171,7 +194,7 @@ local function AddonLoad(self, event, addonName)
         if event == "TRAIT_DATA_READY" then
             nRampantFerocitySoftCap = wan.GetTraitDescriptionNumbers(wan.traitData.RampantFerocity.entryid, { 3 })
 
-            nSaberJaws = wan.GetTraitDescriptionNumbers(wan.traitData.SaberJaws.entryid, { 1 }, wan.traitData.SaberJaws.rank) / 100
+            nSaberJaws = wan.GetTraitDescriptionNumbers(wan.traitData.SaberJaws.entryid, { 1 }, wan.traitData.SaberJaws.rank) * 0.01
 
             local nMasterShapeshifterValues = wan.GetTraitDescriptionNumbers(wan.traitData.MasterShapeshifter.entryid, { 9, 11 })
             nMasterShapeshifter = nMasterShapeshifterValues[1] * 0.01

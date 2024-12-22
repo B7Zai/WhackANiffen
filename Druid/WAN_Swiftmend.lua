@@ -119,8 +119,8 @@ local function AddonLoad(self, event, addonName)
         else
 
             local unitToken = "player"
-            local playerGUID = wan.PlayerState.GUID
-            local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
+            local unitGUID = wan.PlayerState.GUID
+            local currentPercentHealth = UnitPercentHealthFromGUID(unitGUID) or 1
             local cSwifmendInstantHeal = nSwifmendInstantHeal + cDreamSurge
 
             cSwifmendInstantHeal = nSwifmendInstantHeal * critInstantValue
@@ -197,6 +197,14 @@ local function AddonLoad(self, event, addonName)
 
         if event == "TRAIT_DATA_READY" then 
             nStrategicInfusion = wan.GetTraitDescriptionNumbers(wan.traitData.StrategicInfusion.entryid, { 3 })
+        end
+
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if wan.PlayerState.InHealerMode then
+                wan.UpdateMechanicData(wan.spellData.Swiftmend.basename)
+            else
+                wan.UpdateHealingData(nil, wan.spellData.Swiftmend.basename)
+            end
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

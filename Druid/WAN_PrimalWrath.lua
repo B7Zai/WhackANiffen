@@ -35,31 +35,41 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
-        -- Base values
-        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(idValidUnit)
-        local cPrimalWrathInstantDmg = nPrimalWrathInstantDmg * countValidUnit * comboCorrection * checkPhysicalDRAoE
+        local cPrimalWrathInstantDmg = 0
+        local cPrimalWrathDotDmg = 0
 
-        -- Dot value
-        local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Rip.name, nil, cPrimalWrathInstantDmg)
-        local ripDebuffedUnitAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Rip.name)
-        local missingRipDebuffAoE = countValidUnit - ripDebuffedUnitAoE
-        local cRipDotValue = nRipDotDmg * currentCombo * dotPotencyAoE * missingRipDebuffAoE
-        local cRipDmg = (ripDebuffedUnitAoE < countValidUnit and cRipDotValue) or 0
+        for unitToken, _ in pairs(idValidUnit) do
 
-        -- Base value
-        local cPrimalWrathDmg = cPrimalWrathInstantDmg + cRipDmg
+            local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(unitToken)
 
-        -- Rip and Tear
-        if wan.traitData.RipandTear.known then
-            local tearDebuffedUnitAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, "Tear")
-            local missingTearDebuffAoE = countValidUnit - tearDebuffedUnitAoE
-            local cTearDotValue = nRipDotDmg * currentCombo * nRipAndTear * missingTearDebuffAoE * dotPotencyAoE
-            local cTearDmg = (tearDebuffedUnitAoE < countValidUnit and cTearDotValue) or 0
-            cPrimalWrathDmg = cPrimalWrathDmg + cTearDmg
+            local cRipDmg = 0
+            local cTearDmg = 0
+            local checkRipDebuff = wan.auraData[unitToken]["debuff_" .. wan.spellData.Rip.basename]
+            if not checkRipDebuff then
+                local dotPotency = wan.CheckDotPotency(nPrimalWrathInstantDmg, unitToken)
+                local cRipDotDmg = nRipDotDmg * comboCorrection
+                cRipDmg = cRipDotDmg * dotPotency
+
+                -- Rip and Tear
+                if wan.traitData.RipandTear.known then
+                    local checkTearDebuff = wan.auraData[unitToken].debuff_Tear
+                    if not checkTearDebuff then
+                        cTearDmg = cRipDmg * nRipAndTear
+                    end
+                end
+            end
+
+            cPrimalWrathInstantDmg = cPrimalWrathInstantDmg + (nPrimalWrathInstantDmg * comboCorrection * checkPhysicalDR)
+            cPrimalWrathDotDmg = cPrimalWrathDotDmg + cRipDmg + cTearDmg
         end
 
         -- Crit layer
-        cPrimalWrathDmg = cPrimalWrathDmg * wan.ValueFromCritical(wan.CritChance)
+        local nPrimalWrathCritValue = wan.ValueFromCritical(wan.CritChance)
+
+        cPrimalWrathInstantDmg = cPrimalWrathInstantDmg * nPrimalWrathCritValue
+        cPrimalWrathDotDmg = cPrimalWrathDotDmg * nPrimalWrathCritValue
+
+        local cPrimalWrathDmg = cPrimalWrathInstantDmg + cPrimalWrathDotDmg
 
         -- Update ability data
         local abilityValue = math.floor(cPrimalWrathDmg)
@@ -88,7 +98,7 @@ local function AddonLoad(self, event, addonName)
 
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nPrimalWrathInstantDmg = wan.GetSpellDescriptionNumbers(wan.spellData.PrimalWrath.id, {3}) / 2
-            nRipDotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Rip.id, {2}) / 2
+            nRipDotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Rip.id, { 2 }) / 4
         end
     end)
 
@@ -102,7 +112,7 @@ local function AddonLoad(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then
-            nRipAndTear = wan.GetTraitDescriptionNumbers(wan.traitData.RipandTear.entryid, { 1 }) / 100
+            nRipAndTear = wan.GetTraitDescriptionNumbers(wan.traitData.RipandTear.entryid, { 1 }) * 0.01
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

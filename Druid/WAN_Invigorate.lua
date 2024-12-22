@@ -45,10 +45,10 @@ local function AddonLoad(self, event, addonName)
             end
         else
             local unitToken = "player"
+            local unitGUID = wan.PlayerState.GUID
             if (wan.auraData[unitToken].buff_LifeBloom or wan.auraData[unitToken].buff_Rejuvenation) then
 
-                local playerGUID = wan.PlayerState.GUID
-                local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
+                local currentPercentHealth = UnitPercentHealthFromGUID(unitGUID) or 1
                 local cInvigorate = wan.UnitDefensiveCooldownToValue(wan.spellData.Invigorate.id)
 
                 local abilityValue = wan.UnitAbilityHealValue(unitToken, cInvigorate, currentPercentHealth)
@@ -75,6 +75,14 @@ local function AddonLoad(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then end
+
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if wan.PlayerState.InHealerMode then
+                wan.UpdateMechanicData(wan.spellData.Invigorate.basename)
+            else
+                wan.UpdateSupportData(nil, wan.spellData.Invigorate.basename)
+            end
+        end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
             wan.SetUpdateRate(frameInvigorate, CheckAbilityValue, abilityActive)

@@ -12,6 +12,8 @@ local function AddonLoad(self, event, addonName)
     -- Init spell data
     local abilityActive = false
     local nStarfallDmg, nStarfallMaxRange = 0, 0
+    local nMasteryAstralInvocationArcane = 0
+    local nMasteryAstralInvocationNature = 0
 
     -- Init trait data
     local nAstronomicalImpact = 0
@@ -34,23 +36,33 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
-        -- Base values
         local critChanceMod = 0
         local critDamageMod = 0
-        local checkPotencyAoE = wan.CheckAoEPotency(idValidUnit)
-        local cStarfallDmg = nStarfallDmg * countValidUnit * checkPotencyAoE
 
-        -- Astronomical Impact
+        local cStarfallDmg = 0
+
+        for unitToken, _ in pairs(idValidUnit) do
+            local checkPotencyAoE = wan.CheckDotPotency(nil, unitToken)
+
+            local cMasteryAstralInvocationUnitAstral = 1
+            if wan.spellData.MasteryAstralInvocation.known then
+                local cMasteryAstralInvocationUnitNatureValue = wan.auraData[unitToken]["debuff_" .. wan.spellData.Sunfire.basename] and nMasteryAstralInvocationNature or 0
+                local cMasteryAstralInvocationUnitArcaneValue = wan.auraData[unitToken]["debuff_" .. wan.spellData.Moonfire.basename] and nMasteryAstralInvocationArcane or 0
+                local cMasteryAstralInvocationUnitAstralValue = cMasteryAstralInvocationUnitNatureValue + cMasteryAstralInvocationUnitArcaneValue
+                cMasteryAstralInvocationUnitAstral = 1 + cMasteryAstralInvocationUnitAstralValue
+            end
+
+            cStarfallDmg = cStarfallDmg + (nStarfallDmg * checkPotencyAoE * cMasteryAstralInvocationUnitAstral)
+        end
+
         if wan.traitData.AstronomicalImpact.known then
             critDamageMod = critDamageMod + nAstronomicalImpact
         end
 
-        -- Crit layer
         cStarfallDmg = cStarfallDmg * wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
         -- Update ability data
         local abilityValue = math.floor(cStarfallDmg)
-        
         wan.UpdateAbilityData(wan.spellData.Starfall.basename, abilityValue, wan.spellData.Starfall.icon, wan.spellData.Starfall.name)
     end
 
@@ -61,6 +73,11 @@ local function AddonLoad(self, event, addonName)
             local starfallValues = wan.GetSpellDescriptionNumbers(wan.spellData.Starfall.id, { 1, 2 })
             nStarfallMaxRange = starfallValues[1]
             nStarfallDmg = starfallValues[2] 
+
+            
+            local nMasteryAstralInvocationValues = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryAstralInvocation.id, { 2, 4 })
+            nMasteryAstralInvocationArcane = nMasteryAstralInvocationValues[1] * 0.01
+            nMasteryAstralInvocationNature = nMasteryAstralInvocationValues[2] * 0.01
         end
     end)
 

@@ -51,6 +51,7 @@ local function AddonLoad(self, event, addonName)
             for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
                 if idValidGroupUnit[groupUnitToken] then
+
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
                     local critChanceModInstant = 0
                     local critInstantValue = wan.ValueFromCritical(wan.CritChance, critChanceModInstant)
@@ -84,8 +85,8 @@ local function AddonLoad(self, event, addonName)
             end
         else
             local unitToken = "player"
-            local playerGUID = wan.PlayerState.GUID
-            local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
+            local unitGUID = wan.PlayerState.GUID
+            local currentPercentHealth = UnitPercentHealthFromGUID(unitGUID) or 1
             local critChanceModInstant = 0
             local critInstantValue = wan.ValueFromCritical(wan.CritChance, critChanceModInstant)
 
@@ -140,6 +141,14 @@ local function AddonLoad(self, event, addonName)
             nHarmoniousBlooming = wan.GetTraitDescriptionNumbers(wan.traitData.HarmoniousBlooming.entryid, { 1 }) - 1
 
             nWildSynthesis = wan.GetTraitDescriptionNumbers(wan.traitData.HarmoniousBlooming.entryid, { 2 }) 
+        end
+
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if wan.PlayerState.InHealerMode then
+                wan.UpdateMechanicData(wan.spellData.Nourish.basename)
+            else
+                wan.UpdateHealingData(nil, wan.spellData.Nourish.basename)
+            end
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

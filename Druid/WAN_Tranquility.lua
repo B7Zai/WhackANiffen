@@ -72,6 +72,12 @@ local function AddonLoad(self, event, addonName)
 
         if event == "TRAIT_DATA_READY" then end
 
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if not wan.PlayerState.InHealerMode then
+                wan.UpdateHealingData(nil, wan.spellData.Tranquility.basename)
+            end
+        end
+
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
             wan.SetUpdateRate(frameTranquility, CheckAbilityValue, abilityActive)
         end

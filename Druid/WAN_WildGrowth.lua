@@ -147,10 +147,12 @@ local function AddonLoad(self, event, addonName)
         end
 
         if unitsNeedHeal > 0 then
+
             if unitsNeedHeal > cWildGrowthUnitCap then
                 unitsNeedHeal = cWildGrowthUnitCap
             end
             wan.HealUnitCountAoE[hotKey] = unitsNeedHeal
+            
         else
             wan.HealUnitCountAoE[hotKey] = 1
         end
@@ -180,6 +182,12 @@ local function AddonLoad(self, event, addonName)
             nHarmoniousBlooming = wan.GetTraitDescriptionNumbers(wan.traitData.HarmoniousBlooming.entryid, { 1 }) - 1
 
             nStrategicInfusion = wan.GetTraitDescriptionNumbers(wan.traitData.StrategicInfusion.entryid, { 3 })
+        end
+
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if not wan.PlayerState.InHealerMode then
+                wan.UpdateHealingData(nil, wan.spellData.WildGrowth.basename)
+            end
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

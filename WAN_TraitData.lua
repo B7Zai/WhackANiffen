@@ -43,8 +43,8 @@ local function GetTraitData(dataArray)
                         if spellName then
                             local keyReference = definitionInfo.overrideName or spellName
                             local keyName = wan.FormatNameForKey(keyReference)
-                            local isActive = nodeInfo.currentRank > 0
-                            if isSelectionType then isActive = (entryID == activeEntryID) and (nodeInfo.subTreeActive ~= false) end
+                            local isActive = nodeInfo.currentRank > 0 and nodeInfo.subTreeActive ~= false
+                            if isSelectionType then isActive = (entryID == activeEntryID) and nodeInfo.subTreeActive ~= false end
 
                             dataArray[keyName] = {
                                 name = spellName,

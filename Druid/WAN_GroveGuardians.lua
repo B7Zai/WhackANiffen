@@ -44,8 +44,8 @@ local function AddonLoad(self, event, addonName)
             end
         else
             local unitToken = "player"
-            local playerGUID = wan.PlayerState.GUID
-            local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
+            local unitGUID = wan.PlayerState.GUID
+            local currentPercentHealth = UnitPercentHealthFromGUID(unitGUID) or 1
             local cGroveGuardians = wan.UnitDefensiveCooldownToValue(wan.spellData.GroveGuardians.id)
 
             local abilityValue = wan.UnitAbilityHealValue(unitToken, cGroveGuardians, currentPercentHealth)
@@ -57,7 +57,6 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            nGroveGuardians = wan.GetSpellDescriptionNumbers(wan.spellData.GroveGuardians.id, { 1 })
         end
     end)
 
@@ -71,6 +70,14 @@ local function AddonLoad(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then end
+
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if wan.PlayerState.InHealerMode then
+                wan.UpdateMechanicData(wan.spellData.GroveGuardians.basename)
+            else
+                wan.UpdateSupportData(nil, wan.spellData.GroveGuardians.basename)
+            end
+        end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
             wan.SetUpdateRate(frameGroveGuardians, CheckAbilityValue, abilityActive)

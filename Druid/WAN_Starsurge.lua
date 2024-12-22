@@ -12,6 +12,9 @@ local function AddonLoad(self, event, addonName)
     -- Init spell data
     local abilityActive = false
     local nStarsurgeDmg = 0
+    local nMasteryAstralInvocationArcane = 0
+    local nMasteryAstralInvocationNature = 0
+    local nMasteryAstralInvocationAstral = 0
 
     -- Init trait data
     local nAstronomicalImpact = 0
@@ -37,6 +40,16 @@ local function AddonLoad(self, event, addonName)
         -- Base values
         local critChanceMod = 0
         local critDamageMod = 0
+
+        -- check mastery layer
+        local cMasteryAstralInvocationAstral = 1
+        if wan.spellData.MasteryAstralInvocation.known then
+            local cMasteryAstralInvocationNatureValue = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Sunfire.basename] and nMasteryAstralInvocationNature or 0
+            local cMasteryAstralInvocationArcaneValue = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Moonfire.basename] and nMasteryAstralInvocationArcane or 0
+            local cMasteryAstralInvocationAstralValue = cMasteryAstralInvocationNatureValue + cMasteryAstralInvocationArcaneValue
+            cMasteryAstralInvocationAstral = 1 + cMasteryAstralInvocationAstralValue
+        end
+        
         local cStarsurgeDmg = nStarsurgeDmg
 
         -- Astronomical Impact
@@ -49,6 +62,8 @@ local function AddonLoad(self, event, addonName)
             local cPowerOfGoldrinn = nPowerOfGoldrinn * nPowerOfGoldrinnProcChance
             cStarsurgeDmg = cStarsurgeDmg + cPowerOfGoldrinn
         end
+
+        cStarsurgeDmg = cStarsurgeDmg * cMasteryAstralInvocationAstral
 
         -- Crit layer
         cStarsurgeDmg = cStarsurgeDmg * wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
@@ -66,6 +81,10 @@ local function AddonLoad(self, event, addonName)
             nStarsurgeDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Starsurge.id, { 1 })
 
             nPowerOfGoldrinn = wan.GetTraitDescriptionNumbers(wan.traitData.PowerofGoldrinn.entryid, { 1 })
+
+            local nMasteryAstralInvocationValues = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryAstralInvocation.id, { 2, 4 })
+            nMasteryAstralInvocationArcane = nMasteryAstralInvocationValues[1] * 0.01
+            nMasteryAstralInvocationNature = nMasteryAstralInvocationValues[2] * 0.01
         end
     end)
 

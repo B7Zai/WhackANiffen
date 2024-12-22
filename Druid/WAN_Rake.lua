@@ -11,7 +11,7 @@ local function AddonLoad(self, event, addonName)
 
     -- Init data
     local abilityActive = false
-    local nRakeInstantDmg, nRakeDotDmg, nRakeDotDuration, nRakeDotDps = 0, 0, 0, 0
+    local nRakeInstantDmg, nRakeDotDmg = 0, 0
 
     -- Init trait
     local nPouncingStrikes = 0
@@ -28,40 +28,57 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Check for valid unit
-        local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.Rake.id)
+        local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, wan.spellData.Swipe.maxRange)
         if not isValidUnit then
             wan.UpdateAbilityData(wan.spellData.Rake.basename)
             return
         end
 
-        -- Dot value
-        local dotPotency = wan.CheckDotPotency(nRakeInstantDmg)
-        local cRakeDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Rake and (nRakeDotDmg * dotPotency)) or 0
-
         -- Base values
-        local cRakeDmg = nRakeInstantDmg + cRakeDotDmg
+        local cRakeInstantDmg = nRakeInstantDmg
+        local cRakeDotDmg = 0
+
+        -- Check for Rake debuff
+        local checkRakeDebuff = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Rake.basename]
+        if not checkRakeDebuff then
+            local dotPotency = wan.CheckDotPotency(nRakeInstantDmg)
+            cRakeDotDmg = cRakeDotDmg + (nRakeDotDmg * dotPotency)
+        end
 
         -- Double-Clawed Rake
+        local cDoubleClawedRakeInstantDmg = 0
+        local cDoubleClawedRakeDotDmg = 0
         if wan.traitData.DoubleClawedRake.known and countValidUnit > 1 then
-            local nDoubleClawedInstantDmg = nRakeInstantDmg * math.min(countValidUnit, nDoubleClawedRakeAoeCap)
-            local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Rake.name, nil,
-                nDoubleClawedInstantDmg)
-            local rakeDebuffedUnitAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Rake.name)
-            local cDoubleClawedRakeDotDmg = (rakeDebuffedUnitAoE < countValidUnit and nRakeDotDmg * dotPotencyAoE) or 0
-            if rakeDebuffedUnitAoE > 0 and not wan.auraData[wan.TargetUnitID].debuff_Rake then cDoubleClawedRakeDotDmg = 0 end
-            local cDoubleClawedRakeDmg = nRakeInstantDmg + cDoubleClawedRakeDotDmg
-            cRakeDmg = cRakeDmg + cDoubleClawedRakeDmg
+            cDoubleClawedRakeInstantDmg = nRakeInstantDmg
+            local countRake = 0
+            for unitToken, unitGUID in pairs(idValidUnit) do
+                if unitGUID ~= wan.UnitState.GUID[wan.TargetUnitID] then
+                    local checkDoubleClawedDebuff = wan.auraData[unitToken]["debuff_" .. wan.spellData.Rake.basename]
+                    if not checkDoubleClawedDebuff then
+                        local unitDotPotency = wan.CheckDotPotency(cDoubleClawedRakeInstantDmg, unitToken)
+                        cDoubleClawedRakeDotDmg = nRakeDotDmg * unitDotPotency
+                        countRake = countRake + 1
+                    end
+                end
+                if countRake >= nDoubleClawedRakeAoeCap then break end  
+            end
         end
 
         -- Pouncing Strikes
+        local cPouncingStrikes = 1
         if wan.auraData.player.buff_SuddenAmbush or
-            (wan.traitData.PouncingStrikes.known and wan.auraData.player.buff_Prowl) then
-            local cPouncingStrikes = cRakeDmg * nPouncingStrikes
-            cRakeDmg = cRakeDmg + cPouncingStrikes
+            ((wan.traitData.PouncingStrikes.known or wan.PlayerState.SpecializationName ~= "Feral") and wan.auraData.player.buff_Prowl) then
+            cPouncingStrikes = cPouncingStrikes + nPouncingStrikes
         end
 
         -- Crit value
-        cRakeDmg = cRakeDmg * wan.ValueFromCritical(wan.CritChance)
+        local cRakeCritValue = wan.ValueFromCritical(wan.CritChance)
+
+        cRakeInstantDmg = (cRakeInstantDmg + cDoubleClawedRakeInstantDmg) * cPouncingStrikes * cRakeCritValue
+        cRakeDotDmg = (cRakeDotDmg + cDoubleClawedRakeDotDmg) * cPouncingStrikes * cRakeCritValue
+
+        -- Base values
+        local cRakeDmg = cRakeInstantDmg + cRakeDotDmg
 
         -- Update ability data
         local abilityValue = math.floor(cRakeDmg)
@@ -75,8 +92,6 @@ local function AddonLoad(self, event, addonName)
             local rakeValues = wan.GetSpellDescriptionNumbers(wan.spellData.Rake.id, { 1, 2, 3 })
             nRakeInstantDmg = rakeValues[1]
             nRakeDotDmg = rakeValues[2]
-            nRakeDotDuration = rakeValues[3]
-            nRakeDotDps = rakeValues[2] / rakeValues[3]
         end
     end)
 
@@ -90,8 +105,8 @@ local function AddonLoad(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then
-            nPouncingStrikes = wan.GetTraitDescriptionNumbers(wan.traitData.PouncingStrikes.entryid, { 3 }) / 100
-            nDoubleClawedRakeAoeCap = wan.GetTraitDescriptionNumbers(wan.traitData.DoubleClawedRake.entryid, { 1 }) + 1
+            nPouncingStrikes = wan.GetTraitDescriptionNumbers(wan.traitData.PouncingStrikes.entryid, { 3 }) * 0.01
+            nDoubleClawedRakeAoeCap = wan.GetTraitDescriptionNumbers(wan.traitData.DoubleClawedRake.entryid, { 1 })
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

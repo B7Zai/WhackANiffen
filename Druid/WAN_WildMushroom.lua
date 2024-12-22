@@ -9,11 +9,13 @@ local function AddonLoad(self, event, addonName)
     -- Early Exit
     if addonName ~= "WhackANiffen" or wan.PlayerState.Class ~= "DRUID" then return end
 
-    -- Init data
+    -- Init spell data
     local abilityActive = false
     local nWildMushroomInstantDmg, nWildMushroomDotDmg = 0, 0
-
-    -- Init trait
+    local sWildMushroomAuraKey = "FungalGrowth"
+    local nMasteryAstralInvocationArcane = 0
+    local nMasteryAstralInvocationNature = 0
+    local nMasteryAstralInvocationAstral = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -32,16 +34,44 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
-        -- Base value
-        local cWildMushroomInstantDmg = nWildMushroomInstantDmg * countValidUnit
-        local cWirldMushroomDmg = cWildMushroomInstantDmg
+        local cMasteryAstralInvocationNature = 1
+        if wan.spellData.MasteryAstralInvocation.known then
+            local cMasteryAstralInvocationNatureValue = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Sunfire.basename] and nMasteryAstralInvocationNature or 0
+            cMasteryAstralInvocationNature = 1 + cMasteryAstralInvocationNatureValue
+        end
 
-        -- Dot Value
-        local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.WildMushroom.name, nil, cWildMushroomInstantDmg)
-        local wildMushroomDebuffedUnitAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.WildMushroom.name)
-        local missingWildMushroomDebuffAoE = countValidUnit - wildMushroomDebuffedUnitAoE
-        local cWildMushroomDotDmg = nWildMushroomDotDmg * dotPotencyAoE * missingWildMushroomDebuffAoE
-        cWirldMushroomDmg = cWirldMushroomDmg + cWildMushroomDotDmg
+        -- Base value
+        local cWildMushroomInstantDmg = 0
+        local cWildMushroomDotDmg = 0
+
+
+        local checkWildMushroomDebuff = wan.auraData[wan.TargetUnitID]["debuff_" .. sWildMushroomAuraKey]
+        if not checkWildMushroomDebuff then
+            local dotPotency = wan.CheckDotPotency(nWildMushroomInstantDmg)
+            cWildMushroomDotDmg = cWildMushroomDotDmg + (nWildMushroomDotDmg * dotPotency * cMasteryAstralInvocationNature)
+            cWildMushroomInstantDmg = cWildMushroomInstantDmg + (nWildMushroomInstantDmg * cMasteryAstralInvocationNature)
+        end
+
+        for unitToken, unitGUID in pairs(idValidUnit) do
+            
+            if unitGUID ~= wan.UnitState.GUID[wan.TargetUnitID] then
+                -- add mastery layer
+                local cMasteryAstralInvocationNature = 1
+                if wan.spellData.MasteryAstralInvocation.known then
+                    local cMasteryAstralInvocationNatureValue = wan.auraData[unitToken]["debuff_" .. wan.spellData.Sunfire.basename] and nMasteryAstralInvocationNature or 0
+                    cMasteryAstralInvocationNature = 1 + cMasteryAstralInvocationNatureValue
+                end
+
+                local checkUnitWildMushroomDebuff = wan.auraData[unitToken]["debuff_" .. sWildMushroomAuraKey]
+                if not checkUnitWildMushroomDebuff then
+                    local unitDotPotency = wan.CheckDotPotency(cWildMushroomInstantDmg, unitToken)
+                    cWildMushroomDotDmg = cWildMushroomDotDmg + (nWildMushroomDotDmg * unitDotPotency * cMasteryAstralInvocationNature)
+                    cWildMushroomInstantDmg = cWildMushroomInstantDmg + (nWildMushroomInstantDmg * cMasteryAstralInvocationNature)
+                end
+            end
+        end
+
+        local cWirldMushroomDmg = cWildMushroomInstantDmg + cWildMushroomDotDmg
 
         -- Crit layer
         cWirldMushroomDmg = cWirldMushroomDmg * wan.ValueFromCritical(wan.CritChance)
@@ -58,6 +88,10 @@ local function AddonLoad(self, event, addonName)
             local wildMushroomValues = wan.GetSpellDescriptionNumbers(wan.spellData.WildMushroom.id, { 1, 2 })
             nWildMushroomInstantDmg = wildMushroomValues[1]
             nWildMushroomDotDmg = wildMushroomValues[2]
+
+            local nMasteryAstralInvocationValues = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryAstralInvocation.id, { 2, 4 })
+            nMasteryAstralInvocationArcane = nMasteryAstralInvocationValues[1] * 0.01
+            nMasteryAstralInvocationNature = nMasteryAstralInvocationValues[2] * 0.01
         end
     end)
 

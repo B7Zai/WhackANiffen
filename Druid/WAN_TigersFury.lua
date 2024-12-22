@@ -18,7 +18,7 @@ local function AddonLoad(self, event, addonName)
     local function CheckAbilityValue()
         -- Early exits
         if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
-            or not wan.IsSpellUsable(wan.spellData.TigersFury.id)
+            or not wan.PlayerState.Combat or not wan.IsSpellUsable(wan.spellData.TigersFury.id)
         then
             wan.UpdateMechanicData(wan.spellData.TigersFury.basename)
             return

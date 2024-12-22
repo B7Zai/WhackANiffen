@@ -172,8 +172,8 @@ local function AddonLoad(self, event, addonName)
         else
             -- init data for player
             local unitToken = "player"
-            local playerGUID =  wan.PlayerState.GUID
-            local currentPercentHealth = playerGUID and UnitPercentHealthFromGUID(playerGUID) or 0
+            local unitGUID = wan.PlayerState.GUID
+            local currentPercentHealth = UnitPercentHealthFromGUID(unitGUID) or 1
             local hotPotency = wan.HotPotency(unitToken, currentPercentHealth)
             local cLifebloomInstantHeal = cDreamSurge
             local cLifebloomHotHeal = nLifebloomHotHeal
@@ -262,6 +262,14 @@ local function AddonLoad(self, event, addonName)
             nHarmoniousBlooming = wan.GetTraitDescriptionNumbers(wan.traitData.HarmoniousBlooming.entryid, { 1 }) - 1
 
             nStrategicInfusion = wan.GetTraitDescriptionNumbers(wan.traitData.StrategicInfusion.entryid, { 3 })
+        end
+
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if wan.PlayerState.InHealerMode then
+                wan.UpdateMechanicData(wan.spellData.Lifebloom.basename)
+            else
+                wan.UpdateHealingData(nil, wan.spellData.Lifebloom.basename)
+            end
         end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

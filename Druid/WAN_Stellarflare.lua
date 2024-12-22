@@ -12,6 +12,9 @@ local function AddonLoad(self, event, addonName)
     -- Init spell data
     local abilityActive = false
     local nStellarFlareInstantDmg, nStellarFlareDotDmg, nStellarFlareDotDuration = 0, 0, 0
+    local nMasteryAstralInvocationArcane = 0
+    local nMasteryAstralInvocationNature = 0
+    local nMasteryAstralInvocationAstral = 0
 
     -- Init trait data
     local nAstronomicalImpact = 0
@@ -34,14 +37,27 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
-        -- Dot value
-        local dotPotency = wan.CheckDotPotency(nStellarFlareInstantDmg)
-        local cStellarFlareDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_StellarFlare and (nStellarFlareDotDmg * dotPotency)) or 0
-
         -- Base value
         local critChanceMod = 0
         local critDamageMod = 0
-        local cStellarFlareDmg = nStellarFlareInstantDmg + cStellarFlareDotDmg
+        local cStellarFlareInstantDmg = nStellarFlareInstantDmg
+        local cStellarFlareDotDmg = 0
+
+        -- check mastery layer
+        local cMasteryAstralInvocationAstral = 1
+        if wan.spellData.MasteryAstralInvocation.known then
+            local cMasteryAstralInvocationNatureValue = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Sunfire.basename] and nMasteryAstralInvocationNature or 0
+            local cMasteryAstralInvocationArcaneValue = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Moonfire.basename] and nMasteryAstralInvocationArcane or 0
+            local cMasteryAstralInvocationAstralValue = cMasteryAstralInvocationNatureValue + cMasteryAstralInvocationArcaneValue
+            cMasteryAstralInvocationAstral = 1 + cMasteryAstralInvocationAstralValue
+        end
+
+        -- Dot value
+        local checkStellarFlareDebuff = wan.auraData[wan.TargetUnitID].debuff_StellarFlare
+        if not checkStellarFlareDebuff then
+            local dotPotency = wan.CheckDotPotency(nStellarFlareInstantDmg)
+            cStellarFlareDotDmg = cStellarFlareDotDmg + (nStellarFlareDotDmg * dotPotency)
+        end
 
         -- Astronomical Impact
         if wan.traitData.AstronomicalImpact.known then
@@ -50,14 +66,15 @@ local function AddonLoad(self, event, addonName)
 
         -- Cast time layer
         local castEfficiency = wan.CheckCastEfficiency(wan.spellData.StellarFlare.id, wan.spellData.StellarFlare.castTime)
-        cStellarFlareDmg = cStellarFlareDmg * castEfficiency
 
         -- Crit layer
-        cStellarFlareDmg = cStellarFlareDmg * wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+        local cStellarFlareCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+
+
+        local cStellarFlareDmg = (cStellarFlareInstantDmg + cStellarFlareDotDmg) * cMasteryAstralInvocationAstral * cStellarFlareCritValue * castEfficiency 
 
         -- Update ability data
         local abilityDmg = math.floor(cStellarFlareDmg)
-
         wan.UpdateAbilityData(wan.spellData.StellarFlare.basename, abilityDmg, wan.spellData.StellarFlare.icon, wan.spellData.StellarFlare.name)
     end
 
@@ -68,6 +85,10 @@ local function AddonLoad(self, event, addonName)
             nStellarFlareInstantDmg = stellarFlareValues[1]
             nStellarFlareDotDmg = stellarFlareValues[2]
             nStellarFlareDotDuration = stellarFlareValues[3]
+
+            local nMasteryAstralInvocationValues = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryAstralInvocation.id, { 2, 4 })
+            nMasteryAstralInvocationArcane = nMasteryAstralInvocationValues[1] * 0.01
+            nMasteryAstralInvocationNature = nMasteryAstralInvocationValues[2] * 0.01
         end
     end)
 

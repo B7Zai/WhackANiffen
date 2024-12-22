@@ -34,7 +34,7 @@ local function AddonLoad(self, event, addonName)
 
                 if idValidGroupUnit[groupUnitToken] then
 
-                    local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID)
+                    local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
                     local _, countHots = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
                     local cFlourishHeal = wan.UnitAbilityPercentageToValue(groupUnitToken, nFlourishHeal)
                     cFlourishHeal = cFlourishHeal * countHots 
@@ -48,7 +48,8 @@ local function AddonLoad(self, event, addonName)
             end
         else
             local unitToken = "player"
-            local currentPercentHealth = UnitPercentHealthFromGUID(unitToken)
+            local unitGUID = wan.PlayerState.GUID
+            local currentPercentHealth = UnitPercentHealthFromGUID(unitGUID) or 1
             local _, countHots = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
             local cFlourishHeal = wan.UnitAbilityPercentageToValue(unitToken, nFlourishHeal)
             cFlourishHeal = cFlourishHeal * countHots
@@ -77,6 +78,14 @@ local function AddonLoad(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then end
+
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if wan.PlayerState.InHealerMode then
+                wan.UpdateMechanicData(wan.spellData.Flourish.basename)
+            else
+                wan.UpdateHealingData(nil, wan.spellData.Flourish.basename)
+            end
+        end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
             wan.SetUpdateRate(frameFlourish, CheckAbilityValue, abilityActive)

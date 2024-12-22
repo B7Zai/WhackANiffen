@@ -71,6 +71,14 @@ local function AddonLoad(self, event, addonName)
 
         if event == "TRAIT_DATA_READY" then end
 
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if wan.PlayerState.InHealerMode then
+                wan.UpdateMechanicData(wan.spellData.RemoveCorruption.basename)
+            else
+                wan.UpdateSupportData(nil, wan.spellData.RemoveCorruption.basename)
+            end
+        end
+
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
             wan.SetUpdateRate(frameRemoveCorruption, CheckAbilityValue, abilityActive)
         end

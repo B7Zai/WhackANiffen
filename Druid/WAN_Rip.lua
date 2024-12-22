@@ -21,16 +21,17 @@ local function AddonLoad(self, event, addonName)
     -- Ability value calculation
     local function CheckAbilityValue()
         -- Early exits
-        if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
-            or comboPercentage < 80 or wan.auraData.player.buff_Prowl
-            or not wan.IsSpellUsable(wan.spellData.Rip.id)
+        if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm 
+            or wan.auraData.player.buff_Prowl or not wan.IsSpellUsable(wan.spellData.Rip.id)
         then
             wan.UpdateAbilityData(wan.spellData.Rip.basename)
             return
         end
 
+        local maxRange = wan.spellData.PrimalWrath.maxRange or 5
+
         -- Check for valid unit
-        local isValidUnit = wan.ValidUnitBoolCounter(wan.spellData.Rip.id)
+        local isValidUnit = wan.ValidUnitBoolCounter(nil, maxRange)
         if not isValidUnit then
             wan.UpdateAbilityData(wan.spellData.Rip.basename)
             return
@@ -55,9 +56,9 @@ local function AddonLoad(self, event, addonName)
 
         -- Rip and Tear
         if wan.traitData.RipandTear.known then
-            local tearDebuffedUnit = wan.CheckForDebuff(wan.auraData, "Tear", wan.TargetUnitID)
+            local checkTearDebuff = wan.auraData[wan.TargetUnitID].debuff_Tear
             local cTearDotDmg = cRipDmg * currentCombo * nRipAndTear * dotPotency
-            local cTearDmg = (not tearDebuffedUnit and (cTearDotDmg)) or 0
+            local cTearDmg = (not checkTearDebuff and (cTearDotDmg)) or 0
             cRipDmg = cRipDmg + cTearDmg
         end
 

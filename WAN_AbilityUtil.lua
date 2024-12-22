@@ -177,6 +177,16 @@ function wan.AdjustSoftCapUnitOverflow(capStart, numTargets)
     return numTargets
 end
 
+-- Reduce damage for "beyond x target abilities"
+function wan.SoftCapOverflow(capStart, numTargets)
+    local maxTargets = math.min(numTargets, 20)
+    if numTargets > capStart  then
+        return math.sqrt(capStart / maxTargets)
+    end
+
+    return 1
+end
+
 ---- checks if any valid unit is targeting the player
 function wan.IsTanking()
     local isTanking = UnitDetailedThreatSituation("player", wan.TargetUnitID) or false

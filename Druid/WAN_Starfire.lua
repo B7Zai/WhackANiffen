@@ -12,12 +12,15 @@ local function AddonLoad(self, event, addonName)
     -- Init spell data
     local abilityActive = false
     local nStarfireDmg, nStarfireAoEDmg, nStarfireAoECap = 0, 0, 0
+    local nMasteryAstralInvocationArcane = 0
+    local nMasteryAstralInvocationNature = 0
+    local nMasteryAstralInvocationAstral = 0
 
     -- Init trait data
     local nAstronomicalImpact = 0
     local nWildSurges = 0
     local nAstralSmolderProcChance, nAstralSmolderDmg = 0, 0
-    local nDreamSurgeDmg, nDreamSurgeAoECap = 0, 0
+    local nDreamSurgeDmg, nDreamSurgeSoftCap = 0, 0
     local nUmbralEmbraceDmg = 0
 
     -- Ability value calculation
@@ -41,34 +44,39 @@ local function AddonLoad(self, event, addonName)
         -- Base values
         local critChanceMod = 0
         local critDamageMod = 0
-        local cStarfireAoEDmg = 0
-        local cStarfireDmg = nStarfireDmg
 
-        -- AoE values
-        if countValidUnit > 1 then
-            local starfireUnitAoE = countValidUnit - 1
-            local softCappedValidUnit = wan.AdjustSoftCapUnitOverflow(nStarfireAoECap, starfireUnitAoE)
-            cStarfireAoEDmg = nStarfireAoEDmg * softCappedValidUnit
-            cStarfireDmg = cStarfireDmg + cStarfireAoEDmg
+        -- add mastery layer
+        local cMasteryAstralInvocationNature = 1
+        local cMasteryAstralInvocationArcane = 1
+        local cMasteryAstralInvocationAstral = 1
+        if wan.spellData.MasteryAstralInvocation.known then
+            local cMasteryAstralInvocationNatureValue = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Sunfire.basename] and nMasteryAstralInvocationNature or 0
+            local cMasteryAstralInvocationArcaneValue = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Moonfire.basename] and nMasteryAstralInvocationArcane or 0
+            local cMasteryAstralInvocationAstralValue = cMasteryAstralInvocationNatureValue + cMasteryAstralInvocationArcaneValue
+            cMasteryAstralInvocationNature = 1 + cMasteryAstralInvocationNatureValue
+            cMasteryAstralInvocationArcane = 1 + cMasteryAstralInvocationArcaneValue
+            cMasteryAstralInvocationAstral = 1 + cMasteryAstralInvocationAstralValue
         end
 
+        local cStarfireInstantDmg = nStarfireDmg * cMasteryAstralInvocationArcane
+        local cStarfireDotDmg = 0
+
         -- Wild Surges
-        if wan.traitData.WildSurges.known then 
+        if wan.traitData.WildSurges.known then
             critChanceMod = critChanceMod + nWildSurges
         end
 
         -- Astral Smolder
-        if wan.traitData.AstralSmolder.known then
-            local countDebuffed = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, "Astral Smolder")
-            local cAstralSmolder = nStarfireDmg * nAstralSmolderDmg * nAstralSmolderProcChance * (countValidUnit - countDebuffed)
-            cStarfireDmg = cStarfireDmg + cAstralSmolder
+        local cAstralSmolder = 0
+        if wan.traitData.AstralSmolder.known and not wan.auraData[wan.TargetUnitID]["debuff_" .. wan.traitData.AstralSmolder.traitkey] then
+            cAstralSmolder = nStarfireDmg * nAstralSmolderDmg * nAstralSmolderProcChance * cMasteryAstralInvocationAstral
         end
 
         -- Umbral Embrace
+        local cUmbralEmbrace = 1
         if wan.traitData.UmbralEmbrace.known and wan.auraData.player.buff_UmbralEclipse
             and (wan.auraData.player.buff_EclipseSolar or wan.auraData.player.buff_EclipseLunar) then
-            local cUmbralEmbrace = (nStarfireDmg + cStarfireAoEDmg) * nUmbralEmbraceDmg
-            cStarfireDmg = cStarfireDmg + cUmbralEmbrace
+            cUmbralEmbrace = cUmbralEmbrace + nUmbralEmbraceDmg + cMasteryAstralInvocationNature
 
             -- Astronomical Impact
             if wan.traitData.AstronomicalImpact.known then
@@ -77,22 +85,75 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Dream Surge
+        local cDreamSurgeDmg = 0
+        local cDreamSurgeCritValue = 1
+        local cDreamSurgeUnitOverflow = 1
         if wan.traitData.DreamSurge.known and wan.auraData.player.buff_DreamBurst then
-            local softCappenValidUnit = wan.AdjustSoftCapUnitOverflow(nDreamSurgeAoECap, countValidUnit)
-            local cDreamSurgeDmg = nDreamSurgeDmg * softCappenValidUnit
-            cStarfireDmg = cStarfireDmg + cDreamSurgeDmg
+            cDreamSurgeCritValue = wan.ValueFromCritical(wan.CritChance)
+            cDreamSurgeUnitOverflow = wan.SoftCapOverflow(nDreamSurgeSoftCap, countValidUnit)
+            cDreamSurgeDmg = nDreamSurgeDmg * cDreamSurgeUnitOverflow * cMasteryAstralInvocationNature
+        end
+
+        -- Crit layer
+        local cStarfireCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+
+        -- AoE values
+        local cStarfireInstantDmgAoE = 0
+        local cStarfireDotDmgAoE = 0
+        if countValidUnit > 1 then
+
+            local cStarfireUnitOverflow = wan.SoftCapOverflow(nStarfireAoECap, countValidUnit)
+
+            for unitToken, unitGUID in pairs(idValidUnit) do
+
+                if unitGUID ~= wan.UnitState.GUID[wan.TargetUnitID] then
+
+                    local cMasteryAstralInvocationUnitNature = 1
+                    local cMasteryAstralInvocationUnitArcane = 1
+                    local cMasteryAstralInvocationUnitAstral = 1
+                    if wan.spellData.MasteryAstralInvocation.known then
+                        local cMasteryAstralInvocationUnitNatureValue = wan.auraData[unitToken]["debuff_" .. wan.spellData.Sunfire.basename] and nMasteryAstralInvocationNature or 0
+                        local cMasteryAstralInvocationUnitArcaneValue = wan.auraData[unitToken]["debuff_" .. wan.spellData.Moonfire.basename] and nMasteryAstralInvocationArcane or 0
+                        local cMasteryAstralInvocationUnitAstralValue = cMasteryAstralInvocationUnitNatureValue + cMasteryAstralInvocationUnitArcaneValue
+                        cMasteryAstralInvocationUnitNature = 1 + cMasteryAstralInvocationUnitNatureValue
+                        cMasteryAstralInvocationUnitArcane = 1 + cMasteryAstralInvocationUnitArcaneValue
+                        cMasteryAstralInvocationUnitAstral = 1 + cMasteryAstralInvocationUnitAstralValue
+                    end
+
+                    cStarfireInstantDmgAoE = cStarfireInstantDmgAoE + (nStarfireAoEDmg * cStarfireUnitOverflow * cUmbralEmbrace * cMasteryAstralInvocationUnitArcane * cStarfireCritValue)
+
+                    -- Astral Smolder
+                    local cUnitAstralSmolder = 0
+                    if wan.traitData.AstralSmolder.known and not wan.auraData[unitToken]["debuff_" .. wan.traitData.AstralSmolder.traitkey] then
+                        cUnitAstralSmolder = nStarfireDmg * nAstralSmolderDmg * nAstralSmolderProcChance * cMasteryAstralInvocationUnitAstral * cStarfireCritValue 
+                    end
+
+                    local cUnitDreamSurgeDmg = 0
+                    if wan.traitData.DreamSurge.known and wan.auraData.player.buff_DreamBurst then
+                        cUnitDreamSurgeDmg = nDreamSurgeDmg * cDreamSurgeUnitOverflow * cMasteryAstralInvocationUnitNature * cDreamSurgeCritValue
+                    end
+
+                    cStarfireInstantDmgAoE = cStarfireInstantDmgAoE + cUnitDreamSurgeDmg
+                    cStarfireDotDmgAoE = cStarfireDotDmgAoE + cUnitAstralSmolder
+                end
+            end
         end
 
         -- Cast time layer
         local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Starfire.id, wan.spellData.Starfire.castTime)
-        cStarfireDmg = cStarfireDmg * castEfficiency
 
-        -- Crit layer
-        cStarfireDmg = cStarfireDmg * wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+        cStarfireInstantDmg = ((cStarfireInstantDmg * cUmbralEmbrace * cStarfireCritValue) + cDreamSurgeDmg)
+        cStarfireDotDmg = (cStarfireDotDmg + cAstralSmolder) * cStarfireCritValue
+
+        local cStarfireDmg = (cStarfireInstantDmg + cStarfireDotDmg + cStarfireInstantDmgAoE + cStarfireDotDmgAoE) * castEfficiency
 
         -- Handle eclipse
-        if wan.traitData.Eclipse.known and wan.traitData.LunarCalling.known and not wan.auraData.player.buff_EclipseLunar then
-            cStarfireDmg = 0
+        if wan.traitData.Eclipse.known  and not wan.auraData.player.buff_EclipseLunar then
+            if wan.traitData.LunarCalling.known then
+                cStarfireDmg = 0
+            else
+                cStarfireDmg = cStarfireDmg / countValidUnit
+            end
         end
 
         -- Update ability data
@@ -108,9 +169,14 @@ local function AddonLoad(self, event, addonName)
             local starfireValues = wan.GetSpellDescriptionNumbers(wan.spellData.Starfire.id, { 1, 2, 3 })
             nStarfireDmg = starfireValues[1]
             nStarfireAoEDmg = starfireValues[2]
-            nStarfireAoECap = starfireValues[3]
+            nStarfireAoECap = 1 + starfireValues[3]
 
             nDreamSurgeDmg = wan.GetTraitDescriptionNumbers(wan.traitData.DreamSurge.entryid, { 2 })
+
+            local nMasteryAstralInvocationValues = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryAstralInvocation.id, { 2, 4 })
+            nMasteryAstralInvocationArcane = nMasteryAstralInvocationValues[1] * 0.01
+            nMasteryAstralInvocationNature = nMasteryAstralInvocationValues[2] * 0.01
+
         end
     end)
 
@@ -132,7 +198,7 @@ local function AddonLoad(self, event, addonName)
 
             nAstronomicalImpact = wan.GetTraitDescriptionNumbers(wan.traitData.AstronomicalImpact.entryid, { 1 })
 
-            nDreamSurgeAoECap = wan.GetTraitDescriptionNumbers(wan.traitData.DreamSurge.entryid, { 3 })
+            nDreamSurgeSoftCap = wan.GetTraitDescriptionNumbers(wan.traitData.DreamSurge.entryid, { 3 })
 
             nUmbralEmbraceDmg = wan.GetTraitDescriptionNumbers(wan.traitData.UmbralEmbrace.entryid, { 1 }) * 0.01
         end

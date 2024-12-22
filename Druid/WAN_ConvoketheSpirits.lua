@@ -35,6 +35,7 @@ local function AddonLoad(self, event, addonName)
             for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
                 if idValidGroupUnit[groupUnitToken] then
+                    
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
                     local cConvoketheSpirits = wan.UnitDefensiveCooldownToValue(wan.spellData.ConvoketheSpirits.id, groupUnitToken) * wan.UnitState.LevelScale[groupUnitToken]
 
@@ -63,11 +64,13 @@ local function AddonLoad(self, event, addonName)
                 wan.spellData.ConvoketheSpirits.icon, wan.spellData.ConvoketheSpirits.name)
 
             -- Base defensive value
-            local cConvoketheSpiritsHeal = nConvoketheSpiritsHeal
-            local healThreshold = wan.HealThreshold() > cConvoketheSpiritsHeal
+            local unitToken = "player"
+            local unitGUID = wan.PlayerState.GUID
+            local currentPercentHealth = UnitPercentHealthFromGUID(unitGUID) or 1
+            local cConvoketheSpiritsHeal = wan.UnitAbilityHealValue(unitToken, nConvoketheSpiritsHeal, currentPercentHealth)
 
             -- Update ability data
-            local healValue = healThreshold and cConvoketheSpiritsHeal or 0
+            local healValue = cConvoketheSpiritsHeal
             wan.UpdateMechanicData(wan.spellData.ConvoketheSpirits.basename, healValue,
                 wan.spellData.ConvoketheSpirits.icon, wan.spellData.ConvoketheSpirits.name)
         end
@@ -99,6 +102,14 @@ local function AddonLoad(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then end
+
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if wan.PlayerState.InHealerMode then
+                wan.UpdateMechanicData(wan.spellData.ConvoketheSpirits.basename)
+            else
+                wan.UpdateSupportData(nil, wan.spellData.ConvoketheSpirits.basename)
+            end
+        end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
             wan.SetUpdateRate(frameConvokeTheSpirits, CheckAbilityValue, abilityActive)

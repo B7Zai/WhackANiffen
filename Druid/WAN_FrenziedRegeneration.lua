@@ -32,7 +32,7 @@ local function AddonLoad(self, event, addonName)
 
         -- Innate Resolve
         if wan.traitData.InnateResolve.known then
-            local currentHealth = UnitHealth("player")
+            local currentHealth = wan.UnitState.Health["player"]
             local cInnateResolveRatio = (currentHealth / healthMax) * nInnateResolve
             local cInnateResolve = nFrenziedRegenerationHeal * cInnateResolveRatio
             cFrenziedRegenerationHeal = cFrenziedRegenerationHeal + cInnateResolve
@@ -49,7 +49,7 @@ local function AddonLoad(self, event, addonName)
             local nFrenziedRegeneration = wan.GetSpellDescriptionNumbers(wan.spellData.FrenziedRegeneration.id, { 1 })
             nFrenziedRegenerationHeal = wan.AbilityPercentageToValue(nFrenziedRegeneration)
 
-            healthMax = UnitHealthMax("player")
+            healthMax = wan.UnitState.MaxHealth["player"]
         end
     end)
 

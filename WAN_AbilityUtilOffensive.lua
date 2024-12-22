@@ -79,10 +79,10 @@ function wan.ValidUnitBoolCounter(spellIdentifier, maxRange)
     local count = 0
     local inRangeUnits = {}
 
-    for nameplateUnitID, _ in pairs(wan.NameplateUnitID) do
-        if wan.ValidUnitInRangeAoE(nameplateUnitID, spellIdentifier, maxRange) then
+    for unitTokenNameplate, unitGUID in pairs(wan.NameplateUnitID) do
+        if wan.ValidUnitInRangeAoE(unitTokenNameplate, spellIdentifier, maxRange) then
             count = count + 1
-            inRangeUnits[nameplateUnitID] = true
+            inRangeUnits[unitTokenNameplate] = unitGUID
         end
     end
 
@@ -95,10 +95,11 @@ end
 
 
 -- Checks classification and returns the damage reduction values of unit
-function wan.CheckUnitPhysicalDamageReduction()
-    local unitClassification = UnitClassification(wan.TargetUnitID)
-    if wan.classificationData[unitClassification] then
-        return wan.classificationData[unitClassification]
+function wan.CheckUnitPhysicalDamageReduction(unitToken)
+    local unit = unitToken or wan.TargetUnitID
+    local classification = wan.UnitState.Classification[unit]
+    if wan.classificationData[classification] then
+        return wan.classificationData[classification]
     end
     return 1
 end
@@ -136,7 +137,7 @@ end
 -- Checks if units have enough health to use an offensive cooldown
 function wan.CheckOffensiveCooldownPotency(spellDamage, validUnit, unitIDAoE)
     local abilityDamage = spellDamage or 0
-    local targetHealth = UnitHealth(wan.TargetUnitID) or 0
+    local targetHealth = wan.UnitState.Health[wan.TargetUnitID] or 0
     local validGroupMembers = wan.ValidGroupMembers()
     local damagePotency = abilityDamage * validGroupMembers
 
@@ -150,7 +151,7 @@ function wan.CheckOffensiveCooldownPotency(spellDamage, validUnit, unitIDAoE)
 
     local totalNameplateHealth = 0
     for nameplates, _ in pairs(unitIDAoE or {}) do
-        local nameplateHealth = UnitHealth(nameplates) or 0
+        local nameplateHealth = wan.UnitState.Health[nameplates] or 0
         totalNameplateHealth = totalNameplateHealth + nameplateHealth
         if totalNameplateHealth >= damagePotency 
         or (UnitInRaid("player") and UnitIsBossMob(nameplates))
@@ -167,7 +168,7 @@ function wan.CheckAoEPotency(validUnitIDs)
     local totalNameplateHealth = 0
 
     for unitID, _ in pairs(validUnitIDs) do
-        local targetHealth = UnitHealth(unitID)
+        local targetHealth = wan.UnitState.Health[unitID]
         totalNameplateHealth = totalNameplateHealth + targetHealth
     end
 
@@ -180,12 +181,13 @@ function wan.CheckAoEPotency(validUnitIDs)
 end
 
 -- Adjust ability dot value to unit health
-function wan.CheckDotPotency(initialValue)
+function wan.CheckDotPotency(initialValue, unitToken)
+    local unit = unitToken or wan.TargetUnitID
     local baseValue = initialValue or 0
-    local maxHealth = wan.UnitState.MaxHealth.player
-    local targetHealth = math.max((UnitCanAttack("player", wan.TargetUnitID) and UnitHealth(wan.TargetUnitID) or 0)- baseValue, 0)
+    local maxHealth = wan.UnitState.MaxHealth.player or 0
+    local targetHealth = math.max((wan.UnitState.Health[unit] - baseValue), 0)
     local damagePotency = (targetHealth / maxHealth)
-    local validGroupMembers = wan.ValidGroupMembers()
+    local validGroupMembers = (wan.PlayerState.InGroup and wan.ValidGroupMembers()) or 1
     local calcPotency = damagePotency / validGroupMembers
 
     return math.min(calcPotency, 1)
@@ -197,13 +199,12 @@ function wan.CheckDotPotencyAoE(auraData, validUnitIDs, debuffName, maxStacks, i
     local baseValue = initialValue or 0
     local setMaxStacks = (maxStacks and maxStacks > 0) and maxStacks or 1
 
-    for unitID, _ in pairs(validUnitIDs) do
+    for unitToken, _ in pairs(validUnitIDs) do
         if debuffName then
-            local auras = auraData[unitID]
-            local debuff = auras and auras["debuff_" .. debuffName]
+            local aura = auraData[unitToken]["debuff_" .. debuffName]
 
-            if not debuff or debuff.applications < setMaxStacks then
-                local targetHealth = math.max((UnitHealth(unitID) - baseValue), 0)
+            if not aura or aura.applications < setMaxStacks then
+                local targetHealth = math.max((wan.UnitState.Health[unitToken] - baseValue), 0)
                 totalNameplateHealth = totalNameplateHealth + targetHealth
             end
         end
@@ -234,11 +235,10 @@ function wan.CheckForDebuffAoE(auraData, validUnitIDs, debuffName, maxStacks)
     local debuffCount = 0
     local setMaxStacks = (maxStacks and maxStacks > 0) and maxStacks or 1
     
-    for unitID, _ in pairs(validUnitIDs) do
-        local aura = auraData[unitID]
-        local debuff = aura and aura["debuff_" .. debuffName]
+    for unitToken, _ in pairs(validUnitIDs) do
+        local aura = auraData[unitToken]["debuff_" .. debuffName]
 
-        if debuff and debuff.applications < setMaxStacks then
+        if aura and aura.applications < setMaxStacks then
             debuffCount = debuffCount + 1
         end
     end

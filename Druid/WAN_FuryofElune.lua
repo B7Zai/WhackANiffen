@@ -12,9 +12,13 @@ local function AddonLoad(self, event, addonName)
     -- Init data
     local abilityActive = false
     local nFuryOfEluneDmg = 0
+    local nMasteryAstralInvocationArcane = 0
+    local nMasteryAstralInvocationNature = 0
+    local nMasteryAstralInvocationAstral = 0
 
     -- Init trait data
     local nAstronomicalImpact = 0
+    local nBoundlessMoonlight = 0
 
     -- Ability value calculation
     local function CheckAbilityValue()
@@ -36,14 +40,49 @@ local function AddonLoad(self, event, addonName)
         -- Base value
         local critChanceMod = 0
         local critDamageMod = 0
-        local cFuryOfEluneDmg = nFuryOfEluneDmg
+
+        local cMasteryAstralInvocationAstral = 1
+        if wan.spellData.MasteryAstralInvocation.known then
+            local cMasteryAstralInvocationNatureValue = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Sunfire.basename] and nMasteryAstralInvocationNature or 0
+            local cMasteryAstralInvocationArcaneValue = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Moonfire.basename] and nMasteryAstralInvocationArcane or 0
+            local cMasteryAstralInvocationAstralValue = cMasteryAstralInvocationNatureValue + cMasteryAstralInvocationArcaneValue
+            cMasteryAstralInvocationAstral = 1 + cMasteryAstralInvocationAstralValue
+        end
+
+        local cFuryOfEluneInstantDmg = nFuryOfEluneDmg * cMasteryAstralInvocationAstral
+
+        local cBoundlessMoonlight = 0
+        if wan.traitData.BoundlessMoonlight.known then
+            cBoundlessMoonlight = cBoundlessMoonlight + (nBoundlessMoonlight * cMasteryAstralInvocationAstral)
+        end
 
         -- AoE values
+        local cFuryOfEluneInstantDmgAoE = 0
         if countValidUnit > 1 then
-            local furyOFEluneUnitAoE = countValidUnit - 1
-            local softCappedValidUnit = math.sqrt(1 / countValidUnit)
-            local cFuryOfEluneAoEDmg = (nFuryOfEluneDmg * softCappedValidUnit) * furyOFEluneUnitAoE
-            cFuryOfEluneDmg = cFuryOfEluneDmg + cFuryOfEluneAoEDmg
+            local cFuryOfEluneUnitOverflow = wan.SoftCapOverflow(1, countValidUnit)
+
+            for unitToken, unitGUID in pairs(idValidUnit) do
+
+                if unitGUID ~= wan.UnitState.GUID[wan.TargetUnitID] then
+
+                    local cMasteryAstralInvocationUnitAstral = 1
+                    if wan.spellData.MasteryAstralInvocation.known then
+                        local cMasteryAstralInvocationUnitNatureValue = wan.auraData[unitToken]["debuff_" .. wan.spellData.Sunfire.basename] and nMasteryAstralInvocationNature or 0
+                        local cMasteryAstralInvocationUnitArcaneValue = wan.auraData[unitToken]["debuff_" .. wan.spellData.Moonfire.basename] and nMasteryAstralInvocationArcane or 0
+                        local cMasteryAstralInvocationUnitAstralValue = cMasteryAstralInvocationUnitNatureValue + cMasteryAstralInvocationUnitArcaneValue
+                        cMasteryAstralInvocationUnitAstral = 1 + cMasteryAstralInvocationUnitAstralValue
+                    end
+
+                    local unitFuryOfEluneDmg = nFuryOfEluneDmg * cFuryOfEluneUnitOverflow * cMasteryAstralInvocationUnitAstral
+
+                    local cUnitBoundlessMoonlight = 0
+                    if wan.traitData.BoundlessMoonlight.known then
+                        cUnitBoundlessMoonlight = cUnitBoundlessMoonlight + (nBoundlessMoonlight * cMasteryAstralInvocationUnitAstral)
+                    end
+
+                    cFuryOfEluneInstantDmgAoE = cFuryOfEluneInstantDmgAoE + unitFuryOfEluneDmg + cUnitBoundlessMoonlight
+                end
+            end
         end
 
         -- Astronomical Impact
@@ -52,7 +91,12 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Crit layer
-        cFuryOfEluneDmg = cFuryOfEluneDmg * wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+        local cFuryofEluneCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+
+        cFuryOfEluneInstantDmg = (cFuryOfEluneInstantDmg + cBoundlessMoonlight) * cFuryofEluneCritValue
+        cFuryOfEluneInstantDmgAoE = cFuryOfEluneInstantDmgAoE * cFuryofEluneCritValue
+
+        local cFuryOfEluneDmg = cFuryOfEluneInstantDmg + cFuryOfEluneInstantDmgAoE
 
         -- Update ability data
         local cdPotency = wan.CheckOffensiveCooldownPotency(cFuryOfEluneDmg, isValidUnit, idValidUnit)
@@ -64,6 +108,12 @@ local function AddonLoad(self, event, addonName)
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nFuryOfEluneDmg = wan.GetSpellDescriptionNumbers(wan.spellData.FuryofElune.id, { 1 })
+
+            local nMasteryAstralInvocationValues = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryAstralInvocation.id, { 2, 4 })
+            nMasteryAstralInvocationArcane = nMasteryAstralInvocationValues[1] * 0.01
+            nMasteryAstralInvocationNature = nMasteryAstralInvocationValues[2] * 0.01
+
+            nBoundlessMoonlight = wan.GetTraitDescriptionNumbers(wan.traitData.BoundlessMoonlight.entryid, { 3 })
         end
     end)
 

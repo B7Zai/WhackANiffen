@@ -47,8 +47,8 @@ local function AddonLoad(self, event, addonName)
             local unitToken = "player"
             if not wan.auraData[unitToken].buff_Ironbark then
 
-                local playerGUID = wan.PlayerState.GUID
-                local currentPercentHealth = playerGUID and (UnitPercentHealthFromGUID(playerGUID) or 0)
+                local unitGUID = wan.PlayerState.GUID
+                local currentPercentHealth = UnitPercentHealthFromGUID(unitGUID) or 1
                 local cIronbark = wan.UnitDefensiveCooldownToValue(wan.spellData.Ironbark.id)
 
                 local abilityValue = wan.UnitAbilityHealValue(unitToken, cIronbark, currentPercentHealth)
@@ -62,7 +62,6 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            nIronbark = wan.GetSpellDescriptionNumbers(wan.spellData.Ironbark.id, { 1 })
         end
     end)
 
@@ -76,6 +75,14 @@ local function AddonLoad(self, event, addonName)
         end
 
         if event == "TRAIT_DATA_READY" then end
+
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if wan.PlayerState.InHealerMode then
+                wan.UpdateMechanicData(wan.spellData.Ironbark.basename)
+            else
+                wan.UpdateSupportData(nil, wan.spellData.Ironbark.basename)
+            end
+        end
 
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
             wan.SetUpdateRate(frameIronbark, CheckAbilityValue, abilityActive)

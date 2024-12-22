@@ -39,27 +39,33 @@ local function AddonLoad(self, event, addonName)
         -- Base values
         local critChanceMod = 0
         local critDamageMod = 0
-        local softCappedValidUnit = wan.AdjustSoftCapUnitOverflow(nSoftCap, countValidUnit) -- Adjust unit overflow to soft cap
-        local cSwipeDmg = nSwipeDmg * softCappedValidUnit
 
-        -- Merciless Claws
-        if wan.traitData.MercilessClaws.known then
-            local countDebuffed = wan.CheckForAnyDebuffAoE(wan.auraData, checkDebuffs, idValidUnit)
-            local cMercilessClaws = nSwipeDmg * nMercilessClaws * countDebuffed
-            cSwipeDmg = cSwipeDmg + cMercilessClaws
-        end
+        local cSwipeInstantDmg = 0
+        local cSwipeDotDmg = 0
 
-        -- Remove physical layer
-        local checkPhysicalDRAoE = wan.CheckUnitPhysicalDamageReductionAoE(idValidUnit)                                                                                             -- Remove physical layer
-        cSwipeDmg = cSwipeDmg * checkPhysicalDRAoE
+        for unitToken, _ in pairs (idValidUnit) do
+            local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(unitToken)
 
-         -- Thrashing Claws
-        if wan.traitData.ThrashingClaws.known then
-            local countThrashDebuff = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Thrash.name, nThrashMaxStacks)
-            local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Thrash.name, nThrashMaxStacks, cSwipeDmg)
-            local cThrashingClaws = nThrashDotDmg * (countValidUnit - countThrashDebuff) * dotPotencyAoE
-            cSwipeDmg = cSwipeDmg + cThrashingClaws
-        end
+            -- Merciless Claws
+            local cMercilessClaws = 1
+            if wan.traitData.MercilessClaws.known then
+                local checkDebuff = wan.CheckForAnyDebuff(wan.auraData, checkDebuffs, unitToken)
+                cMercilessClaws = 1 + ((checkDebuff and nMercilessClaws) or 0)
+            end
+
+            -- Thrashing Claws
+            local cThrashingClaws = 0
+            if wan.traitData.ThrashingClaws.known then
+                local checkDebuff = wan.auraData[unitToken]["debuff_" .. wan.spellData.Thrash.basename]
+                if not checkDebuff then
+                    local dotPotency = wan.CheckDotPotency(nSwipeDmg, unitToken)
+                    cThrashingClaws = nThrashDotDmg * dotPotency
+                end
+            end
+
+            cSwipeInstantDmg = cSwipeInstantDmg + (nSwipeDmg * checkPhysicalDR * cMercilessClaws)
+            cSwipeDotDmg = cSwipeDotDmg + cThrashingClaws
+        end 
 
         -- Strike for the Heart
         if wan.traitData.StrikefortheHeart.known then
@@ -67,8 +73,16 @@ local function AddonLoad(self, event, addonName)
             critDamageMod = critDamageMod + nStrikeForTheHeart
         end
 
+        local unitOverflow = wan.SoftCapOverflow(nSoftCap, countValidUnit)
+
         -- Crit layer
-        cSwipeDmg = cSwipeDmg * wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+        local cSwipeInstantCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+        local cSwipeDotCritValue = wan.ValueFromCritical(wan.CritChance)
+
+        cSwipeInstantDmg = cSwipeInstantDmg * cSwipeInstantCritValue * unitOverflow
+        cSwipeDotDmg = cSwipeDotDmg * cSwipeDotCritValue
+
+        local cSwipeDmg = cSwipeInstantDmg + cSwipeDotDmg
 
         -- Update ability data
         local abilityValue = math.floor(cSwipeDmg)

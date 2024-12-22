@@ -156,6 +156,12 @@ local function AddonLoad(self, event, addonName)
             nHarmoniousBlooming = wan.GetTraitDescriptionNumbers(wan.traitData.HarmoniousBlooming.entryid, { 1 }) - 1
         end
 
+        if event == "HEALERMODE_FRAME_TOGGLE" then
+            if not wan.PlayerState.InHealerMode then
+                wan.UpdateHealingData(nil, wan.spellData.Efflorescence.basename)
+            end
+        end
+
         if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
             wan.SetUpdateRate(frameEfflorescence, CheckAbilityValue, abilityActive)
         end

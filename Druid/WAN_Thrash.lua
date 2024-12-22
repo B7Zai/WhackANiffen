@@ -29,20 +29,26 @@ local function AddonLoad(self, event, addonName)
             return
         end
 
-        -- Base Values
-        local cThrashInstantDmg = nTrashInstantDmg * countValidUnit
+        local cThrashInstantDmg = 0
+        local cThrashDotDmg = 0
+        
+        for unitToken, _ in pairs(idValidUnit) do
+            cThrashInstantDmg = cThrashInstantDmg + nTrashInstantDmg
 
-         -- Dot Values
-        local dotPotencyAoE = wan.CheckDotPotencyAoE(wan.auraData, idValidUnit, wan.spellData.Thrash.name, nThrashMaxStacks, cThrashInstantDmg)
-        local thrashDebuffedUnitAoE = wan.CheckForDebuffAoE(wan.auraData, idValidUnit, wan.spellData.Thrash.name, nThrashMaxStacks)
-        local missingThrashDebuffAoE = countValidUnit - thrashDebuffedUnitAoE
-        local cThrashDotValue = nThrashDotDmg * missingThrashDebuffAoE * dotPotencyAoE
-        local cThrashDotDmg = (thrashDebuffedUnitAoE < countValidUnit and cThrashDotValue) or 0
-
-        local cThrashDmg = cThrashInstantDmg + cThrashDotDmg
+            local checkDebuff = wan.auraData[unitToken]["debuff_" .. wan.spellData.Thrash.basename]
+            if not checkDebuff then
+                local dotPotency = wan.CheckDotPotency(cThrashInstantDmg, unitToken)
+                cThrashDotDmg = cThrashDotDmg + (nThrashDotDmg * dotPotency)
+            end
+        end
 
         -- Crit layer
-        cThrashDmg = cThrashDmg * wan.ValueFromCritical(wan.CritChance)
+        local cThrashCritValue = wan.ValueFromCritical(wan.CritChance)
+
+        cThrashInstantDmg = cThrashInstantDmg * cThrashCritValue
+        cThrashDotDmg = cThrashDotDmg * cThrashCritValue
+
+        local cThrashDmg = cThrashInstantDmg + cThrashDotDmg
 
          -- Update ability data
         local abilityValue = math.floor(cThrashDmg)

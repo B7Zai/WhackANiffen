@@ -78,7 +78,7 @@ Druid\WAN_Soothe.lua
 Druid\WAN_Starfall.lua
 Druid\WAN_Starfire.lua
 Druid\WAN_Starsurge.lua
-Druid\WAN_Stellarflare.lua
+Druid\WAN_StellarFlare.lua
 Druid\WAN_Sunfire.lua
 Druid\WAN_SurvivalInstincts.lua
 Druid\WAN_Swiftmend.lua
