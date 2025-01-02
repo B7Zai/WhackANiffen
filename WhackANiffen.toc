@@ -31,7 +31,7 @@ WAN_HealingFrameRaid.lua
 WAN_SupportFrame.lua
 WAN_SupportFrameRaid.lua
 
-# Druid
+# # Druid
 Druid\WAN_AdaptiveSwarm.lua
 Druid\WAN_Barkskin.lua
 Druid\WAN_BearForm.lua
@@ -39,55 +39,55 @@ Druid\WAN_Berserk.lua
 Druid\WAN_BristlingFur.lua
 Druid\WAN_CatForm.lua
 Druid\WAN_CelestialAlignment.lua
-Druid\WAN_CenarionWard.lua
-Druid\WAN_ConvoketheSpirits.lua
-Druid\WAN_Efflorescence.lua
-Druid\WAN_FeralFrenzy.lua
-Druid\WAN_FerociousBite.lua
-Druid\WAN_Flourish.lua
-Druid\WAN_ForceofNature.lua
-Druid\WAN_FrenziedRegeneration.lua
-Druid\WAN_FuryofElune.lua
-Druid\WAN_GroveGuardians.lua
-Druid\WAN_Invigorate.lua
-Druid\WAN_Ironbark.lua
-Druid\WAN_Ironfur.lua
-Druid\WAN_Lifebloom.lua
-Druid\WAN_LunarBeam.lua
-Druid\WAN_Mangle.lua
-Druid\WAN_MarkoftheWild.lua
-Druid\WAN_Maul.lua
+# Druid\WAN_CenarionWard.lua
+# Druid\WAN_ConvoketheSpirits.lua
+# Druid\WAN_Efflorescence.lua
+# Druid\WAN_FeralFrenzy.lua
+# Druid\WAN_FerociousBite.lua
+# Druid\WAN_Flourish.lua
+# Druid\WAN_ForceofNature.lua
+# Druid\WAN_FrenziedRegeneration.lua
+# Druid\WAN_FuryofElune.lua
+# Druid\WAN_GroveGuardians.lua
+# Druid\WAN_Invigorate.lua
+# Druid\WAN_Ironbark.lua
+# Druid\WAN_Ironfur.lua
+# Druid\WAN_Lifebloom.lua
+# Druid\WAN_LunarBeam.lua
+# Druid\WAN_Mangle.lua
+# Druid\WAN_MarkoftheWild.lua
+# Druid\WAN_Maul.lua
 Druid\WAN_Moonfire.lua
-Druid\WAN_MoonkinForm.lua
-Druid\WAN_MoonMoon.lua
-Druid\WAN_Nourish.lua
-Druid\WAN_Overgrowth.lua
-Druid\WAN_PrimalWrath.lua
-Druid\WAN_Prowl.lua
-Druid\WAN_Pulverize.lua
-Druid\WAN_RageoftheSleeper.lua
-Druid\WAN_Rake.lua
-Druid\WAN_Raze.lua
-Druid\WAN_Regrowth.lua
-Druid\WAN_Rejuvenation.lua
-Druid\WAN_RemoveCorruption.lua
-Druid\WAN_Renewal.lua
-Druid\WAN_Rip.lua
-Druid\WAN_Shred.lua
-Druid\WAN_Soothe.lua
-Druid\WAN_Starfall.lua
-Druid\WAN_Starfire.lua
-Druid\WAN_Starsurge.lua
-Druid\WAN_StellarFlare.lua
-Druid\WAN_Sunfire.lua
-Druid\WAN_SurvivalInstincts.lua
-Druid\WAN_Swiftmend.lua
-Druid\WAN_Swipe.lua
-Druid\WAN_Thrash.lua
-Druid\WAN_TigersFury.lua
-Druid\WAN_Tranquility.lua
-Druid\WAN_TreeofLife.lua
-Druid\WAN_WarriorofElune.lua
-Druid\WAN_WildGrowth.lua
-Druid\WAN_WildMushroom.lua
-Druid\WAN_Wrath.lua
+# Druid\WAN_MoonkinForm.lua
+# Druid\WAN_MoonMoon.lua
+# Druid\WAN_Nourish.lua
+# Druid\WAN_Overgrowth.lua
+# Druid\WAN_PrimalWrath.lua
+# Druid\WAN_Prowl.lua
+# Druid\WAN_Pulverize.lua
+# Druid\WAN_RageoftheSleeper.lua
+# Druid\WAN_Rake.lua
+# Druid\WAN_Raze.lua
+# Druid\WAN_Regrowth.lua
+# Druid\WAN_Rejuvenation.lua
+# Druid\WAN_RemoveCorruption.lua
+# Druid\WAN_Renewal.lua
+# Druid\WAN_Rip.lua
+# Druid\WAN_Shred.lua
+# Druid\WAN_Soothe.lua
+# Druid\WAN_Starfall.lua
+# Druid\WAN_Starfire.lua
+# Druid\WAN_Starsurge.lua
+# Druid\WAN_StellarFlare.lua
+# Druid\WAN_Sunfire.lua
+# Druid\WAN_SurvivalInstincts.lua
+# Druid\WAN_Swiftmend.lua
+# Druid\WAN_Swipe.lua
+# Druid\WAN_Thrash.lua
+# Druid\WAN_TigersFury.lua
+# Druid\WAN_Tranquility.lua
+# Druid\WAN_TreeofLife.lua
+# Druid\WAN_WarriorofElune.lua
+# Druid\WAN_WildGrowth.lua
+# Druid\WAN_WildMushroom.lua
+# Druid\WAN_Wrath.lua

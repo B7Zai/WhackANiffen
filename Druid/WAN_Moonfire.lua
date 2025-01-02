@@ -9,6 +9,8 @@ local function AddonLoad(self, event, addonName)
     -- Early Exit
     if addonName ~= "WhackANiffen" then return end
 
+    local playerGUID = wan.PlayerState.GUID or UnitGUID("player")
+
     -- Init data
     local abilityActive = false
     local nMoonfireInstantDmg, nMoonfireDotDmg, nMoonfireDotDuration, nMoonfireDotDps, nMoonfireDotTickRate = 0, 0, 0, 0, 2
@@ -22,9 +24,9 @@ local function AddonLoad(self, event, addonName)
     -- Ability value calculation
     local function CheckAbilityValue()
         -- Early exits
-        if not wan.PlayerState.Status or wan.auraData.player.buff_Prowl
-            or (wan.auraData.player.buff_CatForm and not wan.traitData.LunarInspiration.known)
-            or (wan.auraData.player.buff_BearForm and wan.PlayerState.Role ~= "TANK")
+        if not wan.PlayerState.Status or wan.auraData[playerGUID].buff_Prowl
+            or (wan.auraData[playerGUID].buff_CatForm and not wan.traitData.LunarInspiration.known)
+            or (wan.auraData[playerGUID].buff_BearForm and wan.PlayerState.Role ~= "TANK")
             or not wan.IsSpellUsable(wan.spellData.Moonfire.id)
         then
             wan.UpdateAbilityData(wan.spellData.Moonfire.basename)
@@ -52,7 +54,8 @@ local function AddonLoad(self, event, addonName)
             cShootingStarsDmg = nMoonfireDotTickNumber * nShootingStarsProcChance * nShootingStarsDmg
         end
 
-        local checkMoonfireDebuff = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Moonfire.basename]
+        local targetGUID = wan.UnitState.GUID[wan.TargetUnitID]
+        local checkMoonfireDebuff = targetGUID and wan.auraData[targetGUID]["debuff_" .. wan.spellData.Moonfire.basename]
         if not checkMoonfireDebuff then
             local dotPotency = wan.CheckDotPotency(nMoonfireInstantDmg)
             cMoonfireDotDmg = cMoonfireDotDmg + ((nMoonfireDotDmg + cShootingStarsDmg) * dotPotency)
@@ -62,24 +65,24 @@ local function AddonLoad(self, event, addonName)
         local cTwinMoonfireInstantDmg = 0
         local cTwinMoonfireDotDmg = 0
         if (wan.traitData.TwinMoonfire.known or wan.traitData.TwinMoons.known) and countValidUnit > 1 then
-            cTwinMoonfireInstantDmg = nMoonfireInstantDmg
-            local countMoonfire = 0
+            cTwinMoonfireInstantDmg = cTwinMoonfireInstantDmg + nMoonfireInstantDmg
             for unitToken, unitGUID in pairs(idValidUnit) do
-                if unitGUID ~= wan.UnitState.GUID[wan.TargetUnitID] then
-                    local checkTwinMoonfireDebuff = wan.auraData[unitToken]["debuff_" .. wan.spellData.Moonfire.basename]
+                if unitGUID ~= targetGUID then
+                    local checkTwinMoonfireDebuff = wan.auraData[unitGUID]["debuff_" .. wan.spellData.Moonfire.basename]
                     if not checkTwinMoonfireDebuff then
-                        local dotPotency = wan.CheckDotPotency(nMoonfireInstantDmg, unitToken)
-                        cTwinMoonfireDotDmg = cTwinMoonfireDotDmg + ((nMoonfireDotDmg + cShootingStarsDmg) * dotPotency)
-                        countMoonfire = countMoonfire + 1
+                        local unitDotPotency = wan.CheckDotPotency(nMoonfireInstantDmg, unitToken)
+                        cTwinMoonfireDotDmg = cTwinMoonfireDotDmg + ((nMoonfireDotDmg + cShootingStarsDmg) * unitDotPotency)
+                        break
                     end
                 end
-                if countMoonfire >= nTwinMoonfireAoeCap then break end
+
+
             end
         end
 
         local cGalacticGuardian = 1
         if wan.traitData.GalacticGuardian.known then
-            local checkGalacticGuardianBuff = wan.auraData.player.buff_GalacticGuardian
+            local checkGalacticGuardianBuff = wan.auraData.playerGUID.buff_GalacticGuardian
             if checkGalacticGuardianBuff then
                 cGalacticGuardian = cGalacticGuardian + nGalacticGuardian
             end

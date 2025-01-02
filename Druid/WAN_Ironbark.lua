@@ -32,10 +32,10 @@ local function AddonLoad(self, event, addonName)
 
             for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
-                if idValidGroupUnit[groupUnitToken] and not wan.auraData[groupUnitToken].buff_Ironbark then
+                if idValidGroupUnit[groupUnitToken] and not wan.auraData[groupUnitGUID].buff_Ironbark then
 
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
-                    local cIronbark = wan.UnitDefensiveCooldownToValue(wan.spellData.Ironbark.id, groupUnitToken)
+                    local cIronbark = wan.UnitDefensiveCooldownToValue(wan.spellData.Ironbark.id, groupUnitGUID)
 
                     local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cIronbark, currentPercentHealth)
                     wan.UpdateSupportData(groupUnitToken, wan.spellData.Ironbark.basename, abilityValue, wan.spellData.Ironbark.icon, wan.spellData.Ironbark.name)

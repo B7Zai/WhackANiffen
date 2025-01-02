@@ -101,14 +101,14 @@ function wan.AssignUnitState(frameCallback, isLevelScaling)
         activeUnits[unitGUID] = unitToken
 
         wan.UnitState.LevelScale[unitToken] = 1
-        wan.UnitState.MaxHealth[unitToken] = maxHealth
+        wan.UnitState.MaxHealth[unitGUID] = maxHealth
         wan.UnitState.Level[unitToken] = unitLevel
         wan.UnitState.IsAI[unitToken] = isAI
         wan.UnitState.Role[unitToken] = role or "DAMAGER"
 
         if isLevelScaling then
             if wan.UnitState.Level[unitToken] ~= wan.UnitState.Level.player then
-                local levelScaleValue = wan.UnitState.MaxHealth[unitToken] / wan.UnitState.MaxHealth.player
+                local levelScaleValue = wan.UnitState.MaxHealth[unitGUID] / wan.UnitState.MaxHealth[wan.PlayerState.GUID]
                 wan.UnitState.LevelScale[unitToken] = levelScaleValue
             end
         end

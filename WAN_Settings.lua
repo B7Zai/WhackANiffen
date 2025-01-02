@@ -1,6 +1,5 @@
 local _, wan = ...
 
-_G["WhackANiffen"] = wan or {}
 wan.UpdateRate = wan.UpdateRate or {}
 wan.EventFrame = wan.EventFrame or CreateFrame("Frame")
 

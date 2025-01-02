@@ -43,27 +43,33 @@ local function AddonLoad(self, event, addonName)
         end
 
         -- Dot values
-        local dotPotency = wan.CheckDotPotency()
-        local cRipDotDmg = (not wan.auraData[wan.TargetUnitID].debuff_Rip and (nRipDotDmg * comboCorrection * dotPotency)) or 0
-
-        local cRipDmg = cRipDotDmg
-
-        -- Master Shapeshifter
-        if wan.traitData.MasterShapeshifter.known and currentCombo == nMasterShapeshifterCombo then
-            local cMasterShapeshifter = cRipDmg * nMasterShapeshifter
-            cRipDmg = cRipDmg + cMasterShapeshifter
+        local cRipDotDmg = 0
+        local checkRipDebuff = wan.auraData[wan.TargetUnitID]["debuff_" .. wan.spellData.Rip.basename]
+        if not checkRipDebuff then
+            local dotPotency = wan.CheckDotPotency()
+            cRipDotDmg = cRipDotDmg + (nRipDotDmg * comboCorrection * dotPotency)
         end
 
         -- Rip and Tear
+        local cTearDotDmg = 0
         if wan.traitData.RipandTear.known then
             local checkTearDebuff = wan.auraData[wan.TargetUnitID].debuff_Tear
-            local cTearDotDmg = cRipDmg * currentCombo * nRipAndTear * dotPotency
-            local cTearDmg = (not checkTearDebuff and (cTearDotDmg)) or 0
-            cRipDmg = cRipDmg + cTearDmg
+            if not checkTearDebuff then
+                local dotPotency = wan.CheckDotPotency()
+                 cTearDotDmg = cTearDotDmg + (nRipDotDmg * currentCombo * nRipAndTear * dotPotency)
+            end
+        end
+
+        -- Master Shapeshifter
+        local cMasterShapeshifter = 1
+        if wan.traitData.MasterShapeshifter.known and currentCombo == nMasterShapeshifterCombo then
+            cMasterShapeshifter = cMasterShapeshifter + nMasterShapeshifter
         end
 
         -- Crit layer
-        cRipDmg = cRipDmg * wan.ValueFromCritical(wan.CritChance)
+        local cRipCritValue = wan.ValueFromCritical(wan.CritChance)
+
+        local cRipDmg = (cRipDotDmg + cTearDotDmg) * cMasterShapeshifter * cRipCritValue
 
         -- Update ability data
         local abilityValue = math.floor(cRipDmg)

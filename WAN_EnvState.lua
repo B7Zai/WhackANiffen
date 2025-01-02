@@ -1,7 +1,7 @@
 local _, wan = ...
 
 -- Init unitID arrays
-wan.TargetUnitID = {}
+wan.TargetUnitID = "target"
 wan.NameplateUnitID = {}
 wan.GroupUnitID = {}
 
@@ -13,7 +13,7 @@ wan.PlayerState.InGroup = false
 wan.PlayerState.InRaid = false
 wan.PlayerState.Status = false
 wan.PlayerState.Combat = false
-wan.PlayerState.GUID = "guid"
+wan.PlayerState.GUID = UnitGUID("player")
 wan.PlayerState.Role = "DAMAGER"
 wan.PlayerState.SpecializationName = "specName"
 wan.CritChance = GetCritChance() or 0
@@ -44,8 +44,11 @@ local function OnEvent(self, event, ...)
     if event == "PLAYER_ENTERING_WORLD" then
         wan.UnitState.Level.player = UnitLevel("player")
         wan.UnitState.LevelScale.player = 1
-        wan.PlayerState.GUID = UnitGUID("player")
-        wan.UnitState.MaxHealth.player = UnitHealthMax("player") or 0
+        
+        local playerGUID = wan.PlayerState.GUID
+        if playerGUID then
+            wan.UnitState.MaxHealth[playerGUID] = UnitHealthMax("player") or 0
+        end
     end
 
     -- sets unit token for targeting
@@ -54,19 +57,42 @@ local function OnEvent(self, event, ...)
         wan.TargetUnitID = tonumber(targetSetting) == 3 and "softenemy" or "target"
     end
 
+    if event == "PLAYER_SOFT_ENEMY_CHANGED" then
+        wan.UnitState.Health[wan.TargetUnitID] = nil
+        wan.UnitState.GUID[wan.TargetUnitID] = nil
+
+        local health = UnitHealth(wan.TargetUnitID) or 0
+        local unitGUID = UnitGUID(wan.TargetUnitID)
+
+        wan.UnitState.Health[wan.TargetUnitID] = health
+        wan.UnitState.GUID[wan.TargetUnitID] = unitGUID
+
+        wan.CustomEvents("TARGET_UNITID_ASSIGNED")
+    end
+
     -- adds and removes nameplate unit tokens
     if event == "NAME_PLATE_UNIT_ADDED" then
         local unitToken = ...
         local unitClassification = UnitClassification(unitToken)
         local health = UnitHealth(unitToken) or 0
         local unitGUID = UnitGUID(unitToken)
+
         wan.NameplateUnitID[unitToken] = unitGUID
         wan.UnitState.Health[unitToken] = health
+
         if unitClassification then
             wan.UnitState.Classification[unitToken] = unitClassification
         end
-    elseif event == "NAME_PLATE_UNIT_REMOVED" then
+
+        wan.CustomEvents("NAMEPLATE_UNITID_ASSIGNED", unitToken)
+    end
+
+    if event == "NAME_PLATE_UNIT_REMOVED" then
         local unitToken = ...
+        local unitGUID = wan.NameplateUnitID[unitToken]
+
+        wan.auraData[unitGUID] = nil
+        wan.instanceIDMap[unitGUID] = nil
         wan.NameplateUnitID[unitToken] = nil
         wan.UnitState.Classification[unitToken] = nil
         wan.UnitState.Health[unitToken] = nil
@@ -163,9 +189,8 @@ local function OnEvent(self, event, ...)
             if not activeUnits[unitGUID] then
                 wan.GroupUnitID[unitToken] = nil
 
-                wan.auraData[unitToken] = nil
-                wan.instanceIDMap[unitToken] = nil
-                wan.instanceIDThrottler[unitToken] = nil
+                wan.auraData[unitGUID] = nil
+                wan.instanceIDMap[unitGUID] = nil
 
                 wan.HealingData[unitToken] = nil
                 wan.SupportData[unitToken] = nil
@@ -178,6 +203,8 @@ local function OnEvent(self, event, ...)
                 wan.UnitState.Role[unitToken] = nil
             end
         end
+
+        wan.CustomEvents("GROUP_UNITID_ASSIGNED")
     end
 
     if event == "UPDATE_INSTANCE_INFO" or event == "UNIT_LEVEL" then
@@ -199,15 +226,6 @@ local function OnEvent(self, event, ...)
         local unitToken = ...
         local health = UnitHealth(unitToken) or 0
         wan.UnitState.Health[unitToken] = health
-    end
-
-    if event == "PLAYER_TARGET_CHANGED" then
-        wan.UnitState.Health[wan.TargetUnitID] = nil
-        wan.UnitState.GUID[wan.TargetUnitID] = nil
-        local health = UnitHealth(wan.TargetUnitID) or 0
-        local unitGUID = UnitGUID(wan.TargetUnitID) or "guid"
-        wan.UnitState.Health[wan.TargetUnitID] = health
-        wan.UnitState.GUID[wan.TargetUnitID] = unitGUID
     end
 
     if event == "UNIT_MAXHEALTH" and (wan.GroupUnitID[...] or ... == "player")  then
@@ -290,6 +308,7 @@ wan.RegisterBlizzardEvents(stateFrame,
     "UNIT_MAXHEALTH",
     "UNIT_HEALTH",
     "PLAYER_TARGET_CHANGED",
+    "PLAYER_SOFT_ENEMY_CHANGED",
     "UNIT_LEVEL"
 )
 stateFrame:SetScript("OnEvent", OnEvent)

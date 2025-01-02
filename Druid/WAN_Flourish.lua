@@ -36,7 +36,7 @@ local function AddonLoad(self, event, addonName)
 
                     local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
                     local _, countHots = wan.GetUnitHotValues(groupUnitToken, wan.HotValue[groupUnitToken])
-                    local cFlourishHeal = wan.UnitAbilityPercentageToValue(groupUnitToken, nFlourishHeal)
+                    local cFlourishHeal = wan.UnitAbilityPercentageToValue(groupUnitGUID, nFlourishHeal)
                     cFlourishHeal = cFlourishHeal * countHots 
                     cFlourishHeal = nFlourish <= cFlourishHeal and cFlourishHeal or 0
 

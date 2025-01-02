@@ -87,17 +87,17 @@ function wan.ValidGroupMembers()
     return nDamageScaler, nGroupMembersInRange, inRangeUnits
 end
 
-function wan.GetUnitHotValues(unitToken, hotData)
-    if not unitToken or not hotData then return 0, 0 end
+function wan.GetUnitHotValues(unitGUID)
+    if not unitGUID then return 0, 0 end
     local totalHotValues = 0
     local countHots = 0
     local currentTime = GetTime()
-    for formattedHotName, hotValue in pairs(hotData) do
-        local aura = wan.auraData[unitToken]["buff_" .. formattedHotName]
+    for formattedHotName, hotValue in pairs(wan.HotValue[unitGUID]) do
+        local aura = wan.auraData[unitGUID]["buff_" .. formattedHotName]
         if aura then 
             local reminingDuration = aura.expirationTime - currentTime
             local remainingValueMod = math.max(reminingDuration, 0) / aura.duration
-            if reminingDuration < 0 then wan.auraData[unitToken]["buff_" .. formattedHotName] = nil end
+            if reminingDuration < 0 then wan.auraData[unitGUID]["buff_" .. formattedHotName] = nil end
             totalHotValues = totalHotValues + (hotValue * remainingValueMod)
             countHots = countHots + 1
         end
@@ -105,12 +105,12 @@ function wan.GetUnitHotValues(unitToken, hotData)
     return totalHotValues, countHots
 end
 
-function wan.UnitAbilityHealValue(unitToken, abilityValue, unitPercentHealth)
-    if not unitToken or not abilityValue or not unitPercentHealth or abilityValue == 0 then return 0 end
+function wan.UnitAbilityHealValue(unitGUID, abilityValue, unitPercentHealth)
+    if not unitGUID or not abilityValue or not unitPercentHealth or abilityValue == 0 then return 0 end
     if abilityValue == 0 then return 0 end
     local value = 0
-    local unitHotValues = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
-    local maxHealth = wan.UnitState.MaxHealth[unitToken]
+    local unitHotValues = wan.GetUnitHotValues(unitGUID)
+    local maxHealth = wan.UnitState.MaxHealth[unitGUID]
     local abilityPercentageValue = (abilityValue / maxHealth) or 0
     local hotPercentageValue = (unitHotValues / maxHealth) or 0
     local thresholdValue = 0.5
@@ -132,10 +132,10 @@ function wan.UnitAbilityHealValue(unitToken, abilityValue, unitPercentHealth)
     return value
 end
 
-function wan.HotPotency(unitToken, unitPercentHealth, initialValue)
+function wan.HotPotency(unitGUID, unitPercentHealth, initialValue)
     local currentPercentHealth = unitPercentHealth or 0
-    local baseValue = ((initialValue or 0) + wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])) or 0
-    local maxHealth = (wan.UnitState.MaxHealth[unitToken]) or 0
+    local baseValue = ((initialValue or 0) + wan.GetUnitHotValues(unitGUID)) or 0
+    local maxHealth = (wan.UnitState.MaxHealth[unitGUID]) or 0
     local thresholdValue = maxHealth * 0.5
     local targetHealth = (maxHealth * currentPercentHealth)
 
@@ -159,8 +159,9 @@ end
 
 ---- Checks if player is missing enough health
 function wan.HealThreshold()
+    local unitGUID = wan.PlayerState.GUID
     local unitHealth = UnitHealth("player")
-    local unitMaxHealth = wan.UnitState.MaxHealth.player
+    local unitMaxHealth = wan.UnitState.MaxHealth[unitGUID]
     return unitMaxHealth - unitHealth
 end
 
@@ -168,7 +169,8 @@ end
 function wan.DefensiveCooldownToValue(spellIndentifier)
     local cooldownMS, _ = GetSpellBaseCooldown(spellIndentifier)
     local maxCooldown = math.ceil(cooldownMS / 1000 / 60)
-    local maxHealth = wan.UnitState.MaxHealth.player
+    local unitGUID = wan.PlayerState.GUID
+    local maxHealth = wan.UnitState.MaxHealth[unitGUID]
     local healthThresholds = maxHealth * 0.1
     local cooldownValue = (maxCooldown <= 1 and healthThresholds * 3)
     or (maxCooldown > 1 and maxCooldown <= 2 and healthThresholds * 5)
@@ -178,11 +180,11 @@ function wan.DefensiveCooldownToValue(spellIndentifier)
 end
 
 -- Check and convert defensive cooldown to values
-function wan.UnitDefensiveCooldownToValue(spellIndentifier, unitToken)
-    local unit = unitToken or "player"
+function wan.UnitDefensiveCooldownToValue(spellIndentifier, unitGUID)
+    local guid = unitGUID or wan.PlayerState.GUID
     local cooldownMS, _ = GetSpellBaseCooldown(spellIndentifier)
     local maxCooldown = math.ceil(cooldownMS / 1000 / 60)
-    local maxHealth = wan.UnitState.MaxHealth[unit]
+    local maxHealth = wan.UnitState.MaxHealth[guid]
     local healthThresholds = maxHealth * 0.1
     local cooldownValue = (maxCooldown <= 1 and healthThresholds * 3)
     or (maxCooldown > 1 and maxCooldown <= 2 and healthThresholds * 5)
