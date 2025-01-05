@@ -4,7 +4,6 @@ local _, wan = ...
 if wan.PlayerState.Class ~= "DRUID" then return end
 
 -- Init data
-local playerGUID = wan.PlayerState.GUID or UnitGUID("player")
 local abilityActive = false
 local currentSpecName = "Unknown"
 local specName = "Feral"
@@ -13,7 +12,7 @@ local nCatForm, nCatFormMaxRange = 0, 20
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData[playerGUID].buff_CatForm
+    if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
         or specName ~= currentSpecName or not wan.IsSpellUsable(wan.spellData.CatForm.id)
     then
         wan.UpdateMechanicData(wan.spellData.CatForm.basename)

@@ -7,8 +7,7 @@ wan.EventFrame = wan.EventFrame or CreateFrame("Frame")
 local function OnEvent(self, event, addonname)
     if addonname == "WhackANiffen" then
 
-        WhackANiffenDB = _G.WhackANiffenDB or {}
-        _G.WhackANiffenDB = WhackANiffenDB
+        WhackANiffenDB = WhackANiffenDB or {}
         wan.Options = WhackANiffenDB
 
         local category = Settings.RegisterVerticalLayoutCategory("Whack-A-Niffen")

@@ -7,7 +7,6 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 local frameAdaptiveSwarm = CreateFrame("Frame")
 
 -- Init data
-local playerGUID = wan.PlayerState.GUID or UnitGUID("player")
 local abilityActive = false
 local nAdaptiveSwarmHotHeal = 0
 local nAdaptiveSwarmDotDmg = 0
@@ -20,7 +19,7 @@ local nUnbridledSwarm = 0
 local function CheckAbilityValue()
 
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData[playerGUID].buff_Prowl
+    if not wan.PlayerState.Status or wan.auraData.player.buff_Prowl
         or not wan.IsSpellUsable(wan.spellData.AdaptiveSwarm.id)
     then
         wan.UpdateAbilityData(wan.spellData.AdaptiveSwarm.basename)
@@ -28,16 +27,15 @@ local function CheckAbilityValue()
     end
 
     -- Check for valid unit
-    local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.AdaptiveSwarm.id)
+    local isValidUnit, countValidUnit = wan.ValidUnitBoolCounter(wan.spellData.AdaptiveSwarm.id)
     if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.AdaptiveSwarm.basename)
         return
     end
 
     -- Dot value
-    local dotPotency = wan.CheckDotPotency()
     local cAdaptiveSwarmSpreadMod = (countValidUnit * nAdaptiveSwarmSpreadChance) / 2
-    local cAdaptiveSwarmDotDmg = nAdaptiveSwarmDotDmg * dotPotency * cAdaptiveSwarmSpreadMod
+    local cAdaptiveSwarmDotDmg = nAdaptiveSwarmDotDmg * cAdaptiveSwarmSpreadMod
 
     -- Base value
     local cAdaptiveSwarmDmg = cAdaptiveSwarmDotDmg

@@ -5,12 +5,15 @@ wan.TargetUnitID = "target"
 wan.NameplateUnitID = {}
 wan.GroupUnitID = {}
 
--- Init status arrays
+-- Init player status arrays
 wan.PlayerState = {}
 wan.PlayerState.InHealerMode = false
 wan.PlayerState.Class = UnitClassBase("player") or "UNKNOWN"
 wan.PlayerState.InGroup = false
 wan.PlayerState.InRaid = false
+wan.PlayerState.IsDead = false
+wan.PlayerState.InVehicle = false
+wan.PlayerState.Mounted = false
 wan.PlayerState.Status = false
 wan.PlayerState.Combat = false
 wan.PlayerState.GUID = UnitGUID("player")
@@ -19,7 +22,7 @@ wan.PlayerState.SpecializationName = "specName"
 wan.CritChance = GetCritChance() or 0
 wan.Haste = GetHaste() or 0
 
-wan.TargetUnitID = "target"
+-- Init unit status arrays
 wan.UnitState = {}
 wan.UnitState.GUID = {}
 wan.UnitState.Health = {}
@@ -30,75 +33,80 @@ wan.UnitState.LevelScale = {}
 wan.UnitState.Role = {}
 wan.UnitState.Classification = {}
 
-setmetatable(wan.UnitState.Health, {
-    __index = function(t, key)
-        local default = 0
-        t[key] = default
-        return default
-    end
-})
-
-local isDeadOrGhost, isMounted, inVehicle
 local function OnEvent(self, event, ...)
 
+    -- init player data
     if event == "PLAYER_ENTERING_WORLD" then
-        wan.UnitState.Level.player = UnitLevel("player")
-        wan.UnitState.LevelScale.player = 1
-        
-        local playerGUID = wan.PlayerState.GUID
-        if playerGUID then
-            wan.UnitState.MaxHealth[playerGUID] = UnitHealthMax("player") or 0
-        end
+        local playerUnitToken = "player"
+        wan.PlayerState.GUID = wan.PlayerState.GUID or UnitGUID("player")
+        wan.UnitState.Health[playerUnitToken] = UnitHealth("player")
+        wan.UnitState.MaxHealth[playerUnitToken] = UnitHealthMax("player") or 0
+        wan.UnitState.Level[playerUnitToken] = UnitLevel("player")
+        wan.UnitState.LevelScale[playerUnitToken] = 1
     end
 
-    -- sets unit token for targeting
+    -- assigns unit token for targeting
     if event == "PLAYER_ENTERING_WORLD" or (event == "CVAR_UPDATE" and ... == "SoftTargetEnemy") then
         local targetSetting = C_CVar.GetCVar("SoftTargetEnemy")
         wan.TargetUnitID = tonumber(targetSetting) == 3 and "softenemy" or "target"
     end
 
+    -- adds and removes various data for target
     if event == "PLAYER_SOFT_ENEMY_CHANGED" then
-        wan.UnitState.Health[wan.TargetUnitID] = nil
-        wan.UnitState.GUID[wan.TargetUnitID] = nil
+        local unitToken = wan.TargetUnitID
+        local unitGUID = UnitGUID(unitToken)
+        local health = UnitHealth(unitToken) or 0
+        local unitLevel = UnitLevel(unitToken)
+        local unitClassification = UnitClassification(unitToken) or "normal"
+        local unitExists = UnitExists(unitToken)
 
-        local health = UnitHealth(wan.TargetUnitID) or 0
-        local unitGUID = UnitGUID(wan.TargetUnitID)
+        if not unitExists then
+            wan.auraData[unitToken] = nil
+            wan.instanceIDMap[unitToken] = nil
+            wan.UnitState.GUID[unitToken] = nil
+            wan.UnitState.Health[unitToken] = nil
+            wan.UnitState.Level[unitToken] = nil
+            wan.UnitState.Classification[unitToken] = nil
+        end
 
-        wan.UnitState.Health[wan.TargetUnitID] = health
-        wan.UnitState.GUID[wan.TargetUnitID] = unitGUID
-
+        wan.UnitState.GUID[unitToken] = unitGUID
+        wan.UnitState.Health[unitToken] = health
+        wan.UnitState.Level[unitToken] = unitLevel
+        wan.UnitState.Classification[unitToken] = unitClassification
+        
         wan.CustomEvents("TARGET_UNITID_ASSIGNED")
     end
 
-    -- adds and removes nameplate unit tokens
+    -- assigns unit tokens and adds various data for nameplates
     if event == "NAME_PLATE_UNIT_ADDED" then
         local unitToken = ...
-        local unitClassification = UnitClassification(unitToken)
+        local unitClassification = UnitClassification(unitToken) or "normal"
         local health = UnitHealth(unitToken) or 0
         local unitGUID = UnitGUID(unitToken)
 
-        wan.NameplateUnitID[unitToken] = unitGUID
         wan.UnitState.Health[unitToken] = health
+        wan.UnitState.Classification[unitToken] = unitClassification
 
-        if unitClassification then
-            wan.UnitState.Classification[unitToken] = unitClassification
+        if unitGUID then
+            wan.NameplateUnitID[unitToken] = unitGUID
         end
 
         wan.CustomEvents("NAMEPLATE_UNITID_ASSIGNED", unitToken)
     end
 
+    -- removes unit tokens and wipes various data for nameplates
     if event == "NAME_PLATE_UNIT_REMOVED" then
         local unitToken = ...
-        local unitGUID = wan.NameplateUnitID[unitToken]
 
-        wan.auraData[unitGUID] = nil
-        wan.instanceIDMap[unitGUID] = nil
-        wan.NameplateUnitID[unitToken] = nil
-        wan.UnitState.Classification[unitToken] = nil
+        wan.auraData[unitToken] = nil
+        wan.instanceIDMap[unitToken] = nil
         wan.UnitState.Health[unitToken] = nil
+        wan.UnitState.Classification[unitToken] = nil
+        
+        wan.NameplateUnitID[unitToken] = nil
     end
 
-    -- assigns group unit tokens for group
+    -- assigns group unit tokens and adds various data for each member
     if event == "GROUP_ROSTER_UPDATE" or event == "ROLE_CHANGED_INFORM" or event == "PLAYER_ENTERING_WORLD" then
         local groupType = UnitInRaid("player") and "raid" or "party"
         wan.PlayerState.InRaid = groupType == "raid" or false
@@ -189,12 +197,12 @@ local function OnEvent(self, event, ...)
             if not activeUnits[unitGUID] then
                 wan.GroupUnitID[unitToken] = nil
 
-                wan.auraData[unitGUID] = nil
-                wan.instanceIDMap[unitGUID] = nil
-
                 wan.HealingData[unitToken] = nil
                 wan.SupportData[unitToken] = nil
                 wan.HotValue[unitToken] = nil
+
+                wan.auraData[unitToken] = nil
+                wan.instanceIDMap[unitToken] = nil
 
                 wan.UnitState.IsAI[unitToken] = nil
                 wan.UnitState.MaxHealth[unitToken] = nil
@@ -207,61 +215,68 @@ local function OnEvent(self, event, ...)
         wan.CustomEvents("GROUP_UNITID_ASSIGNED")
     end
 
+    -- update group member levels and assigns level scaling value if level scaling is active
     if event == "UPDATE_INSTANCE_INFO" or event == "UNIT_LEVEL" then
         local _, _, _, difficultyName = GetInstanceInfo()
         local isLevelScaling = difficultyName and difficultyName == "Timewalking" or false
         for groupUnitToken, _ in pairs(wan.GroupUnitID) do
+            wan.UnitState.LevelScale[groupUnitToken] = 1
+
             if isLevelScaling then
-                if wan.UnitState.Level[groupUnitToken] ~= wan.UnitState.Level.player then
-                    local levelScaleValue = wan.UnitState.MaxHealth[groupUnitToken] / wan.UnitState.MaxHealth.player
+                if wan.UnitState.Level[groupUnitToken] ~= wan.UnitState.Level[wan.PlayerState.GUID] then
+                    local levelScaleValue = wan.UnitState.MaxHealth[groupUnitToken] / wan.UnitState.MaxHealth[wan.PlayerState.GUID]
                     wan.UnitState.LevelScale[groupUnitToken] = levelScaleValue
                 end
-            else
-                wan.UnitState.LevelScale[groupUnitToken] = 1
             end
         end
     end
 
-    if event == "UNIT_HEALTH" and (wan.NameplateUnitID[...] or ... == wan.TargetUnitID) then
+    -- updates current health of tracked units
+    if event == "UNIT_HEALTH" and (wan.NameplateUnitID[...] or ... == wan.TargetUnitID or ... == "player") then
         local unitToken = ...
         local health = UnitHealth(unitToken) or 0
+
         wan.UnitState.Health[unitToken] = health
     end
 
-    if event == "UNIT_MAXHEALTH" and (wan.GroupUnitID[...] or ... == "player")  then
+    -- updates max health of player and group members
+    if event == "UNIT_MAXHEALTH" and (wan.GroupUnitID[...] or ... == "player") then
         local unitToken = ...
         local maxHealth = UnitHealthMax(unitToken) or 0
+
         wan.UnitState.MaxHealth[unitToken] = maxHealth
     end
 
-    if event == "PLAYER_ALIVE" or event == "PLAYER_DEAD" or event == "PLAYER_ENTERING_WORLD" then
-        isDeadOrGhost = UnitIsDeadOrGhost("player")
-        wan.PlayerState.Status = not (isDeadOrGhost or isMounted or inVehicle)
-    end
-
-    if (event == "UNIT_AURA" and ... == "player") or event == "PLAYER_ENTERING_WORLD" or
-        (event == "UPDATE_SHAPESHIFT_FORM" and wan.PlayerState.Class == "DRUID") then
-        isMounted = IsMounted() or GetShapeshiftForm() == 3
-        wan.PlayerState.Status = not (isDeadOrGhost or isMounted or inVehicle)
-    end
-
-    if (event == "UNIT_ENTERING_VEHICLE" and ... == "player") or (event == "UNIT_EXITING_VEHICLE" and ... == "player")
-    or event == "PLAYER_ENTERING_WORLD" then
-        inVehicle = UnitInVehicle("player") or UnitHasVehicleUI("player")
-        wan.PlayerState.Status = not (isDeadOrGhost or isMounted or inVehicle)
-    end
-
+    -- combat state update for the player
     if event == "PLAYER_REGEN_DISABLED" then
         wan.PlayerState.Combat = true
     elseif event == "PLAYER_REGEN_ENABLED" then
         wan.PlayerState.Combat = false
     end
 
+    -- checks if the player is dead or not
+    if event == "PLAYER_ALIVE" or event == "PLAYER_DEAD" or event == "PLAYER_ENTERING_WORLD" then
+        wan.PlayerState.IsDead = UnitIsDeadOrGhost("player")
+        wan.PlayerState.Status = wan.PlayerState.IsDead or not wan.PlayerState.Mounted or wan.PlayerState.InVehicle
+    end
+
+    -- checks if the player is in a vehicle
+    if (event == "UNIT_ENTERING_VEHICLE" and ... == "player") or (event == "UNIT_EXITING_VEHICLE" and ... == "player")
+    or event == "PLAYER_ENTERING_WORLD" then
+        wan.PlayerState.InVehicle = UnitInVehicle("player") or UnitHasVehicleUI("player")
+        wan.PlayerState.Status = wan.PlayerState.IsDead or not wan.PlayerState.Mounted or wan.PlayerState.InVehicle
+    end
+
+    -- checks if the player is mounted
     if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
+        wan.PlayerState.Mounted = IsMounted() or wan.PlayerState.Class == "DRUID" and GetShapeshiftForm() == 3
+        wan.PlayerState.Status = wan.PlayerState.IsDead or not wan.PlayerState.Mounted or wan.PlayerState.InVehicle
+
         wan.CritChance = GetCritChance()
         wan.Haste = GetHaste()
     end
 
+    -- wipe data tables when the player is logging out
     if event == "PLAYER_LOGOUT" then
         wan.traitData = nil
         wan.spellData = nil

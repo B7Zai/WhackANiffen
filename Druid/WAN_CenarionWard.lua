@@ -4,7 +4,7 @@ local _, wan = ...
 if wan.PlayerState.Class ~= "DRUID" then return end
 
 -- Init data
-local playerGUID = wan.PlayerState.GUID or UnitGUID("player")
+local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
 local nCenarionWardHotHeal = 0
 local nMasteryHarmony = 0
@@ -16,8 +16,8 @@ local nStrategicInfusion = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData[playerGUID].buff_CatForm
-    or wan.auraData[playerGUID].buff_BearForm or wan.auraData[playerGUID].buff_MoonkinForm
+    if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
+    or wan.auraData.player.buff_BearForm or wan.auraData.player.buff_MoonkinForm
         or not wan.IsSpellUsable(wan.spellData.CenarionWard.id)
     then
         wan.UpdateMechanicData(wan.spellData.CenarionWard.basename)
@@ -30,7 +30,7 @@ local function CheckAbilityValue()
     local critChanceModInstant = 0
 
     -- check stategic infusion trait layer
-    if wan.traitData.StrategicInfusion.known and wan.auraData[playerGUID].buff_StrategicInfusion then
+    if wan.traitData.StrategicInfusion.known and wan.auraData.player.buff_StrategicInfusion then
         local cStrategicInfusion = nStrategicInfusion
         critChanceModHot = critChanceModHot + cStrategicInfusion
     end
@@ -46,53 +46,53 @@ local function CheckAbilityValue()
         -- run check over all group units in range
         for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
-            if idValidGroupUnit[groupUnitToken] and not wan.auraData[groupUnitGUID].buff_CenarionWard then
+            if idValidGroupUnit[groupUnitToken] and not wan.auraData[groupUnitToken].buff_CenarionWard then
                 local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
                 local cCenarionWardInstantHeal = 0
 
                 cCenarionWardInstantHeal = cCenarionWardInstantHeal * critInstantValue
 
                 local cCenarionWardHotHeal = nCenarionWardHotHeal
-                local hotPotency = wan.HotPotency(groupUnitGUID, currentPercentHealth, cCenarionWardInstantHeal)
+                local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth, cCenarionWardInstantHeal)
 
                 cCenarionWardHotHeal = cCenarionWardHotHeal * critHotValue * hotPotency * wan.UnitState.LevelScale[groupUnitToken] 
 
-                wan.HotValue[groupUnitGUID] = wan.HotValue[groupUnitGUID] or {}
-                wan.HotValue[groupUnitGUID][wan.traitData.CenarionWard.traitkey] = cCenarionWardHotHeal
+                wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
+                wan.HotValue[groupUnitToken][wan.traitData.CenarionWard.traitkey] = cCenarionWardHotHeal
 
                 -- add mastery layer
                 if wan.spellData.MasteryHarmony.known then
-                    local _, countHots = wan.GetUnitHotValues(groupUnitToken, groupUnitGUID)
+                    local _, countHots = wan.GetUnitHotValues(groupUnitToken)
 
                     if countHots == 0 then countHots = 1 end
 
-                    if wan.traitData.HarmoniousBlooming.known and wan.auraData[groupUnitGUID].buff_Lifebloom then
+                    if wan.traitData.HarmoniousBlooming.known and wan.auraData[groupUnitToken].buff_Lifebloom then
                         countHots = countHots + nHarmoniousBlooming
                     end
 
                     local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
                     cCenarionWardHotHeal = cCenarionWardHotHeal * cMasteryHarmony
-                    wan.HotValue[groupUnitGUID][wan.traitData.CenarionWard.traitkey] = cCenarionWardHotHeal
+                    wan.HotValue[groupUnitToken][wan.traitData.CenarionWard.traitkey] = cCenarionWardHotHeal
                 end
 
                 -- max healing value under 1 cast
                 local cCenarionWardHeal = cCenarionWardInstantHeal + cCenarionWardHotHeal
 
                 -- subtract healing value of ability's hot from ability's max healing value
-                if wan.auraData[groupUnitGUID]["buff_" .. wan.traitData.CenarionWard.traitkey] then
+                if wan.auraData[groupUnitToken]["buff_" .. wan.traitData.CenarionWard.traitkey] then
                     local hotValue = wan.HotValue[groupUnitToken][wan.traitData.CenarionWard.traitkey]
                     cCenarionWardHeal = cCenarionWardHeal - hotValue
                 end
 
                 -- update healing data
-                local abilityValue = wan.UnitAbilityHealValue(groupUnitGUID, cCenarionWardHeal, currentPercentHealth)
+                local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cCenarionWardHeal, currentPercentHealth)
                 wan.UpdateHealingData(groupUnitToken, wan.spellData.CenarionWard.basename, abilityValue, wan.spellData.CenarionWard.icon, wan.spellData.CenarionWard.name)
             else
                 wan.UpdateHealingData(groupUnitToken, wan.traitData.CenarionWard.traitkey)
             end
         end
     else
-        if not wan.auraData[playerGUID].buff_CenarionWard then
+        if not wan.auraData.player.buff_CenarionWard then
             local unitToken = "player"
             local currentPercentHealth = UnitPercentHealthFromGUID(playerGUID) or 1
 
@@ -105,37 +105,36 @@ local function CheckAbilityValue()
 
             cCenarionWardHotHeal = cCenarionWardHotHeal * critHotValue * hotPotency
 
-            wan.HotValue[unitToken] = wan.HotValue[unitToken] or {}
-            wan.HotValue[unitToken][wan.traitData.CenarionWard.traitkey] = cCenarionWardHotHeal
+            wan.HotValue.player = wan.HotValue.player or {}
+            wan.HotValue.player[wan.traitData.CenarionWard.traitkey] = cCenarionWardHotHeal
 
             -- add mastery layer
             if wan.spellData.MasteryHarmony.known then
-                local _, countHots = wan.GetUnitHotValues(unitToken, wan.HotValue[unitToken])
+                local _, countHots = wan.GetUnitHotValues(unitToken)
 
                 if countHots == 0 then countHots = 1 end
 
-                if wan.traitData.HarmoniousBlooming.known and wan.auraData[playerGUID].buff_Lifebloom then
+                if wan.traitData.HarmoniousBlooming.known and wan.auraData.player.buff_Lifebloom then
                     countHots = countHots + nHarmoniousBlooming
                 end
 
                 local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
                 cCenarionWardHotHeal = cCenarionWardHotHeal * cMasteryHarmony
-                wan.HotValue[unitToken][wan.spellData.CenarionWard.basename] = cCenarionWardHotHeal
+                wan.HotValue.player[wan.spellData.CenarionWard.basename] = cCenarionWardHotHeal
             end
 
             -- max healing value
-            local maxCenarionWardHeal = cCenarionWardInstantHeal + cCenarionWardHotHeal
             local cCenarionWardHeal = cCenarionWardInstantHeal + cCenarionWardHotHeal
 
             -- subtract healing value of ability's hot from ability's max healing value
-            if wan.auraData[playerGUID]["buff_" .. wan.spellData.CenarionWard.basename] then
-                local hotValue = wan.HotValue[unitToken][wan.spellData.CenarionWard.basename]
+            if wan.auraData.player["buff_" .. wan.spellData.CenarionWard.basename] then
+                local hotValue = wan.HotValue.player[wan.spellData.CenarionWard.basename]
                 cCenarionWardHeal = cCenarionWardHeal - hotValue
             end
 
             -- update healing data
             local abilityValue = wan.UnitAbilityHealValue(unitToken, cCenarionWardHeal, currentPercentHealth)
-            wan.UpdateMechanicData(unitToken, wan.spellData.CenarionWard.basename, abilityValue, wan.spellData.CenarionWard.icon, wan.spellData.CenarionWard.name)
+            wan.UpdateMechanicData(wan.spellData.CenarionWard.basename, abilityValue, wan.spellData.CenarionWard.icon, wan.spellData.CenarionWard.name)
         else
             wan.UpdateMechanicData(wan.spellData.CenarionWard.basename)
         end
@@ -164,6 +163,7 @@ frameCenarionWard:SetScript("OnEvent", AddonLoad)
 
 -- Set update rate based on settings
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
+
     if event == "SPELL_DATA_READY" then
         abilityActive = wan.spellData.CenarionWard.known and wan.spellData.CenarionWard.id
         wan.BlizzardEventHandler(frameCenarionWard, abilityActive, "SPELLS_CHANGED", "UNIT_AURA",

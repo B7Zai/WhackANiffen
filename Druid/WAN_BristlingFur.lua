@@ -4,7 +4,6 @@ local _, wan = ...
 if wan.PlayerState.Class ~= "DRUID" then return end
 
 -- Init data
-local playerGUID = wan.PlayerState.GUID or UnitGUID("player")
 local abilityActive = false
 local nBristlingFur = 0
 local rageMax = 0
@@ -12,7 +11,7 @@ local rageMax = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.auraData[playerGUID].buff_BearForm
+    if not wan.PlayerState.Status or not wan.auraData.player.buff_BearForm
         or not wan.IsTanking() or not wan.IsSpellUsable(wan.spellData.BristlingFur.id)
     then
         wan.UpdateMechanicData(wan.spellData.BristlingFur.basename)

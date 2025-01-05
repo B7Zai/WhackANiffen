@@ -3,17 +3,13 @@ local _, wan = ...
 wan.auraData = {}
 wan.instanceIDMap = {}
 
-local playerGUID = wan.PlayerState.GUID
-
-local function UpdateAuras(unitToken, unitGUID, updateInfo)
-
-    wan.auraData[unitGUID] = wan.auraData[unitGUID] or {}
-    wan.instanceIDMap[unitGUID] = wan.instanceIDMap[unitGUID] or {}
+local function UpdateAuras(unitToken, updateInfo)
+    wan.auraData[unitToken] = wan.auraData[unitToken] or {}
+    wan.instanceIDMap[unitToken] = wan.instanceIDMap[unitToken] or {}
 
     if updateInfo.isFullUpdate then -- Full aura update for units
-
-        wan.auraData[unitGUID] = {}
-        wan.instanceIDMap[unitGUID] = {}
+        wan.auraData[unitToken] = {}
+        wan.instanceIDMap[unitToken] = {}
 
         for i = 1, 40 do
             local aura = C_UnitAuras.GetBuffDataByIndex(unitToken, i)
@@ -25,8 +21,8 @@ local function UpdateAuras(unitToken, unitGUID, updateInfo)
                 local spellName = wan.FormatNameForKey(aura.name)
                 local key = spellName and "buff_" .. spellName
                 if key then
-                    wan.auraData[unitGUID][key] = aura
-                    wan.instanceIDMap[unitGUID][aura.auraInstanceID] = key
+                    wan.auraData[unitToken][key] = aura
+                    wan.instanceIDMap[unitToken][aura.auraInstanceID] = key
                 end
             end
         end
@@ -41,8 +37,8 @@ local function UpdateAuras(unitToken, unitGUID, updateInfo)
                 local spellName = wan.FormatNameForKey(aura.name)
                 local key = spellName and "debuff_" .. spellName
                 if key then
-                    wan.auraData[unitGUID][key] = aura
-                    wan.instanceIDMap[unitGUID][aura.auraInstanceID] = key
+                    wan.auraData[unitToken][key] = aura
+                    wan.instanceIDMap[unitToken][aura.auraInstanceID] = key
                 end
             end
         end
@@ -52,15 +48,15 @@ local function UpdateAuras(unitToken, unitGUID, updateInfo)
     if updateInfo.addedAuras then -- Aura update when auras get added
         for _, aura in pairs(updateInfo.addedAuras) do
             if unitToken == "player"
-            or (unitToken == wan.TargetUnitID and (aura.isStealable or aura.sourceUnit == "player"))
-            or (wan.NameplateUnitID[unitToken] and (aura.isStealable or aura.sourceUnit == "player"))
-            or (wan.GroupUnitID[unitToken] and (aura.sourceUnit == "player" or aura.canApplyAura or wan.UnitState.IsAI[unitToken] or (aura.isHarmful and aura.isRaid)))
-             then
+                or (unitToken == wan.TargetUnitID and (aura.isStealable or aura.sourceUnit == "player"))
+                or (wan.NameplateUnitID[unitToken] and (aura.isStealable or aura.sourceUnit == "player"))
+                or (wan.GroupUnitID[unitToken] and (aura.sourceUnit == "player" or aura.canApplyAura or wan.UnitState.IsAI[unitToken] or (aura.isHarmful and aura.isRaid)))
+            then
                 local spellName = wan.FormatNameForKey(aura.name)
                 if spellName then
                     local key = aura.isHelpful and "buff_" .. spellName or aura.isHarmful and "debuff_" .. spellName
-                    wan.auraData[unitGUID][key] = aura
-                    wan.instanceIDMap[unitGUID][aura.auraInstanceID] = key
+                    wan.auraData[unitToken][key] = aura
+                    wan.instanceIDMap[unitToken][aura.auraInstanceID] = key
                 end
             end
         end
@@ -68,13 +64,13 @@ local function UpdateAuras(unitToken, unitGUID, updateInfo)
 
     if updateInfo.updatedAuraInstanceIDs then -- Aura update when auras change
         for _, instanceID in pairs(updateInfo.updatedAuraInstanceIDs) do
-            if wan.instanceIDMap[unitGUID][instanceID] then
+            if wan.instanceIDMap[unitToken][instanceID] then
                 local aura = C_UnitAuras.GetAuraDataByAuraInstanceID(unitToken, instanceID)
                 if aura then
-                    local key = wan.instanceIDMap[unitGUID][instanceID]
-                    wan.auraData[unitGUID][key] = aura
-                    wan.instanceIDMap[unitGUID][instanceID] = nil
-                    wan.instanceIDMap[unitGUID][aura.auraInstanceID] = key
+                    local key = wan.instanceIDMap[unitToken][instanceID]
+                    wan.auraData[unitToken][key] = aura
+                    wan.instanceIDMap[unitToken][instanceID] = nil
+                    wan.instanceIDMap[unitToken][aura.auraInstanceID] = key
                 end
             end
         end
@@ -82,18 +78,18 @@ local function UpdateAuras(unitToken, unitGUID, updateInfo)
 
     if updateInfo.removedAuraInstanceIDs then -- Remove flagged auras
         for _, flaggedInstanceID in pairs(updateInfo.removedAuraInstanceIDs) do
-            local removedKey = wan.instanceIDMap[unitGUID][flaggedInstanceID]
+            local removedKey = wan.instanceIDMap[unitToken][flaggedInstanceID]
             if removedKey then
-                wan.instanceIDMap[unitGUID][flaggedInstanceID] = nil
-                wan.auraData[unitGUID][removedKey] = nil
+                wan.instanceIDMap[unitToken][flaggedInstanceID] = nil
+                wan.auraData[unitToken][removedKey] = nil
 
                 -- Update aura data with existing data if data was erased
-                for cachedID, cachedkey in pairs(wan.instanceIDMap[unitGUID]) do
+                for cachedID, cachedkey in pairs(wan.instanceIDMap[unitToken]) do
                     if removedKey == cachedkey then
                         local activeAura = C_UnitAuras.GetAuraDataByAuraInstanceID(unitToken, cachedID)
                         if activeAura then
-                            wan.auraData[unitGUID][cachedkey] = activeAura
-                            wan.instanceIDMap[unitGUID][activeAura.auraInstanceID] = cachedkey
+                            wan.auraData[unitToken][cachedkey] = activeAura
+                            wan.instanceIDMap[unitToken][activeAura.auraInstanceID] = cachedkey
                         end
                     end
                 end
@@ -106,58 +102,50 @@ end
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "TARGET_UNITID_ASSIGNED" then
-        local unitGUID = wan.UnitState.GUID[wan.TargetUnitID]
-        if unitGUID then
-            UpdateAuras(wan.TargetUnitID, unitGUID, { isFullUpdate = true })
-        end
+        UpdateAuras(wan.TargetUnitID, { isFullUpdate = true })
     end
 
     if event == "NAMEPLATE_UNITID_ASSIGNED" then
         local nameplateUnitToken = ...
-        local untiGUID = wan.NameplateUnitID[nameplateUnitToken]
-        UpdateAuras(nameplateUnitToken, untiGUID, { isFullUpdate = true })
+        UpdateAuras(nameplateUnitToken, { isFullUpdate = true })
     end
 
     if event == "GROUP_UNITID_ASSIGNED" then
+        local playerGUID = wan.PlayerState.GUID
         for groupUnitToken, groupGUID in pairs(wan.GroupUnitID) do
             if groupGUID ~= playerGUID then
-                UpdateAuras(groupUnitToken, groupGUID, { isFullUpdate = true })
+                UpdateAuras(groupUnitToken, { isFullUpdate = true })
             end
         end
     end
 end)
 
 local function AuraUpdate(self, event, unitToken, updateInfo)
-
     -- perform a full aura update for player and group members on loading screen
     if event == "PLAYER_ENTERING_WORLD" then
-        UpdateAuras("player", playerGUID, { isFullUpdate = true })
-        for groupUnitToken, groupGUID in pairs(wan.GroupUnitID) do
-            UpdateAuras(groupUnitToken, groupGUID, { isFullUpdate = true })
+        UpdateAuras("player", { isFullUpdate = true })
+        for groupUnitToken, _ in pairs(wan.GroupUnitID) do
+            UpdateAuras(groupUnitToken, { isFullUpdate = true })
         end
     end
 
     -- update aura data on player when resurrecting or changing talents
     if event == "PLAYER_ALIVE" or event == "TRAIT_CONFIG_UPDATED" then
-        UpdateAuras("player", playerGUID, { isFullUpdate = true })
+        UpdateAuras("player", { isFullUpdate = true })
     end
 
     -- update aura data on unitTokens
     if unitToken and updateInfo then
         if unitToken == "player" then
-            UpdateAuras(unitToken, playerGUID, updateInfo)
+            UpdateAuras(unitToken, updateInfo)
         elseif unitToken == wan.TargetUnitID then
-            local unitGUID = wan.UnitState.GUID[wan.TargetUnitID]
-            UpdateAuras(unitToken, unitGUID, updateInfo)
+            UpdateAuras(unitToken, updateInfo)
         elseif wan.NameplateUnitID[unitToken] then
-            local untiGUID = wan.NameplateUnitID[unitToken]
-            UpdateAuras(unitToken, untiGUID, updateInfo)
+            UpdateAuras(unitToken, updateInfo)
         elseif wan.GroupUnitID[unitToken] and unitToken ~= "player" and wan.PlayerState.InHealerMode then
-            local groupGUID = wan.GroupUnitID[unitToken]
-            UpdateAuras(unitToken, groupGUID, updateInfo)
+            UpdateAuras(unitToken, updateInfo)
         end
     end
-
 end
 
 local auraFrame = CreateFrame("Frame")

@@ -4,7 +4,8 @@ local _, wan = ...
 if wan.PlayerState.Class ~= "DRUID" then return end
 
 -- Init data
-local playerGUID = wan.PlayerState.GUID or UnitGUID("player")
+local playerUnitToken = "player"
+local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
 local abilityAura = "Berserk"
 local nBerserkMaxRange = 12
@@ -13,8 +14,8 @@ local nBerserkDmg, nBerserkHeal = 0, 0
  -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData[playerGUID]["buff_" .. abilityAura]
-        or wan.auraData[playerGUID].buff_Prowl or not wan.IsSpellUsable(wan.spellData.Berserk.id)
+    if not wan.PlayerState.Status or wan.auraData.player["buff_" .. abilityAura]
+        or wan.auraData.player.buff_Prowl or not wan.IsSpellUsable(wan.spellData.Berserk.id)
     then
         wan.UpdateAbilityData(wan.spellData.Berserk.basename)
         wan.UpdateMechanicData(wan.spellData.Berserk.basename)
@@ -29,15 +30,15 @@ local function CheckAbilityValue()
     local cdPotency = wan.CheckOffensiveCooldownPotency(cBerserkDmg, isValidUnit, idValidUnit)
 
     -- Base defensive value
+    local currentPercentHealth = UnitPercentHealthFromGUID(playerGUID) or 1
     local cBerserkHeal = nBerserkHeal
-    local healThreshold = wan.HealThreshold() > cBerserkHeal
 
     -- Check whether berserk is an offensive or defensive ability
     local isDefensive = wan.traitData.BerserkPersistence.known
 
     -- Update ability data
     local damageValue = not isDefensive and cdPotency and math.floor(cBerserkDmg) or 0
-    local healValue = isDefensive and healThreshold and math.floor(cBerserkHeal) or 0
+    local healValue = isDefensive and wan.UnitAbilityHealValue(playerUnitToken, cBerserkHeal, currentPercentHealth)
 
     wan.UpdateAbilityData(wan.spellData.Berserk.basename, damageValue, wan.spellData.Berserk.icon, wan.spellData.Berserk.name)
     wan.UpdateMechanicData(wan.spellData.Berserk.basename, healValue, wan.spellData.Berserk.icon, wan.spellData.Berserk.name)

@@ -94,21 +94,21 @@ function wan.AssignUnitState(frameCallback, isLevelScaling)
     if unitGUID and unitToken then
         local isAI = UnitInPartyIsAI(unitToken) or false
         local maxHealth = UnitHealthMax(unitToken) or 0
-        local unitLevel = UnitLevel(unitToken) or wan.UnitState.Level.player
-        local role = UnitGroupRolesAssigned(unitToken)
+        local unitLevel = UnitLevel(unitToken) or wan.UnitState.Level[wan.PlayerState.GUID]
+        local role = UnitGroupRolesAssigned(unitToken) or "DAMAGER"
 
         wan.GroupUnitID[unitToken] = unitGUID
         activeUnits[unitGUID] = unitToken
 
         wan.UnitState.LevelScale[unitToken] = 1
-        wan.UnitState.MaxHealth[unitGUID] = maxHealth
+        wan.UnitState.MaxHealth[unitToken] = maxHealth
         wan.UnitState.Level[unitToken] = unitLevel
         wan.UnitState.IsAI[unitToken] = isAI
-        wan.UnitState.Role[unitToken] = role or "DAMAGER"
+        wan.UnitState.Role[unitToken] = role
 
         if isLevelScaling then
-            if wan.UnitState.Level[unitToken] ~= wan.UnitState.Level.player then
-                local levelScaleValue = wan.UnitState.MaxHealth[unitGUID] / wan.UnitState.MaxHealth[wan.PlayerState.GUID]
+            if wan.UnitState.Level[unitToken] ~= wan.UnitState.Level[unitToken] then
+                local levelScaleValue = wan.UnitState.MaxHealth[unitToken] / wan.UnitState.MaxHealth[unitToken]
                 wan.UnitState.LevelScale[unitToken] = levelScaleValue
             end
         end
@@ -159,51 +159,4 @@ function wan.SetUpdateRate(frame, callback, spellID)
             callback()
         end)
     end
-end
-
--- checks if aura found on units
-function wan.IsUnitMissingAuraAoE(spellName)
-    if not IsInGroup() then
-        return C_UnitAuras.GetAuraDataBySpellName("player", spellName) == nil
-    end
-
-    local count = 1
-    local groupType = UnitInRaid("player") and "raid" or UnitInParty("player") and "party"
-    local numMembers = GetNumGroupMembers(groupType)
-
-    if groupType then
-        for i = 1, numMembers do
-            local unit = groupType .. i
-            if not UnitIsDeadOrGhost(unit)
-                and UnitIsConnected(unit)
-                and UnitInRange(unit)
-                and C_UnitAuras.GetAuraDataBySpellName(unit, spellName) == nil
-            then
-                count = count + 1
-            end
-        end
-    end
-
-    if numMembers == count then
-        return true
-    end
-    return false
-end
-
--- checks and adds debuff durations together over all valid nameplates
-function wan.CheckMissingDebuffDurationAoECapped(auraDataArray, spellName)
-    local totalDuration = 0
-    local formattedSpellName = "debuff_" .. spellName
-
-    for unit, unitAuras in pairs(auraDataArray) do
-        if unit:find("nameplate") then
-            local auraData = unitAuras[formattedSpellName]
-            if auraData and auraData.expirationTime and auraData.expirationTime > GetTime() then
-                local debuffDuration = math.min(math.ceil(auraData.expirationTime - GetTime()), 4)
-                totalDuration = totalDuration + debuffDuration
-            end
-        end
-    end
-
-    return totalDuration
 end

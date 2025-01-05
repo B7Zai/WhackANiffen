@@ -4,15 +4,14 @@ local _, wan = ...
 if wan.PlayerState.Class ~= "DRUID" then return end
 
 -- Init data
-local playerGUID = wan.PlayerState.GUID or UnitGUID("player")
 local abilityActive = false
 local nCelestialAlignment, nCelestialAlignmentMaxRange = 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData[playerGUID].buff_CatForm
-        or wan.auraData[playerGUID].buff_BearForm or not wan.IsSpellUsable(wan.spellData.CelestialAlignment.id)
+    if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
+        or wan.auraData.player.buff_BearForm or not wan.IsSpellUsable(wan.spellData.CelestialAlignment.id)
     then
         wan.UpdateAbilityData(wan.spellData.CelestialAlignment.basename)
         return

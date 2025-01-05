@@ -7,7 +7,8 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 local frameBarkskin = CreateFrame("Frame")
 
 -- Local data
-local playerGUID = wan.PlayerState.GUID or UnitGUID("player")
+local playerUnitToken = "player"
+local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
 local nBarkskin = 0
 
@@ -15,15 +16,16 @@ local nBarkskin = 0
 local function CheckAbilityValue()
 
     if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or wan.auraData[playerGUID].buff_Barkskin or wan.HealThreshold() <= nBarkskin
-        or not wan.IsSpellUsable(wan.spellData.Barkskin.id)
+        or wan.auraData.player.buff_Barkskin or not wan.IsSpellUsable(wan.spellData.Barkskin.id)
     then
         wan.UpdateMechanicData(wan.spellData.Barkskin.basename)
         return
     end
 
+    local currentPercentHealth = UnitPercentHealthFromGUID(playerGUID) or 1
     local cBarkskin = nBarkskin
-    local abilityValue = math.floor(cBarkskin)
+
+    local abilityValue = wan.UnitAbilityHealValue(playerUnitToken, cBarkskin, currentPercentHealth)
     wan.UpdateMechanicData(wan.spellData.Barkskin.basename, abilityValue, wan.spellData.Barkskin.icon, wan.spellData.Barkskin.name)
 end
 

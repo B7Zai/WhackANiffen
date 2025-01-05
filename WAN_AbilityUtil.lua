@@ -75,16 +75,15 @@ end
 ---- Checks if player is missing enough health
 function wan.AbilityPercentageToValue(percentValue)
     local percentage = percentValue or 100
-    local unitGUID = wan.PlayerState.GUID
-    local maxHealth = wan.UnitState.MaxHealth[unitGUID]
+    local maxHealth = wan.UnitState.MaxHealth.player
     return maxHealth * (percentage / 100)
 end
 
 ---- Checks if player is missing enough health
-function wan.UnitAbilityPercentageToValue(unitGUID, percentValue)
-    local guid = unitGUID or wan.PlayerState.GUID
+function wan.UnitAbilityPercentageToValue(unitToken, percentValue)
+    local unit = unitToken or "player"
     local percentage = percentValue or 100
-    local unitMaxHealth = wan.UnitState.MaxHealth[guid]
+    local unitMaxHealth = wan.UnitState.MaxHealth[unit]
     return unitMaxHealth * (percentage / 100)
 end
 
@@ -109,10 +108,10 @@ function wan.IsSpellUsable(spellIdentifier)
             return false
         end
     end
-    
-    local getGCD = gcdMS and gcdMS / 1000 or 0
+
     local getCooldown = C_Spell.GetSpellCooldown(spellIdentifier)
-    return (getCooldown.duration <= getGCD)
+    local getGCD = gcdMS and gcdMS / 1000 or 0
+    return getCooldown.duration <= getGCD
 end
 
 -- Checks critical chance and critical damage weights for ability values
@@ -145,8 +144,8 @@ function wan.CheckCastEfficiency(spellID, spellCastTime, canMoveCast)
         return valueModifier
     end
 
-    local movingCast = canMoveCast or false
     if wan.Options.DetectMovement.Toggle then
+        local movingCast = canMoveCast or false
         local playerSpeed = GetUnitSpeed("player") or 0
         local currentTime = GetTime()
         if not movingCast and playerSpeed > 0 then
@@ -191,24 +190,14 @@ end
 ---- checks if any valid unit is targeting the player
 function wan.IsTanking()
     local isTanking = UnitDetailedThreatSituation("player", wan.TargetUnitID) or false
-    if isTanking then
-        return true  
+    if isTanking then return true end
+
+    for nameplateUnitToken, _ in pairs(wan.NameplateUnitID) do
+        local isTankingUnit = UnitDetailedThreatSituation("player", nameplateUnitToken) or false
+        local inRange = wan.CheckRange(nameplateUnitToken, 40, "<=")
+
+        if inRange and isTankingUnit then return true end
     end
 
-    for i = 1, 40 do
-        local unit = "nameplate" .. i
-
-        if UnitExists(unit) and UnitCanAttack("player", unit) then
-            local inCombat = UnitAffectingCombat(unit)
-
-            if inCombat or not C_QuestLog.UnitIsRelatedToActiveQuest(unit) 
-            and wan.CheckRange(unit, 40, "<=")
-            then
-                isTanking = UnitDetailedThreatSituation("player", unit) or false
-                return isTanking
-            end
-        end
-    end
-    
     return false
 end

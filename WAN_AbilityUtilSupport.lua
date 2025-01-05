@@ -40,20 +40,6 @@ function wan.UpdateSupportData(unitToken, abilityName, value, icon, name, desatu
         return
     end
 
-    if unitToken == "allGroupUnitTokens" then
-        local unitsNeedHeal = wan.HealUnitCountAoE[abilityName] or 1
-            for unitID, _ in pairs(wan.SupportData) do
-                if not value or value == 0 then wan.SupportData[unitID][abilityName] = {} return end
-                wan.SupportData[unitID][abilityName] = {
-                    value = value * unitsNeedHeal,
-                    icon = icon,
-                    name = name,
-                    desat = desaturation,
-                }
-            end
-        return
-    end
-
     wan.SupportData[unitToken] = wan.SupportData[unitToken] or {}
     if value == 0 then wan.SupportData[unitToken][abilityName] = {} return end
     wan.SupportData[unitToken][abilityName] = {
@@ -77,27 +63,26 @@ function wan.ValidGroupMembers()
         then
             count = count + 1
             inRangeUnits[groupUnitToken] = groupUnitGUID
-
         end
     end
 
     local nGroupMembersInRange = count
-    local nDamageScaler = wan.AdjustSoftCapUnitOverflow(4, count)
+    local nDamageScaler = wan.AdjustSoftCapUnitOverflow(1, count)
 
     return nDamageScaler, nGroupMembersInRange, inRangeUnits
 end
 
-function wan.GetUnitHotValues(unitGUID)
-    if not unitGUID then return 0, 0 end
+function wan.GetUnitHotValues(unitToken)
+    if not unitToken then return 0, 0 end
     local totalHotValues = 0
     local countHots = 0
     local currentTime = GetTime()
-    for formattedHotName, hotValue in pairs(wan.HotValue[unitGUID]) do
-        local aura = wan.auraData[unitGUID]["buff_" .. formattedHotName]
+    for formattedHotName, hotValue in pairs(wan.HotValue[unitToken] or {}) do
+        local aura = wan.auraData[unitToken]["buff_" .. formattedHotName]
         if aura then 
             local reminingDuration = aura.expirationTime - currentTime
             local remainingValueMod = math.max(reminingDuration, 0) / aura.duration
-            if reminingDuration < 0 then wan.auraData[unitGUID]["buff_" .. formattedHotName] = nil end
+            if reminingDuration < 0 then wan.auraData[unitToken]["buff_" .. formattedHotName] = nil end
             totalHotValues = totalHotValues + (hotValue * remainingValueMod)
             countHots = countHots + 1
         end
@@ -105,12 +90,11 @@ function wan.GetUnitHotValues(unitGUID)
     return totalHotValues, countHots
 end
 
-function wan.UnitAbilityHealValue(unitGUID, abilityValue, unitPercentHealth)
-    if not unitGUID or not abilityValue or not unitPercentHealth or abilityValue == 0 then return 0 end
-    if abilityValue == 0 then return 0 end
+function wan.UnitAbilityHealValue(unitToken, abilityValue, unitPercentHealth)
+    if not unitToken or not abilityValue or abilityValue == 0 or not unitPercentHealth then return 0 end
     local value = 0
-    local unitHotValues = wan.GetUnitHotValues(unitGUID)
-    local maxHealth = wan.UnitState.MaxHealth[unitGUID]
+    local unitHotValues = wan.GetUnitHotValues(unitToken)
+    local maxHealth = wan.UnitState.MaxHealth[unitToken]
     local abilityPercentageValue = (abilityValue / maxHealth) or 0
     local hotPercentageValue = (unitHotValues / maxHealth) or 0
     local thresholdValue = 0.5
@@ -132,10 +116,10 @@ function wan.UnitAbilityHealValue(unitGUID, abilityValue, unitPercentHealth)
     return value
 end
 
-function wan.HotPotency(unitGUID, unitPercentHealth, initialValue)
+function wan.HotPotency(unitToken, unitPercentHealth, initialValue)
     local currentPercentHealth = unitPercentHealth or 0
-    local baseValue = ((initialValue or 0) + wan.GetUnitHotValues(unitGUID)) or 0
-    local maxHealth = (wan.UnitState.MaxHealth[unitGUID]) or 0
+    local baseValue = ((initialValue or 0) + wan.GetUnitHotValues(unitToken)) or 0
+    local maxHealth = (wan.UnitState.MaxHealth[unitToken]) or 0
     local thresholdValue = maxHealth * 0.5
     local targetHealth = (maxHealth * currentPercentHealth)
 
@@ -148,29 +132,22 @@ end
 
 -- Checks damage reduction from armor gain
 function wan.GetArmorDamageReductionFromSpell(armorValue)
-    local targetLevel = math.max(UnitLevel(wan.TargetUnitID), UnitLevel("player"))
+    local unitLevel = wan.UnitState.Level[wan.TargetUnitID] or wan.UnitState.Level.player
+    local playerLevel = wan.UnitState.Level.player
+    local targetLevel = math.max(unitLevel, playerLevel)
     local _, _, armor = UnitArmor("player")
     local buffedArmor = armor + armorValue
     local currentEffectiveness = C_PaperDollInfo.GetArmorEffectivenessAgainstTarget(armor) or C_PaperDollInfo.GetArmorEffectiveness(armor, targetLevel)
     local buffedEffectiveness = C_PaperDollInfo.GetArmorEffectivenessAgainstTarget(buffedArmor) or C_PaperDollInfo.GetArmorEffectiveness(buffedArmor, targetLevel)
-    
-    return (buffedEffectiveness - currentEffectiveness) * 100
-end
 
----- Checks if player is missing enough health
-function wan.HealThreshold()
-    local unitGUID = wan.PlayerState.GUID
-    local unitHealth = UnitHealth("player")
-    local unitMaxHealth = wan.UnitState.MaxHealth[unitGUID]
-    return unitMaxHealth - unitHealth
+    return (buffedEffectiveness - currentEffectiveness) * 100
 end
 
 -- Check and convert defensive cooldown to values
 function wan.DefensiveCooldownToValue(spellIndentifier)
     local cooldownMS, _ = GetSpellBaseCooldown(spellIndentifier)
     local maxCooldown = math.ceil(cooldownMS / 1000 / 60)
-    local unitGUID = wan.PlayerState.GUID
-    local maxHealth = wan.UnitState.MaxHealth[unitGUID]
+    local maxHealth = wan.UnitState.MaxHealth.player
     local healthThresholds = maxHealth * 0.1
     local cooldownValue = (maxCooldown <= 1 and healthThresholds * 3)
     or (maxCooldown > 1 and maxCooldown <= 2 and healthThresholds * 5)
@@ -180,11 +157,12 @@ function wan.DefensiveCooldownToValue(spellIndentifier)
 end
 
 -- Check and convert defensive cooldown to values
-function wan.UnitDefensiveCooldownToValue(spellIndentifier, unitGUID)
-    local guid = unitGUID or wan.PlayerState.GUID
+function wan.UnitDefensiveCooldownToValue(spellIndentifier, unitToken)
     local cooldownMS, _ = GetSpellBaseCooldown(spellIndentifier)
     local maxCooldown = math.ceil(cooldownMS / 1000 / 60)
-    local maxHealth = wan.UnitState.MaxHealth[guid]
+    local maxHealth = wan.UnitState.MaxHealth[unitToken]
+    if not maxHealth then return math.huge end
+
     local healthThresholds = maxHealth * 0.1
     local cooldownValue = (maxCooldown <= 1 and healthThresholds * 3)
     or (maxCooldown > 1 and maxCooldown <= 2 and healthThresholds * 5)
@@ -195,6 +173,10 @@ end
 
 -- Counts units that have a specific debuff
 function wan.CheckClassBuff(buffName)
+    local currentTime = GetTime()
+    local aura = wan.auraData.player["buff_" .. buffName]
+    local remainingDuration = aura and (aura.expirationTime - currentTime)
+
     if wan.PlayerState.InHealerMode then
         local nGroupUnits = GetNumGroupMembers()
         local _, nGroupMembersInRange, idValidGroupMember = wan.ValidGroupMembers()
@@ -210,13 +192,9 @@ function wan.CheckClassBuff(buffName)
 
         local nGroupSize = (nGroupUnits - nDisconnected)
 
-        if nGroupSize ~= nGroupMembersInRange then
-            local aura = wan.auraData.player["buff_" .. buffName]
-            local remainingDuration = aura and (aura.expirationTime - GetTime())
-            return not aura or remainingDuration < 360 
-        else
-            for unitID, _ in pairs(idValidGroupMember or {}) do
-                local buffed = wan.auraData[unitID]["buff_" .. buffName]
+        if nGroupSize == nGroupMembersInRange then
+            for groupUnitToken, _ in pairs(idValidGroupMember) do
+                local buffed = wan.auraData[groupUnitToken]["buff_" .. buffName]
                 if buffed then
                     countBuffed = countBuffed + 1
                 end
@@ -224,9 +202,8 @@ function wan.CheckClassBuff(buffName)
             return (nGroupUnits > 0 and nGroupMembersInRange > countBuffed)
         end
     end
-    local aura = wan.auraData.player["buff_" .. buffName]
-    local remainingDuration = aura and (aura.expirationTime - GetTime())
-    return not aura or remainingDuration < 360
+    
+    if not aura or remainingDuration < 360 then return true end
 end
 
 function wan.CheckDispelType(spellIdentifier)
@@ -267,10 +244,10 @@ function wan.CheckDispelBool(auraData, unitID, auraType)
 end
 
 -- Checks if a debuff on the unit matches the given aura types
-function wan.GetDispelValue(auraData, unitToken, dispelTypes)
+function wan.GetDispelValue(unitGUID, dispelTypes)
     local dispelValue = 0
     local currentTime = GetTime()
-    for auraKey, aura in pairs(auraData[unitToken]) do
+    for auraKey, aura in pairs(wan.auraData[unitGUID]) do
         if auraKey:find("debuff_") then
             local debuffType = aura.dispelName
             local expirationTimeBool = (aura.expirationTime - currentTime) > 2 or false
@@ -284,11 +261,11 @@ function wan.GetDispelValue(auraData, unitToken, dispelTypes)
 
     if dispelValue > 0 then
         local roleValue = 0
-        if wan.UnitState.Role[unitToken] == "TANK" then
+        if wan.UnitState.Role[unitGUID] == "TANK" then
             roleValue = 2 
-        elseif wan.UnitState.Role[unitToken] == "HEALER" then
+        elseif wan.UnitState.Role[unitGUID] == "HEALER" then
             roleValue = 1.5
-        elseif wan.UnitState.Role[unitToken] == "DAMAGER" then
+        elseif wan.UnitState.Role[unitGUID] == "DAMAGER" then
             roleValue = 1
         end
         dispelValue = dispelValue + roleValue
