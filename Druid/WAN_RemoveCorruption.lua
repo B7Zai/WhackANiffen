@@ -57,6 +57,7 @@ local function AddonLoad(self, event, addonName)
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
             nRemoveCorruption = wan.AbilityPercentageToValue(percentValue)
+            dispelType = wan.CheckDispelType(wan.spellData.RemoveCorruption.id)
         end
     end)
 end
@@ -69,8 +70,6 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         abilityActive = wan.spellData.RemoveCorruption.known and wan.spellData.RemoveCorruption.id
         wan.BlizzardEventHandler(frameRemoveCorruption, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
         wan.SetUpdateRate(frameRemoveCorruption, CheckAbilityValue, abilityActive)
-
-        dispelType = wan.CheckDispelType(wan.spellData.RemoveCorruption.id)
     end
 
     if event == "TRAIT_DATA_READY" then end

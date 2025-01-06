@@ -77,8 +77,8 @@ local function CheckAbilityValue()
 
         -- exit early when a lifebloom is at the target cap
         local nLifebloomCount = 0
-        for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
-            local aura = wan.auraData[groupUnitToken].buff_Lifebloom
+        for groupUnitToken, _ in pairs(wan.GroupUnitID) do
+            local aura = wan.auraData[groupUnitToken] and wan.auraData[groupUnitToken].buff_Lifebloom
             if aura then
                 local remainingDuration = aura.expirationTime - currentTime
                 if remainingDuration < 0 then

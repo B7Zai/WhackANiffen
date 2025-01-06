@@ -103,7 +103,7 @@ local function CheckAbilityValue()
 
                 cEfflorescenceHeal = cEfflorescenceHeal * wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename]
 
-                local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cEfflorescenceHeal, currentPercentHealth, wan.HealUnitCountAoE[wan.spellData.Efflorescence.basename])
+                local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cEfflorescenceHeal, currentPercentHealth)
                 if abilityValue > 0 then unitsNeedHeal = unitsNeedHeal + 1 end
                 wan.UpdateHealingData(groupUnitToken, wan.spellData.Efflorescence.basename, abilityValue, wan.spellData.Efflorescence.icon, wan.spellData.Efflorescence.name)
             else

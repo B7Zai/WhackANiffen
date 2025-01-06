@@ -134,7 +134,7 @@ local function CheckAbilityValue()
             -- add cast efficiency layer
             cWildGrowthHeal = cWildGrowthHeal * castEfficiency * wan.HealUnitCountAoE[hotKey]
 
-            local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cWildGrowthHeal, currentPercentHealth, wan.HealUnitCountAoE[hotKey])
+            local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cWildGrowthHeal, currentPercentHealth)
             if abilityValue > 0 then unitsNeedHeal = unitsNeedHeal + 1 end
             wan.UpdateHealingData(groupUnitToken, wan.spellData.WildGrowth.basename, abilityValue, wan.spellData.WildGrowth.icon, wan.spellData.WildGrowth.name)
         else

@@ -194,7 +194,7 @@ local function OnEvent(self, event, ...)
 
         -- wipe data on removed group units
         for unitToken, unitGUID in pairs(wan.GroupUnitID) do
-            if not activeUnits[unitGUID] then
+            if unitToken ~= "player" and not activeUnits[unitGUID] then
                 wan.GroupUnitID[unitToken] = nil
 
                 wan.HealingData[unitToken] = nil
@@ -223,8 +223,8 @@ local function OnEvent(self, event, ...)
             wan.UnitState.LevelScale[groupUnitToken] = 1
 
             if isLevelScaling then
-                if wan.UnitState.Level[groupUnitToken] ~= wan.UnitState.Level[wan.PlayerState.GUID] then
-                    local levelScaleValue = wan.UnitState.MaxHealth[groupUnitToken] / wan.UnitState.MaxHealth[wan.PlayerState.GUID]
+                if wan.UnitState.Level[groupUnitToken] ~= wan.UnitState.Level.player then
+                    local levelScaleValue = wan.UnitState.MaxHealth[groupUnitToken] / wan.UnitState.MaxHealth.player
                     wan.UnitState.LevelScale[groupUnitToken] = levelScaleValue
                 end
             end

@@ -4,6 +4,8 @@ wan.auraData = {}
 wan.instanceIDMap = {}
 
 local function UpdateAuras(unitToken, updateInfo)
+    if not updateInfo then return end
+    
     wan.auraData[unitToken] = wan.auraData[unitToken] or {}
     wan.instanceIDMap[unitToken] = wan.instanceIDMap[unitToken] or {}
 
@@ -111,9 +113,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "GROUP_UNITID_ASSIGNED" then
-        local playerGUID = wan.PlayerState.GUID
-        for groupUnitToken, groupGUID in pairs(wan.GroupUnitID) do
-            if groupGUID ~= playerGUID then
+        for groupUnitToken, _ in pairs(wan.GroupUnitID) do
+            if groupUnitToken ~= "player" then
                 UpdateAuras(groupUnitToken, { isFullUpdate = true })
             end
         end
@@ -135,7 +136,7 @@ local function AuraUpdate(self, event, unitToken, updateInfo)
     end
 
     -- update aura data on unitTokens
-    if unitToken and updateInfo then
+    if unitToken then
         if unitToken == "player" then
             UpdateAuras(unitToken, updateInfo)
         elseif unitToken == wan.TargetUnitID then

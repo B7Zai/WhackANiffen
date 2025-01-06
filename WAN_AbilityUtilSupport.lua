@@ -73,11 +73,11 @@ function wan.ValidGroupMembers()
 end
 
 function wan.GetUnitHotValues(unitToken)
-    if not unitToken then return 0, 0 end
+    if not unitToken or not wan.HotValue[unitToken] or not wan.auraData[unitToken] then return 0, 0 end
     local totalHotValues = 0
     local countHots = 0
     local currentTime = GetTime()
-    for formattedHotName, hotValue in pairs(wan.HotValue[unitToken] or {}) do
+    for formattedHotName, hotValue in pairs(wan.HotValue[unitToken]) do
         local aura = wan.auraData[unitToken]["buff_" .. formattedHotName]
         if aura then 
             local reminingDuration = aura.expirationTime - currentTime
@@ -225,29 +225,11 @@ function wan.CheckDispelType(spellIdentifier)
     return playerDispelTypes
 end
 
-
 -- Checks if a debuff on the unit matches the given aura types
-function wan.CheckDispelBool(auraData, unitID, auraType)
-    local currentTime = GetTime()
-    if auraData[unitID] then
-        for auraName, aura in pairs(auraData[unitID]) do
-            if auraName:find("debuff_") then
-                if aura.dispelName and auraType[aura.dispelName] then
-                    local expirationTime = (aura.expirationTime - currentTime) > 3
-                    local hasStacks = aura.applications and aura.applications >= 3
-                    if expirationTime or hasStacks then return true end
-                end
-            end
-        end
-    end
-    return false
-end
-
--- Checks if a debuff on the unit matches the given aura types
-function wan.GetDispelValue(unitGUID, dispelTypes)
+function wan.GetDispelValue(unitToken, dispelTypes)
     local dispelValue = 0
     local currentTime = GetTime()
-    for auraKey, aura in pairs(wan.auraData[unitGUID]) do
+    for auraKey, aura in pairs(wan.auraData[unitToken]) do
         if auraKey:find("debuff_") then
             local debuffType = aura.dispelName
             local expirationTimeBool = (aura.expirationTime - currentTime) > 2 or false
@@ -261,11 +243,11 @@ function wan.GetDispelValue(unitGUID, dispelTypes)
 
     if dispelValue > 0 then
         local roleValue = 0
-        if wan.UnitState.Role[unitGUID] == "TANK" then
-            roleValue = 2 
-        elseif wan.UnitState.Role[unitGUID] == "HEALER" then
+        if wan.UnitState.Role[unitToken] == "TANK" then
+            roleValue = 2
+        elseif wan.UnitState.Role[unitToken] == "HEALER" then
             roleValue = 1.5
-        elseif wan.UnitState.Role[unitGUID] == "DAMAGER" then
+        elseif wan.UnitState.Role[unitToken] == "DAMAGER" then
             roleValue = 1
         end
         dispelValue = dispelValue + roleValue
