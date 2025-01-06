@@ -91,3 +91,7 @@ Druid\WAN_WarriorofElune.lua
 Druid\WAN_WildGrowth.lua
 Druid\WAN_WildMushroom.lua
 Druid\WAN_Wrath.lua
+
+# Hunter
+Hunter\WAN_ArcaneShot.lua
+Hunter\WAN_KillCommand.lua

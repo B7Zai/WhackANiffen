@@ -255,3 +255,7 @@ function wan.GetDispelValue(unitToken, dispelTypes)
 
     return dispelValue
 end
+
+function wan.IsPetUsable()
+    return IsPetActive() or UnitIsDead("pet")
+end
