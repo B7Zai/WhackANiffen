@@ -5,7 +5,7 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 
 -- Init spell data
 local abilityActive = false
-local checkDebuffs = {"Rake", "Thrash", "Rip", "Feral Frenzy", "Tear", "Frenzied Assault"}
+local checkDebuffs = {"Rake", "Thrash", "Rip", "FeralFrenzy", "Tear", "FrenziedAssault"}
 local nShredDmg, nThrashDotDmg = 0, 0
 
 -- Init trait data

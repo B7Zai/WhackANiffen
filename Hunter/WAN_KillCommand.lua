@@ -6,17 +6,21 @@ if wan.PlayerState.Class ~= "HUNTER" then return end
 -- Init spell data
 local abilityActive = false
 local nKillCommandDmg = 0
+local checkDebuffs = {}
 
 -- Init trait data
 local nGoForTheThroat = 0
-local nKillCleave = 0
+local nKillCleave, nKillCleaveAoECap = 0, 0
+local nSerpentineRhythm = 0
 local nAMurderOfCrows, nAMurderOfCrowsStacks, nAMurderofCrownsStacksCap = 0, 0, 0
 local nKillerInstinct, nKillerInstinctThreshold = 0, 0
+local nBasiliskCollar = 0
 local nBloodshed = 0
 local nVenomousBite = 0
 local nViciousHunt = 0
 local nFrenziedTear = 0
 local nPhantomPain = 0
+local nPiercingFangs = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -29,7 +33,7 @@ local function CheckAbilityValue()
     end
 
     -- Check for valid unit
-    local isValidUnit, _ ,idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.KillCommand.id)
+    local isValidUnit, countValidUnit ,idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.KillCommand.id)
     if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.KillCommand.basename)
         return
@@ -57,6 +61,12 @@ local function CheckAbilityValue()
         critDamageMod = critDamageMod + (wan.CritChance * cGoForTheThroat)
     end
 
+    -- serpentine rhythm trait layer
+    local cSerpentineRhythm = 1
+    if wan.traitData.SerpentineRhythm.known and wan.auraData.player.buff_SerpentineBlessing then
+        cSerpentineRhythm = cSerpentineRhythm + nSerpentineRhythm
+    end
+
     -- a murder of crows trait layer
     local cAMurderOfCrows = 0
     if wan.traitData.AMurderofCrows.known and wan.auraData.player.buff_AMurderofCrows then
@@ -75,6 +85,18 @@ local function CheckAbilityValue()
         if nKillerInstinctThreshold > targetPercentHealth then
             cKillerInstinct = cKillerInstinct + nKillerInstinct
         end
+    end
+
+    -- basilisk collar trait layer
+    local cBasiliskCollar = 1
+    if wan.traitData.BasiliskCollar.known then
+        local countDebuff = wan.CountUnitDebuff(targetUnitToken, checkDebuffs)
+        cBasiliskCollar = cBasiliskCollar + (nBasiliskCollar * countDebuff)
+    end
+
+    -- piercing fangs trait layer
+    if wan.traitData.PiercingFangs.known and wan.auraData.player["buff_" .. wan.spellData.BestialWrath.basename] then
+        critDamageMod = critDamageMod + nPiercingFangs
     end
 
     -- bloodshed trait layer
@@ -107,6 +129,7 @@ local function CheckAbilityValue()
     local cKillCommandInstantAoEDmg = 0
     local countPhantomPain = 0
     if wan.traitData.KillCleave.known or wan.traitData.PhantomPain.known then
+        local cKillCleaveUnitOverflow = wan.SoftCapOverflow(nKillCleaveAoECap, countValidUnit)
 
         for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
 
@@ -116,13 +139,10 @@ local function CheckAbilityValue()
                     
                     local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
 
-                    local cUnitKillerInstinct = 1
-                    if wan.traitData.cKillerInstinct.known then
-                        local targetPercentHealth = UnitPercentHealthFromGUID(nameplateGUID) or 1
-
-                        if nKillerInstinctThreshold > targetPercentHealth then
-                            cUnitKillerInstinct = cUnitKillerInstinct + nKillerInstinct
-                        end
+                    local cBasiliskCollar = 1
+                    if wan.traitData.BasiliskCollar.known then
+                        local countDebuff = wan.CountUnitDebuff(targetUnitToken, checkDebuffs)
+                        cBasiliskCollar = cBasiliskCollar + (nBasiliskCollar * countDebuff)
                     end
 
                     local cUnitBloodshed = 1
@@ -134,7 +154,7 @@ local function CheckAbilityValue()
                         end
                     end
 
-                    local cKillCleaveDmg = nKillCommandDmg * cAnimalCompanion * nKillCleave * checkUnitPhysicalDR * cUnitKillerInstinct * cUnitBloodshed
+                    local cKillCleaveDmg = nKillCommandDmg * cAnimalCompanion * nKillCleave * cBasiliskCollar * cSerpentineRhythm * checkUnitPhysicalDR * cKillerInstinct * cUnitBloodshed * cKillCleaveUnitOverflow
 
                     cKillCommandInstantAoEDmg = cKillCommandInstantAoEDmg + cKillCleaveDmg
                 end
@@ -156,7 +176,7 @@ local function CheckAbilityValue()
     local cKillCommandCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
     local cKillCommandDotCritValue = wan.ValueFromCritical(wan.CritChance)
 
-    cKillCommandInstantDmg = ((cKillCommandInstantDmg * cKillCommandCritValue * cKillerInstinct * cBloodshed) + (cViciousHunt * cKillCommandDotCritValue)) * checkPhysicalDR
+    cKillCommandInstantDmg = ((cKillCommandInstantDmg * cAnimalCompanion * cKillCommandCritValue * cKillerInstinct * cBasiliskCollar * cBloodshed * cSerpentineRhythm) + (cViciousHunt * cKillCommandDotCritValue)) * checkPhysicalDR
     cKillCommandDotDmg = (cKillCommandDotDmg + cAMurderOfCrows) * checkPhysicalDR * cKillCommandDotCritValue
 
     local cPhantomPain = 0
@@ -206,16 +226,34 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         abilityActive = wan.spellData.KillCommand.known and wan.spellData.KillCommand.id
         wan.BlizzardEventHandler(frameKillCommand, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
         wan.SetUpdateRate(frameKillCommand, CheckAbilityValue, abilityActive)
+
+        checkDebuffs = {
+            wan.spellData.BarbedShot.basename,
+            wan.traitData.Laceration.traitkey,
+            "SerpentSting",
+            wan.traitData.AMurderofCrows.traitkey,
+            "RavenousLeap",
+            wan.traitData.Bloodshed.traitkey,
+            wan.traitData.BlackArrow.traitkey,
+        }
     end
 
     if event == "TRAIT_DATA_READY" then
         nGoForTheThroat = wan.GetTraitDescriptionNumbers(wan.traitData.GofortheThroat.entryid, { 1 }) * 0.01
 
-        nKillCleave = wan.GetTraitDescriptionNumbers(wan.traitData.BeastCleave.entryid, { 1 }) * 0.01
+        nSerpentineRhythm = wan.GetTraitDescriptionNumbers(wan.traitData.SerpentineRhythm.entryid, { 1 }) * 0.01
+
+        local nKillCleaveValues = wan.GetTraitDescriptionNumbers(wan.traitData.BeastCleave.entryid, { 1, 2 })
+        nKillCleave = nKillCleaveValues[1] * 0.01
+        nKillCleaveAoECap = nKillCleaveValues[2]
 
         local nKillerInstinctValues = wan.GetTraitDescriptionNumbers(wan.traitData.KillerInstinct.entryid, { 1, 2 }, wan.traitData.KillerInstinct.rank)
         nKillerInstinct = nKillerInstinctValues[1] * 0.01
         nKillerInstinctThreshold = nKillerInstinctValues[2] * 0.01
+
+        nBasiliskCollar = wan.GetTraitDescriptionNumbers(wan.traitData.BasiliskCollar.entryid, { 1 }, wan.traitData.BasiliskCollar.rank) * 0.01
+
+        nPiercingFangs = wan.GetTraitDescriptionNumbers(wan.traitData.PiercingFangs.entryid, { 1 })
 
         nBloodshed = wan.GetTraitDescriptionNumbers(wan.traitData.Bloodshed.entryid, { 3 }) * 0.01
 

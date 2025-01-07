@@ -94,4 +94,7 @@ Druid\WAN_Wrath.lua
 
 # Hunter
 Hunter\WAN_ArcaneShot.lua
+Hunter\WAN_BarbedShot.lua
 Hunter\WAN_KillCommand.lua
+Hunter\WAN_KillShot.lua
+Hunter\WAN_MultiShot.lua

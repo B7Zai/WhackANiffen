@@ -10,7 +10,8 @@ local nArcaneShotDmg = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.ArcaneShot.id)
+    if not wan.PlayerState.Status 
+    or (wan.spellData.MultiShot.known and not wan.IsSpellUsable(wan.spellData.MultiShot.id) or not wan.IsSpellUsable(wan.spellData.ArcaneShot.id))
     then
         wan.UpdateAbilityData(wan.spellData.ArcaneShot.basename)
         return

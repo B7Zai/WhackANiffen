@@ -173,6 +173,19 @@ function wan.CheckForAnyDebuff(unitToken, debuffData)
     return false
 end
 
+-- Counts number of specified debuffs on a unit
+function wan.CountUnitDebuff(unitToken, debuffData)
+    if not wan.auraData[unitToken] then return 0 end
+    local countDebuff = 0
+    for _, debuffName in pairs(debuffData) do
+        if wan.auraData[unitToken]["debuff_" .. debuffName] then
+            countDebuff = countDebuff + 1
+        end
+    end
+
+    return countDebuff
+end
+
 -- Checks if a debuff on the unit matches the given aura types
 function wan.CheckPurgeBool(unitToken)
     local unit = unitToken or wan.TargetUnitID
