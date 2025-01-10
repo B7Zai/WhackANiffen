@@ -83,7 +83,7 @@ end
 function wan.UnitAbilityPercentageToValue(unitToken, percentValue)
     local unit = unitToken or "player"
     local percentage = percentValue or 100
-    local unitMaxHealth = wan.UnitState.MaxHealth[unit]
+    local unitMaxHealth = wan.UnitState.MaxHealth[unit] or wan.UnitState.MaxHealth.player
     return unitMaxHealth * (percentage / 100)
 end
 
@@ -127,9 +127,12 @@ end
 -- Checks spell cost
 function wan.GetSpellCost(spellIndentifier, powerType)
     local costTable = C_Spell.GetSpellPowerCost(spellIndentifier)
-    for _, spellPower in ipairs(costTable) do
-        if spellPower.type == powerType then
-            return spellPower.cost
+    
+    if costTable then
+        for _, spellPower in ipairs(costTable) do
+            if spellPower.type == powerType then
+                return spellPower.cost
+            end
         end
     end
 end
@@ -197,6 +200,23 @@ function wan.IsTanking()
         local inRange = wan.CheckRange(nameplateUnitToken, 40, "<=")
 
         if inRange and isTankingUnit then return true end
+    end
+
+    return false
+end
+
+function wan.UnitIsCasting(unitToken, spellIndentifier)
+    local unit = unitToken or "player"
+    local castName, _, _, _, _, _, _, _, castSpellID = UnitCastingInfo(unit)
+
+    if spellIndentifier == castName or spellIndentifier == castSpellID then
+        return true
+    end
+
+    local channelName, _, _, _, _, _, _, channelSpellID = UnitChannelInfo(unitToken)
+
+    if spellIndentifier == channelName or spellIndentifier == channelSpellID then
+        return true
     end
 
     return false

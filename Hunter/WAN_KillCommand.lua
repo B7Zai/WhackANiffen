@@ -11,16 +11,21 @@ local checkDebuffs = {}
 -- Init trait data
 local nGoForTheThroat = 0
 local nKillCleave, nKillCleaveAoECap = 0, 0
+local nQuickShotProcChance, nQuickShotDmg, nArcaneShotDmg = 0, 0, 0
 local nSerpentineRhythm = 0
+local nBloodseeker = 0
 local nAMurderOfCrows, nAMurderOfCrowsStacks, nAMurderofCrownsStacksCap = 0, 0, 0
 local nKillerInstinct, nKillerInstinctThreshold = 0, 0
 local nBasiliskCollar = 0
 local nBloodshed = 0
+local nShowerOfBloodUnitCap = 0
 local nVenomousBite = 0
 local nViciousHunt = 0
 local nFrenziedTear = 0
 local nPhantomPain = 0
 local nPiercingFangs = 0
+local nExposedFlank, nExposedFlankUnitCap = 0, 0
+
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -43,11 +48,15 @@ local function CheckAbilityValue()
     local critChanceMod = 0
     local critDamageMod = 0
 
-    local cKillCommandInstantDmg = nKillCommandDmg
+    local cKillCommandInstantDmg = 0
     local cKillCommandDotDmg = 0
+    local cKillCommandInstantDmgAoE = 0
+    local cKillCommandDotDmgAoE = 0
 
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
+
+    ---- BEAST MASTERY TRAITS ----
 
     -- animal companion trait layer
     local cAnimalCompanion = 1
@@ -67,20 +76,35 @@ local function CheckAbilityValue()
         cSerpentineRhythm = cSerpentineRhythm + nSerpentineRhythm
     end
 
+    -- kill cleave trait layer
+    local cKillCleaveInstantDmgAoE = 0
+    if wan.traitData.KillCleave.known and wan.auraData.player.buff_BeastCleave then
+        local cKillCleaveUnitOverflow = wan.SoftCapOverflow(nKillCleaveAoECap, countValidUnit)
+
+        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+            if nameplateGUID ~= targetGUID then
+                local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+
+                cKillCleaveInstantDmgAoE = cKillCleaveInstantDmgAoE + (nKillCommandDmg * nKillCleave * checkUnitPhysicalDR *  cKillCleaveUnitOverflow)
+            end
+        end
+    end
+
     -- a murder of crows trait layer
     local cAMurderOfCrows = 0
     if wan.traitData.AMurderofCrows.known and wan.auraData.player.buff_AMurderofCrows then
         local cAMurderofCrownsStacks = wan.auraData.player.buff_AMurderofCrows.applications
 
         if cAMurderofCrownsStacks == nAMurderofCrownsStacksCap then
-            cAMurderOfCrows = cAMurderOfCrows + nAMurderOfCrows
+            local checkPhysicalDRAMurderOfCrows = wan.traitData.BansheesMark.known and 1 or wan.CheckUnitPhysicalDamageReduction()
+            cAMurderOfCrows = cAMurderOfCrows + (nAMurderOfCrows * checkPhysicalDRAMurderOfCrows)
         end
     end
 
     -- killec instinct trait layer
     local cKillerInstinct = 1
-    if wan.traitData.cKillerInstinct.known then
-        local targetPercentHealth = UnitPercentHealthFromGUID(targetGUID) or 1
+    if wan.traitData.KillerInstinct.known then
+        local targetPercentHealth = targetGUID and UnitPercentHealthFromGUID(targetGUID) or 1
 
         if nKillerInstinctThreshold > targetPercentHealth then
             cKillerInstinct = cKillerInstinct + nKillerInstinct
@@ -89,9 +113,17 @@ local function CheckAbilityValue()
 
     -- basilisk collar trait layer
     local cBasiliskCollar = 1
+    local cBasiliskCollarAoE = 1
     if wan.traitData.BasiliskCollar.known then
         local countDebuff = wan.CountUnitDebuff(targetUnitToken, checkDebuffs)
         cBasiliskCollar = cBasiliskCollar + (nBasiliskCollar * countDebuff)
+
+        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+            if nameplateGUID ~= targetGUID then
+                local countDebuff = wan.CountUnitDebuff(nameplateUnitToken, checkDebuffs)
+                cBasiliskCollarAoE = cBasiliskCollarAoE + (nBasiliskCollar * countDebuff)
+            end
+        end
     end
 
     -- piercing fangs trait layer
@@ -101,18 +133,84 @@ local function CheckAbilityValue()
 
     -- bloodshed trait layer
     local cBloodshed = 1
+    local cBloodshedAoE = 1
     if wan.traitData.Bloodshed.known then
-        local checkBloodshedDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.traitData.Bloodshed.traitkey]
+        if wan.traitData.ShowerofBlood.known then
+            local checkBloodshedDebuff = wan.auraData[targetUnitToken] and
+            wan.auraData[targetUnitToken]["debuff_" .. wan.traitData.Bloodshed.traitkey]
 
-        if checkBloodshedDebuff then
-            cBloodshed = cBloodshed + nBloodshed
-        end
+            if checkBloodshedDebuff then
+                cBloodshed = cBloodshed + nBloodshed
 
-        -- venomous bite trait layer
-        if wan.traitData.VenomousBite.known then
-            cBloodshed = cBloodshed + nVenomousBite
+                -- venomous bite trait layer
+                if wan.traitData.VenomousBite.known then
+                    cBloodshed = cBloodshed + nVenomousBite
+                end
+            end
+            local countShowerofBlood = 0
+
+            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+                if nameplateGUID ~= targetGUID then
+                    local checkBloodshedDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.Bloodshed.traitkey]
+
+                    if checkBloodshedDebuff then
+                        cBloodshedAoE = cBloodshedAoE + nBloodshed
+                        countShowerofBlood = countShowerofBlood + 1
+
+                        if (checkBloodshedDebuff and countShowerofBlood >= nShowerOfBloodUnitCap)
+                            or (countShowerofBlood > nShowerOfBloodUnitCap)
+                        then
+                            break
+                        end
+                    end
+                end
+            end
         end
     end
+
+    ---- SURVIVAL TRAITS ----
+
+    -- quick shot trait layer
+    local cQuickShot = 0
+    if wan.traitData.QuickShot.known then
+        cQuickShot = cQuickShot + (nArcaneShotDmg * nQuickShotProcChance * nQuickShotDmg)
+    end
+
+    -- bloodseeker trait layer
+    local cBloodseeker = 0
+    if wan.traitData.Bloodseeker.known then
+        local checkBloodseekerDebuff = wan.auraData[targetUnitToken]["debuff_" .. wan.spellData.KillCommand.basename]
+
+        if not checkBloodseekerDebuff then
+            cBloodseeker = cBloodseeker + nBloodseeker
+        end
+    end
+
+    -- exposed flank trait layer
+    local cExposedFlank = 1
+    local countExposedFlank = 0
+    local cExposedFlankInstantDmgAoE = 0
+    if wan.traitData.ExposedFlank.known then
+        local checkExposedFlankBuff = wan.auraData.player["buff_" .. wan.traitData.ExposedFlank.traitkey]
+        cExposedFlank = cExposedFlank + nExposedFlank
+
+        if checkExposedFlankBuff then
+
+            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+                if nameplateGUID ~= targetGUID then
+                    local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+
+                    cExposedFlankInstantDmgAoE = cExposedFlankInstantDmgAoE + (nKillCommandDmg * checkUnitPhysicalDR)
+                    countExposedFlank = countExposedFlank + 1
+
+                    if countExposedFlank >= nExposedFlankUnitCap then break end
+                end
+            end
+        end
+    end
+
+    ---- PACK LEADER TRAITS ----
 
     -- vicious hunt trait layer
     local cViciousHunt = 0
@@ -126,70 +224,29 @@ local function CheckAbilityValue()
         cFrenziedTear = cFrenziedTear + nFrenziedTear
     end
 
-    local cKillCommandInstantAoEDmg = 0
-    local countPhantomPain = 0
-    if wan.traitData.KillCleave.known or wan.traitData.PhantomPain.known then
-        local cKillCleaveUnitOverflow = wan.SoftCapOverflow(nKillCleaveAoECap, countValidUnit)
+    ---- DARK RANGER TRAITS ----
 
-        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-
-            if nameplateGUID ~= targetGUID then
-
-                if wan.auraData.player.buff_BeastCleave then
-                    
-                    local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
-
-                    local cBasiliskCollar = 1
-                    if wan.traitData.BasiliskCollar.known then
-                        local countDebuff = wan.CountUnitDebuff(targetUnitToken, checkDebuffs)
-                        cBasiliskCollar = cBasiliskCollar + (nBasiliskCollar * countDebuff)
-                    end
-
-                    local cUnitBloodshed = 1
-                    if wan.traitData.ShowerofBlood.known then
-                        local checkBloodshedDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.Bloodshed.traitkey]
-
-                        if checkBloodshedDebuff then
-                            cUnitBloodshed = cUnitBloodshed + nBloodshed
-                        end
-                    end
-
-                    local cKillCleaveDmg = nKillCommandDmg * cAnimalCompanion * nKillCleave * cBasiliskCollar * cSerpentineRhythm * checkUnitPhysicalDR * cKillerInstinct * cUnitBloodshed * cKillCleaveUnitOverflow
-
-                    cKillCommandInstantAoEDmg = cKillCommandInstantAoEDmg + cKillCleaveDmg
-                end
-
-                if wan.traitData.PhantomPain.known then
-                    local checkUnitBlackArrowDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.BlackArrow.traitkey]
-                    if checkUnitBlackArrowDebuff then
-                        countPhantomPain = countPhantomPain + 1
-                    end
-                end
+    -- phantom pain trait layer
+    local cPhantomPain = 0
+    if wan.traitData.PhantomPain.known then
+        for nameplateUnitToken, _ in pairs(idValidUnit) do
+            local checkBlackArrowDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.BlackArrow.traitkey]
+            if checkBlackArrowDebuff then
+                cPhantomPain = cPhantomPain + (nKillCommandDmg * cAnimalCompanion * cSerpentineRhythm * cKillerInstinct * cBasiliskCollar * cBloodshed * cFrenziedTear * nPhantomPain)
             end
         end
     end
-
-    -- Remove physical layer
+    
     local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
-
-    -- Crit layer
     local cKillCommandCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
-    local cKillCommandDotCritValue = wan.ValueFromCritical(wan.CritChance)
+    local cKillCommandBaseCritValue = wan.ValueFromCritical(wan.CritChance)
 
-    cKillCommandInstantDmg = ((cKillCommandInstantDmg * cAnimalCompanion * cKillCommandCritValue * cKillerInstinct * cBasiliskCollar * cBloodshed * cSerpentineRhythm) + (cViciousHunt * cKillCommandDotCritValue)) * checkPhysicalDR
-    cKillCommandDotDmg = (cKillCommandDotDmg + cAMurderOfCrows) * checkPhysicalDR * cKillCommandDotCritValue
+    cKillCommandInstantDmg = cKillCommandInstantDmg + (nKillCommandDmg * cAnimalCompanion * cSerpentineRhythm * cKillerInstinct * cBasiliskCollar * cBloodshed * cFrenziedTear * cExposedFlank * checkPhysicalDR * cKillCommandCritValue) + (cQuickShot * cKillCommandBaseCritValue)  + (cViciousHunt * checkPhysicalDR * cKillCommandBaseCritValue)
+    cKillCommandDotDmg = cKillCommandDotDmg + ((cAMurderOfCrows + cBloodseeker) * cKillCommandBaseCritValue)
+    cKillCommandInstantDmgAoE = cKillCommandInstantDmgAoE + ((cKillCleaveInstantDmgAoE + cExposedFlankInstantDmgAoE) * cAnimalCompanion * cSerpentineRhythm * cKillerInstinct * cBasiliskCollarAoE * cBloodshedAoE * cFrenziedTear * cExposedFlank * cKillCommandCritValue) + cPhantomPain
+    cKillCommandDotDmgAoE = cKillCommandDotDmgAoE + (cBloodseeker * countExposedFlank * cKillCommandBaseCritValue)
 
-    local cPhantomPain = 0
-    if wan.traitData.PhantomPain.known then
-        local checkBlackArrowDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.traitData.BlackArrow.traitkey]
-        if checkBlackArrowDebuff then
-            cPhantomPain = cPhantomPain + (cKillCommandInstantDmg * nPhantomPain * countPhantomPain)
-        end
-    end
-
-    cKillCommandInstantAoEDmg = (cKillCommandInstantAoEDmg * cFrenziedTear * cKillCommandCritValue) + cPhantomPain
-
-    local cKillCommandDmg = cKillCommandInstantDmg + cKillCommandDotDmg + cKillCommandInstantAoEDmg
+    local cKillCommandDmg = cKillCommandInstantDmg + cKillCommandDotDmg + cKillCommandInstantDmgAoE + cKillCommandDotDmgAoE
 
     -- Update ability data
     local abilityValue = math.floor(cKillCommandDmg)
@@ -213,6 +270,10 @@ local function AddonLoad(self, event, addonName)
             nAMurderOfCrows = nAMurderOfCrowsValues[2]
 
             nViciousHunt = wan.GetTraitDescriptionNumbers(wan.traitData.ViciousHunt.entryid, { 1 })
+
+            nArcaneShotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.ArcaneShot.id, { 1 })
+
+            nBloodseeker = wan.GetTraitDescriptionNumbers(wan.traitData.Bloodseeker.entryid, { 1 })
         end
     end)
 end
@@ -243,6 +304,14 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
         nSerpentineRhythm = wan.GetTraitDescriptionNumbers(wan.traitData.SerpentineRhythm.entryid, { 1 }) * 0.01
 
+        local nQuickShotValues = wan.GetTraitDescriptionNumbers(wan.traitData.QuickShot.entryid, { 1, 2 })
+        nQuickShotProcChance = nQuickShotValues[1] * 0.01
+        nQuickShotDmg = nQuickShotValues[2] * 0.01
+
+        local nExposedFlankValues = wan.GetTraitDescriptionNumbers(wan.traitData.ExposedFlank.entryid, { 1, 2 })
+        nExposedFlank = nExposedFlankValues[1] * 0.01
+        nExposedFlankUnitCap = nExposedFlankValues[2]
+
         local nKillCleaveValues = wan.GetTraitDescriptionNumbers(wan.traitData.BeastCleave.entryid, { 1, 2 })
         nKillCleave = nKillCleaveValues[1] * 0.01
         nKillCleaveAoECap = nKillCleaveValues[2]
@@ -256,6 +325,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nPiercingFangs = wan.GetTraitDescriptionNumbers(wan.traitData.PiercingFangs.entryid, { 1 })
 
         nBloodshed = wan.GetTraitDescriptionNumbers(wan.traitData.Bloodshed.entryid, { 3 }) * 0.01
+
+        nShowerOfBloodUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.ShowerofBlood.entryid, { 1 })
 
         nVenomousBite = wan.GetTraitDescriptionNumbers(wan.traitData.VenomousBite.entryid, { 1 }) * 0.01
 

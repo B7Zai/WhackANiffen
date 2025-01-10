@@ -54,7 +54,7 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            nGroveGuardians = wan.UnitDefensiveCooldownToValue(wan.spellData.GroveGuardians.id)
+            nGroveGuardians = wan.DefensiveCooldownToValue(wan.spellData.GroveGuardians.id)
         end
     end)
 end

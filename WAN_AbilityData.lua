@@ -53,6 +53,30 @@ local function GetSpellData(spellDataArray)
                             known = true
                         }
                     end
+
+                elseif spellType == Enum.SpellBookItemType.Flyout and not isOffSpec then
+                    local _, _, numSlots = GetFlyoutInfo(spellID)
+                    for i = 1, numSlots do
+                        local baseSpellID = GetFlyoutSlotInfo(spellID, i)
+                        local baseSpellName = C_Spell.GetSpellName(baseSpellID)
+                        local overriddenSpellID = C_Spell.GetOverrideSpell(baseSpellID)
+                        local spellInfo = C_Spell.GetSpellInfo(overriddenSpellID)
+                        local keyName = wan.FormatNameForKey(baseSpellName)
+
+                        if spellInfo then
+                            spellDataArray[keyName] = {
+                                name = spellInfo.name,
+                                icon = spellInfo.iconID,
+                                originalIconID = spellInfo.originalIconID,
+                                castTime = spellInfo.castTime,
+                                minRange = spellInfo.minRange,
+                                maxRange = spellInfo.maxRange,
+                                id = spellInfo.spellID,
+                                basename = keyName,
+                                known = true
+                            }
+                        end
+                    end
                 end
             end
         end

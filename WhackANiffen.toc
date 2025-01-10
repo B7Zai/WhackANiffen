@@ -93,8 +93,30 @@ Druid\WAN_WildMushroom.lua
 Druid\WAN_Wrath.lua
 
 # Hunter
+Hunter\WAN_AimedShot.lua
 Hunter\WAN_ArcaneShot.lua
+Hunter\WAN_AspectoftheTurtle.lua
 Hunter\WAN_BarbedShot.lua
+Hunter\WAN_Barrage.lua
+Hunter\WAN_BestialWrath.lua
+Hunter\WAN_Bloodshed.lua
+Hunter\WAN_CallOfTheWild.lua
+Hunter\WAN_CallPet.lua
+Hunter\WAN_DireBeast.lua
+Hunter\WAN_Exhilaration.lua
+Hunter\WAN_ExplosiveShot.lua
+Hunter\WAN_HighExplosiveTrap.lua
+Hunter\WAN_ImplosiveTrap.lua
 Hunter\WAN_KillCommand.lua
 Hunter\WAN_KillShot.lua
+Hunter\WAN_MendPet.lua
 Hunter\WAN_MultiShot.lua
+Hunter\WAN_RapidFire.lua
+Hunter\WAN_RevivePet.lua
+Hunter\WAN_RoarofSacrifice.lua
+Hunter\WAN_Salvo.lua
+Hunter\WAN_SteadyShot.lua
+Hunter\WAN_SurvivaloftheFittest.lua
+Hunter\WAN_TranquilizingShot.lua
+Hunter\WAN_Trueshot.lua
+Hunter\WAN_Volley.lua

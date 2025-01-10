@@ -17,6 +17,7 @@ local function UpdateAuras(unitToken, updateInfo)
             local aura = C_UnitAuras.GetBuffDataByIndex(unitToken, i)
             if not aura then break end
             if unitToken == "player"
+                or (unitToken == "pet" and aura.sourceUnit == "player")
                 or (unitToken == wan.TargetUnitID and aura.isStealable)
                 or (wan.NameplateUnitID[unitToken] and aura.isStealable)
                 or (wan.GroupUnitID[unitToken] and (aura.sourceUnit == "player" or aura.canApplyAura or wan.UnitState.IsAI[unitToken])) then
@@ -33,6 +34,7 @@ local function UpdateAuras(unitToken, updateInfo)
             local aura = C_UnitAuras.GetDebuffDataByIndex(unitToken, i)
             if not aura then break end
             if unitToken == "player"
+                or (unitToken == "pet" and aura.isRaid)
                 or (unitToken == wan.TargetUnitID and aura.sourceUnit == "player")
                 or (wan.NameplateUnitID[unitToken] and aura.sourceUnit == "player")
                 or (wan.GroupUnitID[unitToken] and aura.isRaid) then
@@ -50,6 +52,7 @@ local function UpdateAuras(unitToken, updateInfo)
     if updateInfo.addedAuras then -- Aura update when auras get added
         for _, aura in pairs(updateInfo.addedAuras) do
             if unitToken == "player"
+                or (unitToken == "pet" and (aura.isRaid or aura.sourceUnit == "player"))
                 or (unitToken == wan.TargetUnitID and (aura.isStealable or aura.sourceUnit == "player"))
                 or (wan.NameplateUnitID[unitToken] and (aura.isStealable or aura.sourceUnit == "player"))
                 or (wan.GroupUnitID[unitToken] and (aura.sourceUnit == "player" or aura.canApplyAura or wan.UnitState.IsAI[unitToken] or (aura.isHarmful and aura.isRaid)))
@@ -107,6 +110,10 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         UpdateAuras(wan.TargetUnitID, { isFullUpdate = true })
     end
 
+    if event == "PET_UNITID_ASSIGNED" then
+        UpdateAuras("pet", { isFullUpdate = true })
+    end
+
     if event == "NAMEPLATE_UNITID_ASSIGNED" then
         local nameplateUnitToken = ...
         UpdateAuras(nameplateUnitToken, { isFullUpdate = true })
@@ -125,6 +132,7 @@ local function AuraUpdate(self, event, unitToken, updateInfo)
     -- perform a full aura update for player and group members on loading screen
     if event == "PLAYER_ENTERING_WORLD" then
         UpdateAuras("player", { isFullUpdate = true })
+        UpdateAuras("pet", { isFullUpdate = true })
         for groupUnitToken, _ in pairs(wan.GroupUnitID) do
             UpdateAuras(groupUnitToken, { isFullUpdate = true })
         end
@@ -133,11 +141,14 @@ local function AuraUpdate(self, event, unitToken, updateInfo)
     -- update aura data on player when resurrecting or changing talents
     if event == "PLAYER_ALIVE" or event == "TRAIT_CONFIG_UPDATED" then
         UpdateAuras("player", { isFullUpdate = true })
+        UpdateAuras("pet", { isFullUpdate = true })
     end
 
     -- update aura data on unitTokens
     if unitToken then
         if unitToken == "player" then
+            UpdateAuras(unitToken, updateInfo)
+        elseif unitToken == "pet" then
             UpdateAuras(unitToken, updateInfo)
         elseif unitToken == wan.TargetUnitID then
             UpdateAuras(unitToken, updateInfo)

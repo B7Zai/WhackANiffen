@@ -42,7 +42,8 @@ local function CheckAbilityValue()
 
     local checkBarbedShotDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.spellData.BarbedShot.basename]
     if not checkBarbedShotDebuff then
-        cBarbedShotDotDmg = cBarbedShotDotDmg + nBarbedShotDmg
+        local dotPotency = wan.CheckDotPotency()
+        cBarbedShotDotDmg = cBarbedShotDotDmg + (nBarbedShotDmg * dotPotency)
     end
 
     local cStomp = 0

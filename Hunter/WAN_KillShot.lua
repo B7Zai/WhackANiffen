@@ -8,9 +8,14 @@ local abilityActive = false
 local nKillShotInstantDmg, nKillShotDotDmg, nKillShotCritDamage = 0, 0, 0
 
 -- Init trait data
+local nPenetratingShots = 0
 local nVenomsBiteInstantDmg, nVenomsBiteDotDmg = 0, 0
+local nHuntersPrey = 0
 local nAMurderOfCrows = 0
 local nBansheesMarkProcChance = 0
+local nImprovedDeathblow = 0
+local nKillerAccuracy = 0
+local nRazorFragmentsUnitCap, nRazorFragments = 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -32,83 +37,46 @@ local function CheckAbilityValue()
     local critChanceMod = 0
     local critDamageMod = 0
 
-    local cKillShotInstantDmg = nKillShotInstantDmg
+    local cKillShotInstantDmg = 0
     local cKillShotDotDmg = 0
+    local cKillShotInstantDmgAoE = 0
+    local cKillShotDotDmgAoE = 0
 
     critDamageMod = critDamageMod + nKillShotCritDamage
 
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[wan.TargetUnitID]
 
-    local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
-
-    local cVenomsBiteInstantDmg = 0
-    local cVenomsBiteDotDmg = 0
-    if wan.traitData.VenomsBite.known then
-        cVenomsBiteInstantDmg = cVenomsBiteInstantDmg + nVenomsBiteInstantDmg
-        local checkSerpentStingDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken].debuff_SerpentSting
-        if not checkSerpentStingDebuff then
-            local dotPotency = wan.CheckDotPotency(nVenomsBiteInstantDmg, targetUnitToken)
-            cVenomsBiteDotDmg = cVenomsBiteDotDmg + (nVenomsBiteDotDmg * dotPotency)
-        end
+    local cPenetratingShots = 0
+    if wan.traitData.PenetratingShots.known then
+        cPenetratingShots = cPenetratingShots + (wan.CritChance * nPenetratingShots)
+        critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
     end
 
-    local cBlackArrowDotDmg = 0
-    if wan.traitData.BlackArrow.known then
-        checkPhysicalDR = 1
-        local checkBlackArrowDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.traitData.BlackArrow.traitkey]
-        if not checkBlackArrowDebuff then
-            local dotPotency = wan.CheckDotPotency(nKillShotInstantDmg, targetUnitToken)
-
-            cBlackArrowDotDmg = cBlackArrowDotDmg + (nKillShotDotDmg * dotPotency)
-        end
+    if wan.traitData.ImprovedDeathblow.known then
+        critDamageMod = critDamageMod + nImprovedDeathblow
     end
 
-    local cBansheesMark = 0
-    if wan.traitData.BansheesMark.known then
-        cBansheesMark = cBansheesMark + (nAMurderOfCrows * nBansheesMarkProcChance)
+    if wan.traitData.KillerAccuracy.known then
+        critChanceMod = critChanceMod + nKillerAccuracy
+        critDamageMod = critDamageMod + nKillerAccuracy
     end
 
-    -- Crit layer
-    local cKillShotCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
-    local cBaseCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
-
-    local cKillShotInstantDmgAoE = 0
-    local cKillShotDotDmgAoE = 0
+    local cHuntersPrey = 1
+    local cHuntersPreyInstantDmgAoE = 0
     if wan.traitData.HuntersPrey.known then
         local activePets = (wan.IsPetUsable() and 1 or 0) * (wan.traitData.AnimalCompanion.known and 2 or 1)
+        cHuntersPrey = cHuntersPrey + (nHuntersPrey * activePets)
+
         local countHuntersPreyUnit = 0
 
         for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
 
             if nameplateGUID ~= targetGUID then
 
-                local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateGUID)
+                local checkUnitPhysicalDR = wan.traitData.BlackArrow.known and 1 or wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
 
-                local cVenomsBiteInstantDmg = 0
-                local cVenomsBiteDotDmg = 0
-                if wan.traitData.VenomsBite.known then
-                    cVenomsBiteInstantDmg = cVenomsBiteInstantDmg + nVenomsBiteInstantDmg
-                    local checkSerpentStingDebuff = wan.auraData[nameplateUnitToken].debuff_SerpentSting
-                    if not checkSerpentStingDebuff then
-                        local dotPotency = wan.CheckDotPotency(nVenomsBiteInstantDmg, nameplateUnitToken)
-                        cVenomsBiteDotDmg = cVenomsBiteDotDmg + (nVenomsBiteDotDmg * dotPotency)
-                    end
-                end
-
-                local cBlackArrowDotDmg = 0
-                if wan.traitData.BlackArrow.known then
-                    checkUnitPhysicalDR = 1
-                    local checkBlackArrowDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.BlackArrow.traitkey]
-                    if not checkBlackArrowDebuff then
-                        local dotPotency = wan.CheckDotPotency(nKillShotInstantDmg, nameplateUnitToken)
-
-                        cBlackArrowDotDmg = cBlackArrowDotDmg + (nKillShotDotDmg * dotPotency)
-                    end
-                end
-
-                cKillShotInstantDmgAoE = cKillShotInstantDmgAoE + (nKillShotInstantDmg * cKillShotCritValue * checkUnitPhysicalDR) + (cVenomsBiteInstantDmg * cBaseCritValue)
-                cKillShotDotDmgAoE = cKillShotDotDmgAoE + ((cVenomsBiteDotDmg + cBlackArrowDotDmg) * cBaseCritValue)
+                cHuntersPreyInstantDmgAoE = cHuntersPreyInstantDmgAoE + (nKillShotInstantDmg * checkUnitPhysicalDR)
 
                 countHuntersPreyUnit = countHuntersPreyUnit + 1
 
@@ -117,8 +85,110 @@ local function CheckAbilityValue()
         end
     end
 
-    cKillShotInstantDmg = cKillShotInstantDmg * checkPhysicalDR * cKillShotCritValue
-    cKillShotDotDmg = ((cKillShotDotDmg + cVenomsBiteDotDmg + cBlackArrowDotDmg + (cBansheesMark * checkPhysicalDR)) * cKillShotCritValue)
+    local cVenomsBiteInstantDmg = 0
+    local cVenomsBiteDotDmg = 0
+    local cVenomsBiteInstantDmgAoE = 0
+    local cVenomsBiteDotDmgAoE = 0
+    if wan.traitData.VenomsBite.known then
+        cVenomsBiteInstantDmg = cVenomsBiteInstantDmg + nVenomsBiteInstantDmg
+        local checkSerpentStingDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken].debuff_SerpentSting
+        if not checkSerpentStingDebuff then
+            local dotPotency = wan.CheckDotPotency(nVenomsBiteInstantDmg, targetUnitToken)
+            cVenomsBiteDotDmg = cVenomsBiteDotDmg + (nVenomsBiteDotDmg * dotPotency)
+        end
+
+        if wan.traitData.HuntersPrey.known then
+            local activePets = (wan.IsPetUsable() and 1 or 0) * (wan.traitData.AnimalCompanion.known and 2 or 1)
+            local countHuntersPreyUnit = 0
+
+            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+                if nameplateGUID ~= targetGUID then
+                    cVenomsBiteInstantDmgAoE = cVenomsBiteInstantDmgAoE + nVenomsBiteInstantDmg
+
+                    local checkSerpentStingDebuff = wan.auraData[nameplateUnitToken].debuff_SerpentSting
+                    if not checkSerpentStingDebuff then
+                        local dotPotency = wan.CheckDotPotency(nVenomsBiteInstantDmg, nameplateUnitToken)
+                        cVenomsBiteDotDmgAoE = cVenomsBiteDotDmgAoE + (nVenomsBiteDotDmg * dotPotency)
+                    end
+
+                    countHuntersPreyUnit = countHuntersPreyUnit + 1
+
+                    if countHuntersPreyUnit > activePets then break end
+                end
+            end
+        end
+    end
+
+    local cBlackArrowDotDmg = 0
+    local cBlackArrowDotDmgAoE = 0
+    if wan.traitData.BlackArrow.known then
+        local checkBlackArrowDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.traitData.BlackArrow.traitkey]
+        if not checkBlackArrowDebuff then
+            local dotPotency = wan.CheckDotPotency(nKillShotInstantDmg, targetUnitToken)
+            cBlackArrowDotDmg = cBlackArrowDotDmg + (nKillShotDotDmg * dotPotency)
+        end
+
+        if wan.traitData.HuntersPrey.known then
+            local activePets = (wan.IsPetUsable() and 1 or 0) * (wan.traitData.AnimalCompanion.known and 2 or 1)
+            local countHuntersPreyUnit = 0
+            
+            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+                if nameplateGUID ~= targetGUID then
+                    local checkUnitBlackArrowDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.BlackArrow.traitkey]
+
+                    if not checkUnitBlackArrowDebuff then
+                        local dotPotency = wan.CheckDotPotency(nKillShotInstantDmg, nameplateUnitToken)
+
+                        cBlackArrowDotDmgAoE = cBlackArrowDotDmgAoE + (nKillShotDotDmg * dotPotency)
+
+                        countHuntersPreyUnit = countHuntersPreyUnit + 1
+
+                        if countHuntersPreyUnit > activePets then break end
+                    end
+                end
+            end
+        end
+    end
+
+    local cBansheesMark = 0
+    if wan.traitData.BansheesMark.known then
+        cBansheesMark = cBansheesMark + (nAMurderOfCrows * nBansheesMarkProcChance)
+    end
+
+    local checkPhysicalDR = wan.traitData.BlackArrow.known and 1 or wan.CheckUnitPhysicalDamageReduction()
+
+    -- Crit layer
+    local cKillShotCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+    local cBaseCritValue = wan.ValueFromCritical(wan.CritChance, nil, cPenetratingShots)
+
+    cKillShotInstantDmg = cKillShotInstantDmg + (nKillShotInstantDmg * cHuntersPrey * checkPhysicalDR * cKillShotCritValue) + (cVenomsBiteInstantDmg * cBaseCritValue)
+    cKillShotDotDmg = cKillShotDotDmg + ((cVenomsBiteDotDmg + cBlackArrowDotDmg + cBansheesMark) * cBaseCritValue)
+    cKillShotInstantDmgAoE = cKillShotInstantDmgAoE + ((cHuntersPreyInstantDmgAoE * cHuntersPrey * checkPhysicalDR * cKillShotCritValue) + (cVenomsBiteInstantDmgAoE * cBaseCritValue))
+
+    local cRazorFragmentDotDmgAoE = 0
+    if wan.traitData.RazorFragments.known then
+        local checkRazorFragmentsBuff = wan.auraData.player["buff_" .. wan.traitData.RazorFragments.traitkey]
+        local countRazorFragments = 0
+
+        if checkRazorFragmentsBuff then
+            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+                if nameplateGUID ~= targetGUID then
+                    local checkRazorFragmentDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.RazorFragments.traitkey]
+
+                    if not checkRazorFragmentDebuff then
+                        cRazorFragmentDotDmgAoE = cRazorFragmentDotDmgAoE + (nKillShotInstantDmg * cHuntersPrey * nRazorFragments * checkPhysicalDR * cKillShotCritValue * nRazorFragments)
+                        countRazorFragments = countRazorFragments + 1
+
+                        if countRazorFragments >= nRazorFragmentsUnitCap then break end
+                    end
+                end
+            end
+        end
+    end
+
+    cKillShotDotDmgAoE = cKillShotDotDmgAoE + ((cVenomsBiteDotDmgAoE + cBlackArrowDotDmgAoE) * cBaseCritValue) + cRazorFragmentDotDmgAoE
 
     local cKillShotDmg = cKillShotInstantDmg + cKillShotDotDmg + cKillShotInstantDmgAoE + cKillShotDotDmgAoE
 
@@ -128,7 +198,7 @@ local function CheckAbilityValue()
 end
 
 -- Init frame 
-local frameArcaneShot = CreateFrame("Frame")
+local frameKillShot = CreateFrame("Frame")
 local function AddonLoad(self, event, addonName)
     -- Early Exit
     if addonName ~= "WhackANiffen" then return end
@@ -142,30 +212,42 @@ local function AddonLoad(self, event, addonName)
             nKillShotCritDamage = not wan.traitData.BlackArrow.known and nKillShotValues[3] or 0
 
             nAMurderOfCrows = wan.GetTraitDescriptionNumbers(wan.traitData.AMurderofCrows.entryid, { 2 })
+
+            local nExplosiveVenomValues = wan.GetTraitDescriptionNumbers(wan.traitData.VenomsBite.entryid, { 4, 5 })
+            nVenomsBiteInstantDmg = nExplosiveVenomValues[1]
+            nVenomsBiteDotDmg = nExplosiveVenomValues[2]
         end
     end)
 end
-frameArcaneShot:RegisterEvent("ADDON_LOADED")
-frameArcaneShot:SetScript("OnEvent", AddonLoad)
+frameKillShot:RegisterEvent("ADDON_LOADED")
+frameKillShot:SetScript("OnEvent", AddonLoad)
 
 -- Set update rate based on settings
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "SPELL_DATA_READY" then
         abilityActive = wan.spellData.KillShot.known and wan.spellData.KillShot.id
-        wan.BlizzardEventHandler(frameArcaneShot, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
-        wan.SetUpdateRate(frameArcaneShot, CheckAbilityValue, abilityActive)
+        wan.BlizzardEventHandler(frameKillShot, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
+        wan.SetUpdateRate(frameKillShot, CheckAbilityValue, abilityActive)
     end
 
     if event == "TRAIT_DATA_READY" then
-        local nExplosiveVenomValues = wan.GetTraitDescriptionNumbers(wan.traitData.VenomsBite.entryid, { 4, 5 })
-        nVenomsBiteInstantDmg = nExplosiveVenomValues[1]
-        nVenomsBiteDotDmg = nExplosiveVenomValues[2]
+        nPenetratingShots = wan.GetTraitDescriptionNumbers(wan.traitData.PenetratingShots.entryid, { 1 }) * 0.01
 
         nBansheesMarkProcChance = wan.GetTraitDescriptionNumbers(wan.traitData.BansheesMark.entryid, { 1 }) * 0.01
+
+        nHuntersPrey = wan.GetTraitDescriptionNumbers(wan.traitData.HuntersPrey.entryid, { 1 }) * 0.01
+
+        nImprovedDeathblow = wan.GetTraitDescriptionNumbers(wan.traitData.ImprovedDeathblow.entryid, { 3 })
+        
+        nKillerAccuracy = wan.GetTraitDescriptionNumbers(wan.traitData.KillerAccuracy.entryid, { 1 })
+
+        local nRazorFragmentsValues = wan.GetTraitDescriptionNumbers(wan.traitData.RazorFragments.entryid, { 2, 3 })
+        nRazorFragmentsUnitCap = nRazorFragmentsValues[1]
+        nRazorFragments = nRazorFragmentsValues[2] * 0.01
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
-        wan.SetUpdateRate(frameArcaneShot, CheckAbilityValue, abilityActive)
+        wan.SetUpdateRate(frameKillShot, CheckAbilityValue, abilityActive)
     end
 end)

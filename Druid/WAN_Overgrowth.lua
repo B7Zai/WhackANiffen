@@ -60,7 +60,7 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            nOvergrowth = wan.UnitDefensiveCooldownToValue(wan.spellData.Overgrowth.id)
+            nOvergrowth = wan.DefensiveCooldownToValue(wan.spellData.Overgrowth.id)
         end
     end)
 end

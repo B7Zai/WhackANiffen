@@ -59,7 +59,7 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            nInvigorate = wan.UnitDefensiveCooldownToValue(wan.spellData.Invigorate.id)
+            nInvigorate = wan.DefensiveCooldownToValue(wan.spellData.Invigorate.id)
         end
     end)
 end

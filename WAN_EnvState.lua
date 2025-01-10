@@ -7,42 +7,70 @@ wan.GroupUnitID = {}
 
 -- Init player status arrays
 wan.PlayerState = {}
-wan.PlayerState.InHealerMode = false
 wan.PlayerState.Class = UnitClassBase("player") or "UNKNOWN"
-wan.PlayerState.InGroup = false
-wan.PlayerState.InRaid = false
-wan.PlayerState.IsDead = false
-wan.PlayerState.InVehicle = false
-wan.PlayerState.Mounted = false
-wan.PlayerState.Status = false
 wan.PlayerState.Combat = false
 wan.PlayerState.GUID = UnitGUID("player")
+wan.PlayerState.InGroup = false
+wan.PlayerState.InHealerMode = false
+wan.PlayerState.InRaid = false
+wan.PlayerState.InVehicle = false
+wan.PlayerState.IsDead = false
+wan.PlayerState.Mounted = false
+wan.PlayerState.Resting = false
 wan.PlayerState.Role = "DAMAGER"
 wan.PlayerState.SpecializationName = "specName"
+wan.PlayerState.Status = false
 wan.CritChance = GetCritChance() or 0
 wan.Haste = GetHaste() or 0
 
 -- Init unit status arrays
 wan.UnitState = {}
+wan.UnitState.Classification = {}
 wan.UnitState.GUID = {}
 wan.UnitState.Health = {}
-wan.UnitState.MaxHealth = {}
 wan.UnitState.IsAI = {}
 wan.UnitState.Level = {}
 wan.UnitState.LevelScale = {}
+wan.UnitState.MaxHealth = {}
 wan.UnitState.Role = {}
-wan.UnitState.Classification = {}
 
 local function OnEvent(self, event, ...)
 
     -- init player data
     if event == "PLAYER_ENTERING_WORLD" then
         local playerUnitToken = "player"
-        wan.PlayerState.GUID = wan.PlayerState.GUID or UnitGUID("player")
-        wan.UnitState.Health[playerUnitToken] = UnitHealth("player")
-        wan.UnitState.MaxHealth[playerUnitToken] = UnitHealthMax("player") or 0
-        wan.UnitState.Level[playerUnitToken] = UnitLevel("player")
+        local petUnitToken = "pet"
+
+        wan.PlayerState.GUID = wan.PlayerState.GUID or UnitGUID(playerUnitToken)
+        wan.PlayerState.Resting = IsResting()
+
+        wan.UnitState.Health[playerUnitToken] = UnitHealth(playerUnitToken)
+        wan.UnitState.Level[playerUnitToken] = UnitLevel(playerUnitToken)
         wan.UnitState.LevelScale[playerUnitToken] = 1
+        wan.UnitState.MaxHealth[playerUnitToken] = UnitHealthMax(playerUnitToken) or 0
+
+        wan.UnitState.GUID[petUnitToken] = UnitGUID(petUnitToken)
+        wan.UnitState.MaxHealth[petUnitToken] = UnitHealthMax(petUnitToken) or 0
+    end
+
+    -- assign GUID for pets
+    if event == "UNIT_PET" then
+        local unitToken = "pet"
+        local unitGUID = UnitGUID(unitToken)
+        local maxHealth = UnitHealthMax(unitToken) or 0
+        local unitExists = UnitExists(unitToken)
+
+        if not unitExists then
+            wan.auraData[unitToken] = nil
+            wan.instanceIDMap[unitToken] = nil
+            wan.UnitState.GUID[unitToken] = nil
+            wan.UnitState.MaxHealth[unitToken] = nil
+        end
+
+        wan.UnitState.GUID[unitToken] = unitGUID
+        wan.UnitState.MaxHealth[unitToken] = maxHealth
+
+        wan.CustomEvents("PET_UNITID_ASSIGNED")
     end
 
     -- assigns unit token for targeting
@@ -240,7 +268,7 @@ local function OnEvent(self, event, ...)
     end
 
     -- updates max health of player and group members
-    if event == "UNIT_MAXHEALTH" and (wan.GroupUnitID[...] or ... == "player") then
+    if event == "UNIT_MAXHEALTH" and (wan.GroupUnitID[...] or ... == "player" or ... == "pet") then
         local unitToken = ...
         local maxHealth = UnitHealthMax(unitToken) or 0
 
@@ -252,6 +280,10 @@ local function OnEvent(self, event, ...)
         wan.PlayerState.Combat = true
     elseif event == "PLAYER_REGEN_ENABLED" then
         wan.PlayerState.Combat = false
+    end
+
+    if event == "PLAYER_UPDATE_RESTING" then
+        wan.PlayerState.Resting = IsResting()
     end
 
     -- checks if the player is dead or not
@@ -306,24 +338,30 @@ local stateFrame = CreateFrame("Frame")
 wan.RegisterBlizzardEvents(stateFrame,
     "PLAYER_ALIVE",
     "PLAYER_DEAD",
-    "UNIT_ENTERING_VEHICLE",
-    "UNIT_EXITING_VEHICLE",
-    "UPDATE_SHAPESHIFT_FORM",
-    "PLAYER_LOGOUT",
-    "UNIT_AURA",
     "PLAYER_ENTERING_WORLD",
-    "UPDATE_INSTANCE_INFO",
-    "CVAR_UPDATE",
+    "PLAYER_LOGOUT",
     "PLAYER_REGEN_DISABLED",
     "PLAYER_REGEN_ENABLED",
+    "PLAYER_SOFT_ENEMY_CHANGED",
+    "PLAYER_TARGET_CHANGED",
+    "PLAYER_UPDATE_RESTING",
+
+    "UNIT_AURA",
+    "UNIT_ENTERING_VEHICLE",
+    "UNIT_EXITING_VEHICLE",
+    "UNIT_HEALTH",
+    "UNIT_LEVEL",
+    "UNIT_MAXHEALTH",
+    "UNIT_PET",
+
     "NAME_PLATE_UNIT_ADDED",
     "NAME_PLATE_UNIT_REMOVED",
+
     "GROUP_ROSTER_UPDATE",
     "ROLE_CHANGED_INFORM",
-    "UNIT_MAXHEALTH",
-    "UNIT_HEALTH",
-    "PLAYER_TARGET_CHANGED",
-    "PLAYER_SOFT_ENEMY_CHANGED",
-    "UNIT_LEVEL"
+    "UPDATE_INSTANCE_INFO",
+
+    "CVAR_UPDATE",
+    "UI_ERROR_MESSAGE"
 )
 stateFrame:SetScript("OnEvent", OnEvent)
