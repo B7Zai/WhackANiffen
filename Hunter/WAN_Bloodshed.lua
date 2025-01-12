@@ -9,6 +9,7 @@ local nBloodshedDotDmg, nBloodshedInstantDmg = 0, 0
 
 -- Init trait data
 local nShowerofBloodUnitCap = 0
+local nHowlOfThePack = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -70,6 +71,15 @@ local function CheckAbilityValue()
         end
     end
 
+    -- howl of the pack trait layer
+    if wan.traitData.HowlofthePack.known then
+        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
+        if checkHowlOfThePackBuff then
+            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
+            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
+        end
+    end
+
     -- Crit layer
     local cBloodshedCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
@@ -115,6 +125,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "TRAIT_DATA_READY" then
         nShowerofBloodUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.ShowerofBlood.entryid, { 1 })
+
+        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

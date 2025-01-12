@@ -13,6 +13,7 @@ local nRapidFireArrows, nRapidFireCastTime, nRapidFireDmgPerArrow, nRapidFireDmg
 local nTrickShots, nTrickShotsUnitCap = 0, 0
 local nFanTheHammer = 0
 local nRapidFireBarrageUnitCap, nRapidFireBarrage = 0, 0
+local nHowlOfThePack = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -54,9 +55,7 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local cPenetratingShots = 0
     if wan.traitData.PenetratingShots.known then
-        cPenetratingShots = cPenetratingShots + (wan.CritChance * nPenetratingShots)
         critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
     end
 
@@ -107,6 +106,16 @@ local function CheckAbilityValue()
 
                 if countRapidFireBarrage >= nRapidFireBarrageUnitCap then break end
             end
+        end
+    end
+
+    ---- PACKLEADER TRAITS ----
+
+    if wan.traitData.HowlofthePack.known then
+        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
+        if checkHowlOfThePackBuff then
+            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
+            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
         end
     end
 
@@ -171,6 +180,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         local nRapidFireBarrageValues = wan.GetTraitDescriptionNumbers(wan.traitData.RapidFireBarrage.entryid, { 1, 2 })
         nRapidFireBarrageUnitCap = nRapidFireBarrageValues[1]
         nRapidFireBarrage = nRapidFireBarrageValues[2] * 0.01
+
+        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

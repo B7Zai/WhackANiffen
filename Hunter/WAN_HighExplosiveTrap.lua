@@ -38,9 +38,7 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local cPenetratingShots = 0
     if wan.traitData.PenetratingShots.known then
-        cPenetratingShots = cPenetratingShots + (wan.CritChance * nPenetratingShots)
         critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
     end
 

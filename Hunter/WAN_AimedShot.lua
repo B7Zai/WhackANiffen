@@ -121,7 +121,7 @@ local function CheckAbilityValue()
         local countHydrasBite = 0
 
         if checkHydrasBiteDebuff then
-            cHydrasBiteInstantDmg = cHydrasBiteInstantDmg + (cSerpentstalkersTrickeryInstantDmg * cHydrasBiteUnitCap)
+            cHydrasBiteInstantDmg = cHydrasBiteInstantDmg + (nSerpentstalkersTrickeryInstantDmg * cHydrasBiteUnitCap)
 
             for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
 

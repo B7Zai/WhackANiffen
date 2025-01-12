@@ -10,6 +10,8 @@ local nExplosiveShotDmg, nExplosiveShotSoftCap = 0, 0
 -- Init trait data
 local nPenetratingShots = 0
 local nExplosiveVenomInstantDmg, nExplosiveVenomDotDmg, nExplosiveVenomStacks = 0, 0, 0
+local nHowlOfThePack = 0
+local nBombardierUnitCap = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -39,11 +41,7 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local cPenetratingShots = 0
-    if wan.traitData.PenetratingShots.known then
-        cPenetratingShots = cPenetratingShots + (wan.CritChance * nPenetratingShots)
-        critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
-    end
+    ---- BEAST MASTERY TRAITS ----
 
     local cExplosiveVenomInstantDmgAoE = 0
     local cExplosiveVenomDotDmgAoE = 0
@@ -65,12 +63,35 @@ local function CheckAbilityValue()
         end
     end
 
+    ---- MARKSMAN TRAITS ----
+
+    if wan.traitData.PenetratingShots.known then
+        critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
+    end
+
+    ---- SURVIVAL TRAITS ----
+
+    local cBombardier = 1
+    if wan.traitData.Bombardier.known and wan.auraData.player["buff_" .. wan.traitData.Bombardier.traitkey] then
+        cBombardier = nBombardierUnitCap
+    end
+
+    ---- PACK LEADER TRAITS ----
+
+    if wan.traitData.HowlofthePack.known then
+        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
+        if checkHowlOfThePackBuff then
+            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
+            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
+        end
+    end
+
     local cExplosiveShotUnitOverflow = wan.AdjustSoftCapUnitOverflow(nExplosiveShotSoftCap, countValidUnit)
     local cExplosiveShotCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
     cExplosiveShotInstantDmg = cExplosiveShotInstantDmg
     cExplosiveShotDotDmg = cExplosiveShotDotDmg
-    cExplosiveShotInstantDmgAoE = cExplosiveShotInstantDmgAoE + (((nExplosiveShotDmg * cExplosiveShotUnitOverflow) + cExplosiveVenomInstantDmgAoE) * cExplosiveShotCritValue)
+    cExplosiveShotInstantDmgAoE = cExplosiveShotInstantDmgAoE + (nExplosiveShotDmg * cExplosiveShotUnitOverflow * cBombardier * cExplosiveShotCritValue) + (cExplosiveVenomInstantDmgAoE * cExplosiveShotCritValue)
     cExplosiveShotDotDmgAoE = cExplosiveShotDotDmgAoE + (cExplosiveVenomDotDmgAoE * cExplosiveShotCritValue)
 
     local cExplosiveShotDmg = cExplosiveShotInstantDmg + cExplosiveShotDotDmg + cExplosiveShotInstantDmgAoE + cExplosiveShotDotDmgAoE
@@ -114,6 +135,10 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nPenetratingShots = wan.GetTraitDescriptionNumbers(wan.traitData.PenetratingShots.entryid, { 1 }) * 0.01
 
         nExplosiveVenomStacks = wan.GetTraitDescriptionNumbers(wan.traitData.ExplosiveVenom.entryid, { 1 })
+
+        nBombardierUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.Bombardier.entryid, { 1 })
+
+        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

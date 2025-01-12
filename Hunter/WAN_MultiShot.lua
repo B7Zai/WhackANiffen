@@ -14,6 +14,7 @@ local nExplosiveVenomInstantDmg, nExplosiveVenomDotDmg, nExplosiveVenomStacks = 
 local nSalvoUnitCap = 0
 local nExplosiveShotDmg, nExplosiveShotSoftCap = 0, 0
 local nSymphonicArsenal, nSymphonicArsenalUnitCap = 0, 0
+local nHowlOfThePack = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -57,11 +58,7 @@ local function CheckAbilityValue()
         cMultiShotInstantAoEDmg = cMultiShotInstantAoEDmg + (nMultiShotDmg * checkPhysicalDR * cMultiShotUnitOverflow)
     end
 
-    local cPenetratingShots = 0
-    if wan.traitData.PenetratingShots.known then
-        cPenetratingShots = cPenetratingShots + (wan.CritChance * nPenetratingShots)
-        critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
-    end
+    ---- BEAST MASTERY TRAITS ----
 
     local cExplosiveVenomInstantDmgAoE = 0
     local cExplosiveVenomDotDmgAoE = 0
@@ -83,6 +80,12 @@ local function CheckAbilityValue()
         end
     end
 
+    ---- MARKSMAN TRAITS ----
+    
+    if wan.traitData.PenetratingShots.known then
+        critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
+    end
+
     local cSalvoInstantDmgAoE = 0
     if wan.traitData.Salvo.known and wan.auraData.player["buff_" .. wan.traitData.Salvo.traitkey] then
         local cExplosiveShotUnitOverflow = wan.AdjustSoftCapUnitOverflow(nExplosiveShotSoftCap, countValidUnit)
@@ -91,6 +94,18 @@ local function CheckAbilityValue()
         cSalvoInstantDmgAoE = cSalvoInstantDmgAoE + (nExplosiveShotDmg * cExplosiveShotUnitOverflow * cSalvoUnitCap)
     end
 
+    ---- PACK LEADER TRAITS----
+
+    if wan.traitData.HowlofthePack.known then
+        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
+        if checkHowlOfThePackBuff then
+            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
+            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
+        end
+    end
+
+    ---- SENTINEL TRAITS ----
+    
     local cSymphonicArsenalInstantDmgAoE = 0
     if wan.traitData.SymphonicArsenal.known then
         local cSymphonicArsenalUnitCap = math.min(countValidUnit, nSymphonicArsenalUnitCap)
@@ -173,6 +188,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nExplosiveVenomStacks = wan.GetTraitDescriptionNumbers(wan.traitData.ExplosiveVenom.entryid, { 1 })
 
         nSalvoUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.Salvo.entryid, { 1 })
+
+        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
