@@ -14,22 +14,15 @@ local nPenetratingShots = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status 
+    if not wan.PlayerState.Status
     or (wan.spellData.MultiShot.known and not wan.IsSpellUsable(wan.spellData.MultiShot.id) or not wan.IsSpellUsable(wan.spellData.ArcaneShot.id))
     then
         wan.UpdateAbilityData(wan.spellData.ArcaneShot.basename)
         return
     end
 
-    local currentFocus = UnitPower("player", 2) or 0
-    if currentFocus < nArcaneShotSpellCost
-    then
-        wan.UpdateAbilityData(wan.spellData.ArcaneShot.basename)
-        return
-    end
-
     -- Check for valid unit
-    local isValidUnit, _, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.ArcaneShot.id)
+    local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.ArcaneShot.id)
     if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.ArcaneShot.basename)
         return
@@ -74,6 +67,17 @@ local function CheckAbilityValue()
     cArcaneShotInstantDmgAoE = cArcaneShotInstantDmgAoE + (cChimaeraShotInstantDmgAoE * cArcaneShotCritValue)
     cArcaneShotDotDmgAoE = cArcaneShotDotDmgAoE
 
+    if (wan.traitData.BeastCleave.known or wan.traitData.TrickShots.known) and countValidUnit > 2 then
+        local currentTime = GetTime()
+        local checkEnablerBuff = wan.auraData.player.buff_BeastCleave or wan.auraData.player.buff_TrickShots
+        local addonUpdateRate = (wan.Options.UpdateRate.Toggle and wan.Options.UpdateRate.Slider * 0.01) or 0.4
+        local expirationTime = (checkEnablerBuff and checkEnablerBuff.expirationTime - currentTime) or math.huge
+        if not checkEnablerBuff or expirationTime < addonUpdateRate then
+            wan.UpdateAbilityData(wan.spellData.ArcaneShot.basename)
+            return
+        end
+    end
+
     local cArcaneShotDmg = cArcaneShotInstantDmg + cArcaneShotDotDmg + cArcaneShotInstantDmgAoE + cArcaneShotDotDmgAoE
 
     -- Update ability data
@@ -93,9 +97,6 @@ local function AddonLoad(self, event, addonName)
             local nArcaneShotValues = wan.GetSpellDescriptionNumbers(wan.spellData.ArcaneShot.id, { 1, 2 })
             nArcaneShotDmg = nArcaneShotValues[1]
             nArcaneShotDmgAoE = wan.traitData.ChimaeraShot.known and nArcaneShotValues[2] or 0
-
-            nArcaneShotSpellCost = (wan.traitData.AimedShot.known and wan.GetSpellCost(wan.spellData.AimedShot.id, 2))
-            or wan.GetSpellCost(wan.spellData.ArcaneShot.id, 2)
         end
     end)
 end

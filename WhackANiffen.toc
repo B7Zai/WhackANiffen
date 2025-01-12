@@ -110,6 +110,7 @@ Hunter\WAN_ExplosiveShot.lua
 Hunter\WAN_FlankingStrike.lua
 Hunter\WAN_FuryoftheEagle.lua
 Hunter\WAN_HighExplosiveTrap.lua
+Hunter\WAN_HuntersMark.lua
 Hunter\WAN_ImplosiveTrap.lua
 Hunter\WAN_KillCommand.lua
 Hunter\WAN_KillShot.lua

@@ -25,12 +25,6 @@ local function CheckAbilityValue()
         return
     end
 
-    local currentFocus = UnitPower("player", 2) or 0
-    if currentFocus < nMultiShotSpellCost
-    then
-        wan.UpdateAbilityData(wan.spellData.MultiShot.basename)
-        return
-    end
 
     -- Check for valid unit
     local isValidUnit, countValidUnit ,idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.MultiShot.id)
@@ -51,9 +45,10 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
+    local mechanicBuff = wan.auraData.player.buff_TrickShots
     local cMultiShotUnitOverflow = wan.SoftCapOverflow(nMultiShotSoftCap, countValidUnit)
     for nameplateUnitToken, _ in pairs(idValidUnit) do
-        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+        local checkPhysicalDR = mechanicBuff and 1 or wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
 
         cMultiShotInstantAoEDmg = cMultiShotInstantAoEDmg + (nMultiShotDmg * checkPhysicalDR * cMultiShotUnitOverflow)
     end
@@ -126,7 +121,9 @@ local function CheckAbilityValue()
 
     local cMultiShotDmg = cMultiShotInstantDmg + cMultiShotDotDmg + cMultiShotInstantAoEDmg + cMultiShotDotDmgAoE
 
-    if (wan.traitData.BeastCleave.known or wan.traitData.TrickShots.known) and countValidUnit > 2 then
+    if (wan.traitData.BeastCleave.known or wan.traitData.TrickShots.known) and countValidUnit > 2
+    and wan.spellData.AimedShot.name ~= wan.traitData.WailingArrow.name
+    then
         local currentTime = GetTime()
         local checkEnablerBuff = wan.auraData.player.buff_BeastCleave or wan.auraData.player.buff_TrickShots
         local addonUpdateRate = (wan.Options.UpdateRate.Toggle and wan.Options.UpdateRate.Slider * 0.01) or 0.4

@@ -15,13 +15,11 @@ local nLunarStormDuration, nLunarStormDmg, nLunarStormTickRate, nLunarStorm, nLu
 
 -- Ability value calculation
 local function CheckAbilityValue()
-    local checkTrickShots = wan.auraData.player.buff_TrickShots
     -- Early exits
     if not wan.PlayerState.Status
         or not wan.IsSpellUsable(wan.spellData.RapidFire.id)
-        or (checkTrickShots and (wan.UnitIsCasting("player", wan.spellData.RapidFire.name)
-            or wan.UnitIsCasting("player", wan.spellData.AimedShot.name)
-            or wan.UnitIsCasting("player", wan.spellData.Barrage.name)))
+        or wan.UnitIsCasting("player", wan.spellData.AimedShot.name)
+        or wan.UnitIsCasting("player", wan.spellData.Barrage.name)
     then
         wan.UpdateAbilityData(wan.spellData.RapidFire.basename)
         return
@@ -36,7 +34,7 @@ local function CheckAbilityValue()
 
     if wan.traitData.TrickShots.known and countValidUnit > 2 and not wan.auraData.player.buff_TrickShots then
         wan.UpdateAbilityData(wan.spellData.RapidFire.basename)
-        return
+       return
     end
 
     -- Base values

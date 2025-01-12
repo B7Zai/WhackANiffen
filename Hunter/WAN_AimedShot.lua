@@ -21,14 +21,13 @@ local nPhantomPain = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
-    local checkTrickShots = wan.auraData.player.buff_TrickShots
 
     -- Early exits
     if not wan.PlayerState.Status 
         or not wan.IsSpellUsable(wan.spellData.AimedShot.id)
-        or (checkTrickShots and (wan.UnitIsCasting("player", wan.spellData.RapidFire.name)
-            or wan.UnitIsCasting("player", wan.spellData.Barrage.name)
-            or wan.UnitIsCasting("player", wan.spellData.AimedShot.name)))
+        or wan.UnitIsCasting("player", wan.spellData.AimedShot.name)
+        or wan.UnitIsCasting("player", wan.spellData.RapidFire.name)
+        or wan.UnitIsCasting("player", wan.spellData.Barrage.name)
     then
         wan.UpdateAbilityData(wan.spellData.AimedShot.basename)
         return
@@ -38,6 +37,12 @@ local function CheckAbilityValue()
     -- Check for valid unit
     local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.AimedShot.id)
     if not isValidUnit then
+        wan.UpdateAbilityData(wan.spellData.AimedShot.basename)
+        return
+    end
+
+    if wan.traitData.TrickShots.known and countValidUnit > 2 and not wan.auraData.player.buff_TrickShots
+        and wan.spellData.AimedShot.name ~= wan.traitData.WailingArrow.name then
         wan.UpdateAbilityData(wan.spellData.AimedShot.basename)
         return
     end
@@ -145,15 +150,6 @@ local function CheckAbilityValue()
         end
     end
 
-    local checkPhysicalDR = wan.traitData.WailingArrow.known and 1 or wan.CheckUnitPhysicalDamageReduction()
-    local castEfficiency = wan.CheckCastEfficiency(wan.spellData.AimedShot.id, wan.spellData.AimedShot.castTime)
-    local cAimedShotCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
-    local cBaseCritValue = wan.ValueFromCritical(wan.CritChance, nil, cPenetratingShots)
-
-    cAimedShotInstantDmg = cAimedShotInstantDmg + (((nAimedShotDmg * cCarefulAim * cAimedShotCritValue) + (cLegacyOfTheWindrunners * cBaseCritValue)) * checkPhysicalDR) + (cSerpentstalkersTrickeryInstantDmg * cBaseCritValue)
-    cAimedShotDotDmg = cAimedShotDotDmg + (cSerpentstalkersTrickeryDotDmg * cBaseCritValue)
-    cAimedShotInstantDmgAoE = cAimedShotInstantDmgAoE + (cTrickShotsInstantDmgAoE * cCarefulAim * cAimedShotCritValue) + ((cWailingArrowInstantDmgAoE + cHydrasBiteInstantDmg) * cBaseCritValue)
-
     local cPhantomPain = 0
     if wan.traitData.PhantomPain.known then
         local countPhantomPain = 0
@@ -166,10 +162,18 @@ local function CheckAbilityValue()
                 end
             end
         end
-        cPhantomPain = cPhantomPain + (nAimedShotDmg * cCarefulAim * cAimedShotCritValue * nPhantomPain * countPhantomPain)
+        cPhantomPain = cPhantomPain + (nAimedShotDmg * cCarefulAim * nPhantomPain * countPhantomPain)
     end
 
-    cAimedShotDotDmgAoE = cAimedShotDotDmgAoE + ((cHydrasBiteDotDmg + cPhantomPain) * cBaseCritValue)
+    local checkPhysicalDR = wan.spellData.AimedShot.name == wan.traitData.WailingArrow.name and 1 or wan.CheckUnitPhysicalDamageReduction()
+    local castEfficiency = wan.CheckCastEfficiency(wan.spellData.AimedShot.id, wan.spellData.AimedShot.castTime)
+    local cAimedShotCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+    local cBaseCritValue = wan.ValueFromCritical(wan.CritChance, nil, cPenetratingShots)
+
+    cAimedShotInstantDmg = cAimedShotInstantDmg + (((nAimedShotDmg * cCarefulAim * cAimedShotCritValue) + (cLegacyOfTheWindrunners * cBaseCritValue)) * checkPhysicalDR) + (cSerpentstalkersTrickeryInstantDmg * cBaseCritValue)
+    cAimedShotDotDmg = cAimedShotDotDmg + (cSerpentstalkersTrickeryDotDmg * cBaseCritValue)
+    cAimedShotInstantDmgAoE = cAimedShotInstantDmgAoE + (cTrickShotsInstantDmgAoE * cCarefulAim * cAimedShotCritValue) + (cWailingArrowInstantDmgAoE * cBaseCritValue) + (cHydrasBiteInstantDmg * cBaseCritValue) + (cPhantomPain * cAimedShotCritValue)
+    cAimedShotDotDmgAoE = cAimedShotDotDmgAoE + (cHydrasBiteDotDmg * cBaseCritValue)
 
     local cAimedShotDmg = (cAimedShotInstantDmg + cAimedShotDotDmg + cAimedShotInstantDmgAoE + cAimedShotDotDmgAoE) * castEfficiency
 

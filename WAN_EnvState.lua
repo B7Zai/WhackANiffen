@@ -25,6 +25,7 @@ wan.Haste = GetHaste() or 0
 
 -- Init unit status arrays
 wan.UnitState = {}
+wan.UnitState.Class = {}
 wan.UnitState.Classification = {}
 wan.UnitState.GUID = {}
 wan.UnitState.Health = {}
@@ -87,6 +88,7 @@ local function OnEvent(self, event, ...)
         local unitLevel = UnitLevel(unitToken)
         local unitClassification = UnitClassification(unitToken) or "normal"
         local unitExists = UnitExists(unitToken)
+        local unitPlayer = UnitIsPlayer(unitToken)
 
         if not unitExists then
             wan.auraData[unitToken] = nil
@@ -95,12 +97,14 @@ local function OnEvent(self, event, ...)
             wan.UnitState.Health[unitToken] = nil
             wan.UnitState.Level[unitToken] = nil
             wan.UnitState.Classification[unitToken] = nil
+            wan.UnitState.Class[unitToken] = nil
         end
 
         wan.UnitState.GUID[unitToken] = unitGUID
         wan.UnitState.Health[unitToken] = health
         wan.UnitState.Level[unitToken] = unitLevel
         wan.UnitState.Classification[unitToken] = unitClassification
+        wan.UnitState.Class[unitToken] = unitPlayer and UnitClassBase(unitToken) or false
         
         wan.CustomEvents("TARGET_UNITID_ASSIGNED")
     end
@@ -111,9 +115,11 @@ local function OnEvent(self, event, ...)
         local unitClassification = UnitClassification(unitToken) or "normal"
         local health = UnitHealth(unitToken) or 0
         local unitGUID = UnitGUID(unitToken)
+        local unitPlayer = UnitIsPlayer(unitToken)
 
         wan.UnitState.Health[unitToken] = health
         wan.UnitState.Classification[unitToken] = unitClassification
+        wan.UnitState.Class[unitToken] = unitPlayer and UnitClassBase(unitToken) or false
 
         if unitGUID then
             wan.NameplateUnitID[unitToken] = unitGUID
@@ -130,6 +136,7 @@ local function OnEvent(self, event, ...)
         wan.instanceIDMap[unitToken] = nil
         wan.UnitState.Health[unitToken] = nil
         wan.UnitState.Classification[unitToken] = nil
+        wan.UnitState.Class[unitToken] = nil
         
         wan.NameplateUnitID[unitToken] = nil
     end
