@@ -49,33 +49,33 @@ local function OnEvent(self, event, addonName)
             wan.TextUpdater2(self, topValue)
         end
     end)
+end
 
-    wan.EventFrame:HookScript("OnEvent", function(self, event,...)
-        if event == "MECHANIC_FRAME_TOGGLE" then
-            wan.SetClickThroughFrame(mechanicFrame, wan.Options.Mechanic.Toggle)
-            wan.SetDragFrame(mechanicFrame, wan.Options.Mechanic.Toggle, wan.Options.Mechanic)
-            wan.SetResize(resizeFrame, wan.Options.Mechanic.Toggle)
-            wan.SetAlpha(mechanicFrame, wan.Options.Mechanic.Toggle, wan.Options.Mechanic.AlphaSlider)
-            wan.SetTesterAlpha(mechanicFrame, wan.Options.Mechanic.Toggle, wan.Options.Mechanic.AlphaSlider)
-        end
-
-        if event == "TRAIT_DATA_READY" then
-            wan.IconUpdater(mechanicFrame, nil, nil, nil)
-        end
-
-        if event == "MECHANIC_FRAME_HORIZONTAL_SLIDER" or event == "MECHANIC_FRAME_VERTICAL_SLIDER" then
-            mechanicFrame:SetPoint("CENTER", wan.Options.Mechanic.HorizontalPosition, wan.Options.Mechanic.VerticalPosition)
-        end
-
-        if event == "NAME_TEXT_TOGGLE" then
-            wan.SetText1(mechanicFrame, wan.Options.ShowName.Toggle)
-        end
-    end)
-
-    SLASH_WANMVALUE1 = "/wanmv"
-    SlashCmdList["WANMVALUE"] = function()
-        wan.SetText2(mechanicFrame)
+wan.EventFrame:HookScript("OnEvent", function(self, event,...)
+    if event == "MECHANIC_FRAME_TOGGLE" then
+        wan.SetClickThroughFrame(mechanicFrame, wan.Options.Mechanic.Toggle)
+        wan.SetDragFrame(mechanicFrame, wan.Options.Mechanic.Toggle, wan.Options.Mechanic)
+        wan.SetResize(resizeFrame, wan.Options.Mechanic.Toggle)
+        wan.SetAlpha(mechanicFrame, wan.Options.Mechanic.Toggle, wan.Options.Mechanic.AlphaSlider)
+        wan.SetTesterAlpha(mechanicFrame, wan.Options.Mechanic.Toggle, wan.Options.Mechanic.AlphaSlider)
     end
+
+    if event == "TRAIT_DATA_READY" then
+        wan.IconUpdater(mechanicFrame, nil, nil, nil)
+    end
+
+    if event == "MECHANIC_FRAME_HORIZONTAL_SLIDER" or event == "MECHANIC_FRAME_VERTICAL_SLIDER" then
+        mechanicFrame:SetPoint("CENTER", wan.Options.Mechanic.HorizontalPosition, wan.Options.Mechanic.VerticalPosition)
+    end
+
+    if event == "NAME_TEXT_TOGGLE" then
+        wan.SetText1(mechanicFrame, wan.Options.ShowName.Toggle)
+    end
+end)
+
+SLASH_WANMVALUE1 = "/wanmv"
+SlashCmdList["WANMVALUE"] = function()
+    wan.SetText2(mechanicFrame)
 end
 
 mechanicFrame:RegisterEvent("ADDON_LOADED")

@@ -49,33 +49,33 @@ local function OnEvent(self, event, addonName)
             wan.TextUpdater2(self, topValue, wan.Options.Damage.AlphaSlider)
         end
     end)
+end
 
-    wan.EventFrame:HookScript("OnEvent", function(self, event,...)
-        if event == "DAMAGE_FRAME_TOGGLE" then
-            wan.SetClickThroughFrame(damageFrame, wan.Options.Damage.Toggle)
-            wan.SetDragFrame(damageFrame, wan.Options.Damage.Toggle, wan.Options.Damage)
-            wan.SetResize(resizeFrame, wan.Options.Damage.Toggle)
-            wan.SetAlpha(damageFrame, wan.Options.Damage.Toggle, wan.Options.Damage.AlphaSlider)
-            wan.SetTesterAlpha(damageFrame, wan.Options.Damage.Toggle, wan.Options.Damage.AlphaSlider)
-        end
-
-        if event == "TRAIT_DATA_READY" then
-            wan.IconUpdater(damageFrame, nil, nil, nil)
-        end
-
-        if event == "DAMAGE_FRAME_HORIZONTAL_SLIDER" or event == "DAMAGE_FRAME_VERTICAL_SLIDER" then
-            damageFrame:SetPoint("CENTER", wan.Options.Damage.HorizontalPosition, wan.Options.Damage.VerticalPosition)
-        end
-
-        if event == "NAME_TEXT_TOGGLE" then
-            wan.SetText1(damageFrame, wan.Options.ShowName.Toggle, wan.Options.Damage.AlphaSlider)
-        end
-    end)
-
-    SLASH_WANDVALUE1 = "/wandv"
-    SlashCmdList["WANDVALUE"] = function()
-        wan.SetText2(damageFrame)
+wan.EventFrame:HookScript("OnEvent", function(self, event,...)
+    if event == "DAMAGE_FRAME_TOGGLE" then
+        wan.SetClickThroughFrame(damageFrame, wan.Options.Damage.Toggle)
+        wan.SetDragFrame(damageFrame, wan.Options.Damage.Toggle, wan.Options.Damage)
+        wan.SetResize(resizeFrame, wan.Options.Damage.Toggle)
+        wan.SetAlpha(damageFrame, wan.Options.Damage.Toggle, wan.Options.Damage.AlphaSlider)
+        wan.SetTesterAlpha(damageFrame, wan.Options.Damage.Toggle, wan.Options.Damage.AlphaSlider)
     end
+
+    if event == "TRAIT_DATA_READY" then
+        wan.IconUpdater(damageFrame, nil, nil, nil)
+    end
+
+    if event == "DAMAGE_FRAME_HORIZONTAL_SLIDER" or event == "DAMAGE_FRAME_VERTICAL_SLIDER" then
+        damageFrame:SetPoint("CENTER", wan.Options.Damage.HorizontalPosition, wan.Options.Damage.VerticalPosition)
+    end
+
+    if event == "NAME_TEXT_TOGGLE" then
+        wan.SetText1(damageFrame, wan.Options.ShowName.Toggle, wan.Options.Damage.AlphaSlider)
+    end
+end)
+
+SLASH_WANDVALUE1 = "/wandv"
+SlashCmdList["WANDVALUE"] = function()
+    wan.SetText2(damageFrame)
 end
 
 damageFrame:RegisterEvent("ADDON_LOADED")

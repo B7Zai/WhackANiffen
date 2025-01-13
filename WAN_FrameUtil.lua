@@ -199,19 +199,19 @@ function wan.TextUpdater2(frame, value, alpha)
     end
 end
 
-function wan.SetAlpha(frame, enabler, setting)
+function wan.SetAlpha(frame, enabler, alpha)
     if enabler == false then 
-        frame.texture:Hide()
-    else
         frame.texture:Show()
-        frame.texture:SetAlpha(setting)
+        frame.texture:SetAlpha(alpha)
+    else
+        frame.texture:Hide()
     end
 end
 
-function wan.SetTesterAlpha(frame, enabler, setting)
+function wan.SetTesterAlpha(frame, enabler, alpha)
     if enabler == true then 
         frame.testtexture:Show()
-        frame.testtexture:SetAlpha(setting)
+        frame.testtexture:SetAlpha(alpha)
     else
         frame.testtexture:Hide()
     end
