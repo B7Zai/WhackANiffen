@@ -20,7 +20,8 @@ setmetatable(wan.spellData, {
 })
 
 local function GetSpellData(spellDataArray)
-    wan.WipeTable(spellDataArray)
+    wan.WipeTable(wan.spellData)
+    
     local spellBookItemSpellBank = Enum.SpellBookSpellBank.Player
 
     for i = 1, C_SpellBook.GetNumSpellBookSkillLines() do
@@ -48,7 +49,7 @@ local function GetSpellData(spellDataArray)
                             castTime = spellInfo.castTime,
                             minRange = spellInfo.minRange,
                             maxRange = spellInfo.maxRange,
-                            id = spellInfo.spellID,
+                            id = overriddenSpellID,
                             basename = keyName,
                             known = true
                         }

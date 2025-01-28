@@ -20,25 +20,6 @@ function wan.UpdateAbilityData(abilityName, value, icon, name, desaturation)
     }
 end
 
-local LibRangeCheck = LibStub("LibRangeCheck-3.0")
-function wan.CheckRange(unit, range, operator)
-    local min, max = LibRangeCheck:GetRange(unit, true);
-
-    if (type(range) ~= "number") then
-        range = tonumber(range);
-    end
-
-    if (not range) then
-        return
-    end
-
-    if (operator == "<=") then
-        return (max or 999) <= range;
-    else
-        return (min or 0) >= range;
-    end
-end
-
 -- Checks for a valid unit
 function wan.ValidUnitInRange(spellIdentifier, maxRange)
     if not UnitExists(wan.TargetUnitID) or not UnitCanAttack("player", wan.TargetUnitID) then
@@ -158,6 +139,14 @@ function wan.CheckDotPotency(initialValue, unitToken)
     local calcPotency = damagePotency / validGroupMembers
 
     return math.min(calcPotency, 1)
+end
+
+function wan.CheckUnitDebuff(unitToken, formattedDebuffName)
+    local unit = unitToken or wan.TargetUnitID
+    local checkDebuff = wan.auraData[unit] and wan.auraData[unit]["debuff_" .. formattedDebuffName]
+    if checkDebuff then return checkDebuff end
+
+    return nil
 end
 
 

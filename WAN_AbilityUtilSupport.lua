@@ -50,6 +50,16 @@ function wan.UpdateSupportData(unitToken, abilityName, value, icon, name, desatu
     }
 end
 
+function wan.CheckUnitBuff(unitToken, formattedBuffName)
+    if not formattedBuffName then return nil end
+    
+    local unit = unitToken or "player"
+    local checkDebuff = wan.auraData[unit] and wan.auraData[unit]["buff_" .. formattedBuffName]
+    if checkDebuff then return checkDebuff end
+
+    return nil
+end
+
 -- Counts the number of group members in range
 function wan.ValidGroupMembers()
     if not IsInGroup() then return 1, 1, {} end
@@ -61,6 +71,28 @@ function wan.ValidGroupMembers()
             and UnitIsConnected(groupUnitToken)
             and UnitInRange(groupUnitToken)
         then
+            count = count + 1
+            inRangeUnits[groupUnitToken] = groupUnitGUID
+        end
+    end
+
+    local nGroupMembersInRange = count
+    local nDamageScaler = wan.AdjustSoftCapUnitOverflow(1, count)
+
+    return nDamageScaler, nGroupMembersInRange, inRangeUnits
+end
+
+-- Counts the number of group members in spell range
+function wan.ValidGroupMembersInSpellRange(spellIndentifier, maxRange)
+    if not IsInGroup() then return 1, 1, {} end
+    local spellID = spellIndentifier or 61304
+    local maxSpellRange = maxRange or 0
+
+    local inRangeUnits = {}
+    local count = 0
+    for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
+        if C_Spell.IsSpellInRange(spellID, groupUnitToken)
+            or wan.CheckRange(groupUnitToken, maxSpellRange, "<=") then
             count = count + 1
             inRangeUnits[groupUnitToken] = groupUnitGUID
         end
@@ -144,30 +176,41 @@ function wan.GetArmorDamageReductionFromSpell(armorValue)
 end
 
 -- Check and convert defensive cooldown to values
-function wan.DefensiveCooldownToValue(spellIndentifier)
-    local cooldownMS, _ = GetSpellBaseCooldown(spellIndentifier)
-    local maxCooldown = math.ceil(cooldownMS / 1000 / 60)
+function wan.DefensiveCooldownToValue(spellIndentifier, customCooldown)
+    local minThreshold = customCooldown or 30000
+    local cooldownMS = GetSpellBaseCooldown(spellIndentifier)
+    
+    if customCooldown and cooldownMS < minThreshold then cooldownMS = minThreshold end
+    local maxCooldown =  math.ceil(cooldownMS / 1000 / 60)
     local maxHealth = wan.UnitState.MaxHealth.player
     local healthThresholds = maxHealth * 0.1
-    local cooldownValue = (maxCooldown <= 1 and healthThresholds * 3)
-    or (maxCooldown > 1 and maxCooldown <= 2 and healthThresholds * 5)
-    or (maxCooldown >= 2 and healthThresholds * 7)
+
+    local cooldownValue = (maxCooldown <= 0.5 and healthThresholds * 2)
+    or (0.5 < maxCooldown and maxCooldown <= 1 and healthThresholds * 3)
+    or (1 < maxCooldown and maxCooldown <= 2 and healthThresholds * 5)
+    or (2 < maxCooldown and healthThresholds * 7)
     or healthThresholds
+
     return cooldownValue or math.huge
 end
 
 -- Check and convert defensive cooldown to values
-function wan.UnitDefensiveCooldownToValue(spellIndentifier, unitToken)
-    local cooldownMS, _ = GetSpellBaseCooldown(spellIndentifier)
+function wan.UnitDefensiveCooldownToValue(spellIndentifier, unitToken, customCooldown)
+    local minThreshold = customCooldown or 30000
+    local cooldownMS = GetSpellBaseCooldown(spellIndentifier)
+
+    if customCooldown and cooldownMS < minThreshold then cooldownMS = minThreshold end
     local maxCooldown = math.ceil(cooldownMS / 1000 / 60)
     local maxHealth = wan.UnitState.MaxHealth[unitToken]
     if not maxHealth then return math.huge end
 
     local healthThresholds = maxHealth * 0.1
-    local cooldownValue = (maxCooldown <= 1 and healthThresholds * 3)
-    or (maxCooldown > 1 and maxCooldown <= 2 and healthThresholds * 5)
-    or (maxCooldown >= 2 and healthThresholds * 7)
+    local cooldownValue = (maxCooldown <= 0.5 and healthThresholds * 2)
+    or (0.5 < maxCooldown and maxCooldown <= 1 and healthThresholds * 3)
+    or (1 < maxCooldown and maxCooldown <= 2 and healthThresholds * 5)
+    or (2 < maxCooldown and healthThresholds * 7)
     or healthThresholds
+
     return cooldownValue or math.huge
 end
 

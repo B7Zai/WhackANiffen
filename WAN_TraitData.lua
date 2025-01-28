@@ -75,6 +75,7 @@ traitFrame:SetScript("OnEvent", function(self, event, ...)
         wan.WipeTable(wan.AbilityData)
         wan.WipeTable(wan.MechanicData)
         wan.WipeTable(wan.HealingData)
+        wan.WipeTable(wan.SupportData)
         wan.WipeTable(wan.traitData)
         GetTraitData(wan.traitData)
     end

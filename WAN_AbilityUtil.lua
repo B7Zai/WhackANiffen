@@ -8,6 +8,8 @@ wan.SupportData = {}    -- used for displaying support values in a group
 wan.HotValue = {}       -- used for storing hot values over all valid group units
 wan.HealUnitCountAoE = {}  -- used for storing valid group unit count for aoe healing spells
 
+local LibRangeCheck = LibStub("LibRangeCheck-3.0") -- callback for range check library
+
 -- Parses spell description and converts string numbers to numeric values.
 -- Returns specified numbers indexed by `indexes`.
 -- Returns 0 if no valid numbers are found for the specified indexes.
@@ -70,6 +72,33 @@ function wan.GetTraitDescriptionNumbers(entryID, indexes, rank)
     end
 
     return #indexes == 1 and results[1] or results
+end
+
+---- Checks if unit is in range
+function wan.CheckRange(unit, range, operator)
+    local min, max = LibRangeCheck:GetRange(unit, true);
+
+    if (type(range) ~= "number") then
+        range = tonumber(range);
+    end
+
+    if (not range) then
+        return
+    end
+
+    if (operator == "<=") then
+        return (max or 999) <= range;
+    else
+        return (min or 0) >= range;
+    end
+end
+
+---- Returns estimated min and max range from unit
+function wan.GetRangeBracket(unitToken)
+    if not unitToken then return 0, 0 end
+
+    local min, max = LibRangeCheck:GetRange(unitToken, true);
+    return min or 0, max or 999
 end
 
 ---- Checks if player is missing enough health

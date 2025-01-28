@@ -1,6 +1,3 @@
--- move all namespace event handler outside other event handler to avoid looping
--- update all ability to use GUID when checking auraData
-
 -- make aura updates as efficient as possible
 -- add better event coverage for aura data updates
 
