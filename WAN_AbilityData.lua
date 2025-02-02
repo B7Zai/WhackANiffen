@@ -12,6 +12,7 @@ setmetatable(wan.spellData, {
             maxRange = 0,
             id = 61304,
             basename = "Unknown",
+            isPassive = false,
             known = false
         }
         t[key] = default
@@ -21,7 +22,7 @@ setmetatable(wan.spellData, {
 
 local function GetSpellData(spellDataArray)
     wan.WipeTable(wan.spellData)
-    
+
     local spellBookItemSpellBank = Enum.SpellBookSpellBank.Player
 
     for i = 1, C_SpellBook.GetNumSpellBookSkillLines() do
@@ -39,6 +40,7 @@ local function GetSpellData(spellDataArray)
                     local baseSpellName = C_Spell.GetSpellName(baseSpellID)
                     local overriddenSpellID = C_Spell.GetOverrideSpell(spellID)
                     local spellInfo = C_Spell.GetSpellInfo(overriddenSpellID)
+                    local isPassive = C_Spell.IsSpellPassive(overriddenSpellID)
                     local keyName = wan.FormatNameForKey(baseSpellName)
 
                     if spellInfo then
@@ -51,6 +53,7 @@ local function GetSpellData(spellDataArray)
                             maxRange = spellInfo.maxRange,
                             id = overriddenSpellID,
                             basename = keyName,
+                            isPassive = isPassive,
                             known = true
                         }
                     end

@@ -107,8 +107,8 @@ function wan.AssignUnitState(frameCallback, isLevelScaling)
         wan.UnitState.Role[unitToken] = role
 
         if isLevelScaling then
-            if wan.UnitState.Level[unitToken] ~= wan.UnitState.Level[unitToken] then
-                local levelScaleValue = wan.UnitState.MaxHealth[unitToken] / wan.UnitState.MaxHealth[unitToken]
+            if wan.UnitState.Level[unitToken] ~= wan.UnitState.Level["player"] then
+                local levelScaleValue = wan.UnitState.MaxHealth[unitToken] / wan.UnitState.MaxHealth["player"]
                 wan.UnitState.LevelScale[unitToken] = levelScaleValue
             end
         end
@@ -134,29 +134,44 @@ function wan.GetSpellGcdValue(spellID)
 end
 
 -- Sets the update rate for tickers or throttles
+local sliderValue = 0
 function wan.SetUpdateRate(frame, callback, spellID)
-    if wan.UpdateRate[frame] then
-        wan.UpdateRate[frame]:Cancel()
-        wan.UpdateRate[frame] = nil
+    if not callback or not spellID then
+        if wan.UpdateRate[frame] then
+            wan.UpdateRate[frame]:Cancel()
+            wan.UpdateRate[frame] = nil
+        end
+
+        frame:SetScript("OnUpdate", nil)
+        return
     end
-    frame:SetScript("OnUpdate", nil)
-    if not callback or not spellID then return end
 
     local gcdValue = wan.GetSpellGcdValue(spellID)
     local updateThrottle = gcdValue / (wan.Options.UpdateRate.Toggle and wan.Options.UpdateRate.Slider or 4)
 
     if wan.Options.UpdateRate.Toggle then
+        if wan.UpdateRate[frame] then
+            wan.UpdateRate[frame]:Cancel()
+            wan.UpdateRate[frame] = nil
+        end
+
         local lastUpdate = 0
-        frame:SetScript("OnUpdate", function(_, elapsed)
-            lastUpdate = lastUpdate + elapsed
-            if lastUpdate >= updateThrottle then
-                lastUpdate = 0
-                callback()
-            end
-        end)
+        if sliderValue ~= wan.Options.UpdateRate.Slider or not frame:GetScript("OnUpdate", 1) then
+            frame:SetScript("OnUpdate", function(_, elapsed)
+                lastUpdate = lastUpdate + elapsed
+                if lastUpdate >= updateThrottle then
+                    lastUpdate = 0
+                    callback()
+                end
+            end)
+            sliderValue = wan.Options.UpdateRate.Slider
+        end
     else
-        wan.UpdateRate[frame] = C_Timer.NewTicker(updateThrottle, function()
-            callback()
-        end)
+        frame:SetScript("OnUpdate", nil)
+        if not wan.UpdateRate[frame] then
+            wan.UpdateRate[frame] = C_Timer.NewTicker(updateThrottle, function()
+                callback()
+            end)
+        end
     end
 end

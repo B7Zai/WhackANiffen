@@ -234,6 +234,18 @@ function wan.IsTanking()
     return false
 end
 
+function wan.IsUnitTanking(unitToken)
+
+    for nameplateUnitToken, _ in pairs(wan.NameplateUnitID) do
+        local isTankingUnit = UnitDetailedThreatSituation(unitToken, nameplateUnitToken) or false
+        local inRange = wan.CheckRange(nameplateUnitToken, 60, "<=")
+
+        if inRange and isTankingUnit then return true end
+    end
+
+    return false
+end
+
 function wan.UnitIsCasting(unitToken, spellIndentifier)
     local unit = unitToken or "player"
     local castName, _, _, _, _, _, _, _, castSpellID = UnitCastingInfo(unit)

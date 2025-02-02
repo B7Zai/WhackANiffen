@@ -62,7 +62,7 @@ end
 
 -- Counts the number of group members in range
 function wan.ValidGroupMembers()
-    if not IsInGroup() then return 1, 1, {} end
+    if not wan.PlayerState.InGroup then return 1, 1, {} end
 
     local inRangeUnits = {}
     local count = 0
@@ -123,7 +123,7 @@ function wan.GetUnitHotValues(unitToken)
 end
 
 function wan.UnitAbilityHealValue(unitToken, abilityValue, unitPercentHealth)
-    if not unitToken or not abilityValue or abilityValue == 0 or not unitPercentHealth then return 0 end
+    if not unitToken or not abilityValue or abilityValue == 0 or not unitPercentHealth or unitPercentHealth == 0 then return 0 end
     local value = 0
     local unitHotValues = wan.GetUnitHotValues(unitToken)
     local maxHealth = wan.UnitState.MaxHealth[unitToken]
@@ -220,7 +220,7 @@ function wan.CheckClassBuff(buffName)
     local aura = wan.auraData.player["buff_" .. buffName]
     local remainingDuration = aura and (aura.expirationTime - currentTime)
 
-    if wan.PlayerState.InHealerMode then
+    if wan.PlayerState.IsInGroup then
         local nGroupUnits = GetNumGroupMembers()
         local _, nGroupMembersInRange, idValidGroupMember = wan.ValidGroupMembers()
         local countBuffed = 0
@@ -247,6 +247,17 @@ function wan.CheckClassBuff(buffName)
     end
     
     if not aura or remainingDuration < 360 then return true end
+end
+
+-- Counts units that have a specific debuff
+function wan.CheckSelfBuff(buffName)
+    local currentTime = GetTime()
+    local aura = wan.auraData.player["buff_" .. buffName]
+    local remainingDuration = aura and (aura.expirationTime - currentTime)
+
+    if aura and remainingDuration > 360 then return true end
+
+    return false
 end
 
 function wan.CheckDispelType(spellIdentifier)

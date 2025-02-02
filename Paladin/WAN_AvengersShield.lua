@@ -155,7 +155,7 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         wan.SetUpdateRate(frameAvengersShield, CheckAbilityValue, abilityActive)
     end
 
-    if event == "TRAIT_DATA_READY" then
+    if event == "TRAIT_DATA_READY" then        
         nSoaringShield = wan.GetTraitDescriptionNumbers(wan.traitData.SoaringShield.entryid, { 1 })
 
         nFocusedEnmity = wan.GetTraitDescriptionNumbers(wan.traitData.FocusedEnmity.entryid, { 1 }) * 0.01

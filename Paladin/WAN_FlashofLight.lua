@@ -37,8 +37,9 @@ local function CheckAbilityValue()
     end
 
     if wan.PlayerState.Role == "TANK" then
-        local isTanking = wan.IsTanking()
-        if isTanking then
+        local nFlashofLightMaxRangeTanking = nFlashofLightMaxRange * 0.6
+        local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, nFlashofLightMaxRangeTanking)
+        if isValidUnit then
             wan.UpdateMechanicData(wan.spellData.FlashofLight.basename)
             wan.UpdateHealingData(nil, wan.spellData.FlashofLight.basename)
             return
@@ -95,6 +96,7 @@ local function CheckAbilityValue()
                 local cFlashofLightHotHeal = 0
 
                 local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
+                local levelScale = wan.UnitState.LevelScale[groupUnitToken] or 1
 
                 local cMasteryLightbringer = 1
                 if bMasteryLightbringer then
@@ -129,7 +131,7 @@ local function CheckAbilityValue()
                 end
 
                 cFlashofLightInstantHeal = cFlashofLightInstantHeal
-                    + (nFlashofLightInstantHeal * cMasteryLightbringer * cSelflessHealer * cMomentofCompassion * cDivineRevelations * cDivineFavor * cTyrsDeliverance * cFlashofLightCritValue)
+                    + (nFlashofLightInstantHeal * cMasteryLightbringer * cSelflessHealer * cMomentofCompassion * cDivineRevelations * cDivineFavor * cTyrsDeliverance * cFlashofLightCritValue * levelScale)
 
                 cFlashofLightHotHeal = cFlashofLightHotHeal
 

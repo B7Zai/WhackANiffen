@@ -9,6 +9,7 @@ local nShieldoftheRighteousDmg, nShieldoftheRighteousMaxRange = 0, 11
 
 -- Init trait data
 local nGreaterJudgment = 0
+local nShiningRighteousnessDmg = 0
 local checkHammerofLight = false
 local nEmpyreanHammer = 0
 local nWrathfulDescent = 0
@@ -63,6 +64,13 @@ local function CheckAbilityValue()
         end
     end
 
+    ---- HOLY TRAITS ----
+
+    local cShiningRighteousnessInstantDmg = 0
+    if wan.traitData.ShiningRighteousness.known then
+        cShiningRighteousnessInstantDmg = cShiningRighteousnessInstantDmg + nShiningRighteousnessDmg
+    end
+
     --- TEMPLAR TRAITS ----
 
     local cEmpyreanHammerInstantDmg = 0
@@ -91,6 +99,7 @@ local function CheckAbilityValue()
     local cShieldoftheRighteousCritValueBase = wan.ValueFromCritical(wan.CritChance, critChanceModBase, critDamageModBase)
 
     cShieldoftheRighteousInstantDmg = cShieldoftheRighteousInstantDmg
+        + (cShiningRighteousnessInstantDmg * cShieldoftheRighteousCritValueBase)
         + (cEmpyreanHammerInstantDmg * cShieldoftheRighteousCritValueBase)
 
     cShieldoftheRighteousDotDmg = cShieldoftheRighteousDotDmg
@@ -118,8 +127,10 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            local nDivineStormValues = wan.GetSpellDescriptionNumbers(wan.spellData.ShieldoftheRighteous.id, { 1, 2 })
-            nShieldoftheRighteousDmg = nDivineStormValues[1]
+            local nShieldoftheRighteousValues = wan.GetSpellDescriptionNumbers(wan.spellData.ShieldoftheRighteous.id, { 1, 2 })
+            nShieldoftheRighteousDmg = nShieldoftheRighteousValues[1]
+
+            nShiningRighteousnessDmg = wan.GetTraitDescriptionNumbers(wan.traitData.ShiningRighteousness.entryid, { 1 })
 
             checkHammerofLight = wan.spellData.WakeofAshes.name == "Hammer of Light"
 

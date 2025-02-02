@@ -14,6 +14,7 @@ local nBoundlessJudgment = 0
 local nHighlordsWrath = 0
 local nBlessedChampionUnitCap, nBlessedChampion = 0, 0
 local nForWhomtheBellTolls, nForWhomtheBellTollsMin = 0, 0
+local nHammerandAnvilDmg, nHammerandAnvilProcChance = 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -86,6 +87,13 @@ local function CheckAbilityValue()
         end
     end
 
+    ---- LIGHTSMITH TRAITS ----
+
+    local cHammerandAnvil = 0
+    if wan.traitData.HammerandAnvil.known then
+        cHammerandAnvil = cHammerandAnvil + (nHammerandAnvilDmg * nHammerandAnvilProcChance * countValidUnit)   
+    end
+
     --- TEMPLAR TRAITS ----
 
     local cForWhomtheBellTolls = 1
@@ -109,6 +117,7 @@ local function CheckAbilityValue()
     cJudgmentInstantDmgAoE = cJudgmentInstantDmgAoE
         + (cBlessedChampionInstantDmgAoE * cForWhomtheBellTolls * cJudgmentCritValue)
         + (cHighlordsJudgmentInstantDmg * countBlessedChampionUnits * cJudgmentCritValue)
+        + (cHammerandAnvil * cJudgmentCritValue)
 
     cJudgmentDotDmgAoE = cJudgmentDotDmgAoE
 
@@ -133,6 +142,9 @@ local function AddonLoad(self, event, addonName)
             local nMasteryHighlordsJudgmentValues = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryHighlordsJudgment.id, { 2, 3 })
             nMasteryHighlordsJudgmentProcChance = nMasteryHighlordsJudgmentValues[1] * 0.01
             nMasteryHighlordsJudgmentDmg = nMasteryHighlordsJudgmentValues[2]
+
+            nHammerandAnvilDmg = wan.GetTraitDescriptionNumbers(wan.traitData.HammerandAnvil.entryid, { 1 })
+            nHammerandAnvilProcChance = wan.CritChance * 0.01
         end
     end)
 end

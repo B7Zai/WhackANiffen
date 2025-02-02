@@ -23,10 +23,28 @@ local nWrathfulDescent = 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or checkHammerofLight
+        or wan.auraData.player["buff_" .. wan.traitData.DivineHammer.traitkey]
         or not wan.IsSpellUsable(wan.spellData.DivineStorm.id)
     then
         wan.UpdateAbilityData(wan.spellData.DivineStorm.basename)
         return
+    end
+
+    if wan.traitData.DivineHammer.known then
+        local formattedDebuffName = wan.traitData.DivineHammer.traitkey
+        local checkDivineHammerDebuff = wan.CheckUnitDebuff(nil, formattedDebuffName)
+        if checkDivineHammerDebuff then
+            wan.UpdateAbilityData(wan.spellData.DivineStorm.basename)
+            return
+        end
+
+        for nameplateUnitToken, _ in pairs(wan.NameplateUnitID) do
+            local checkUnitDivineHammerDebuff = wan.CheckUnitDebuff(nameplateUnitToken, formattedDebuffName)
+            if checkUnitDivineHammerDebuff then
+                wan.UpdateAbilityData(wan.spellData.DivineStorm.basename)
+                return
+            end
+        end
     end
 
     -- Check for valid unit

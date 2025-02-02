@@ -114,6 +114,7 @@ local function CheckAbilityValue()
                 local cHolyShockHotHeal = 0
 
                 local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
+                local levelScale = wan.UnitState.LevelScale[groupUnitToken] or 1
 
                 local cMasteryLightbringer = 1
                 if bMasteryLightbringer then
@@ -133,12 +134,12 @@ local function CheckAbilityValue()
                 end
 
                 cHolyShockInstantHeal = cHolyShockInstantHeal
-                    + (nHolyShockHeal * cMasteryLightbringer * cTyrsDeliverance * cReclamationHeal * cRisingSunlight * cHolyShockCritValue)
-                    + (cPoweroftheSilverHand * cMasteryLightbringer * cTyrsDeliverance * cReclamationHeal * cRisingSunlight * cHolyShockCritValue)
-                    + (cSecondSunriseInstantHeal * cMasteryLightbringer * cTyrsDeliverance * cReclamationHeal * cRisingSunlight * cHolyShockCritValue)
+                    + (nHolyShockHeal * cMasteryLightbringer * cTyrsDeliverance * cReclamationHeal * cRisingSunlight * cHolyShockCritValue * levelScale)
+                    + (cPoweroftheSilverHand * cMasteryLightbringer * cTyrsDeliverance * cReclamationHeal * cRisingSunlight * cHolyShockCritValue * levelScale)
+                    + (cSecondSunriseInstantHeal * cMasteryLightbringer * cTyrsDeliverance * cReclamationHeal * cRisingSunlight * cHolyShockCritValue * levelScale)
 
                 cHolyShockHotHeal = cHolyShockHotHeal
-                    + (cSunSearHotHeal * cHolyShockCritValueBase)
+                    + (cSunSearHotHeal * cHolyShockCritValueBase * levelScale)
 
                 local cHolyShockHeal = cHolyShockInstantHeal + cHolyShockHotHeal
 

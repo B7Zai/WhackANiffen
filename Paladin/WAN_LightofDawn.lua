@@ -85,6 +85,7 @@ local function CheckAbilityValue()
             wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
 
             local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
+            local levelScale = wan.UnitState.LevelScale[groupUnitToken] or 1
 
             local cMasteryLightbringer = 1
             if bMasteryLightbringer then
@@ -99,16 +100,16 @@ local function CheckAbilityValue()
             if bDawnlight then
                 cDawnlightHotHeal = cDawnlightHotHeal + (nDawnlightHotHeal / wan.HealUnitCountAoE[wan.spellData.LightofDawn.basename])
 
-                wan.HotValue[groupUnitToken][sDawnlightFormattedBuffName] = cDawnlightHotHeal
+                wan.HotValue[groupUnitToken][sDawnlightFormattedBuffName] = cDawnlightHotHeal * levelScale
             end
 
             cLightofDawnInstantHeal = cLightofDawnInstantHeal
-                + (nLightofDawnInstantHeal * cMasteryLightbringer * cLightofDawnCritValue)
-                + (cSecondSunriseInstantHeal * cMasteryLightbringer * cLightofDawnCritValue)
+                + (nLightofDawnInstantHeal * cMasteryLightbringer * cLightofDawnCritValue * levelScale)
+                + (cSecondSunriseInstantHeal * cMasteryLightbringer * cLightofDawnCritValue * levelScale)
 
             cLightofDawnHotHeal = cLightofDawnHotHeal
-                + (cDawnlightHotHeal * cLightofDawnCritValueBase)
-                + (cSunSearHotHeal * cLightofDawnCritValueBase)
+                + (cDawnlightHotHeal * cLightofDawnCritValueBase * levelScale)
+                + (cSunSearHotHeal * cLightofDawnCritValueBase * levelScale)
 
             local cLightofDawnHeal = cLightofDawnInstantHeal + cLightofDawnHotHeal
 

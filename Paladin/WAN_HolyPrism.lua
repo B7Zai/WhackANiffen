@@ -46,6 +46,7 @@ local function CheckAbilityValue()
                 local cHolyPrismHotHeal = 0
 
                 local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
+                local levelScale = wan.UnitState.LevelScale[groupUnitToken] or 1
 
                 local cMasteryLightbringer = 1
                 if bMasteryLightbringer then
@@ -57,7 +58,7 @@ local function CheckAbilityValue()
                 end
 
                 cHolyPrismInstantHeal = cHolyPrismInstantHeal
-                    + (nHolyPrismInstantHeal * cMasteryLightbringer * cFlashofLightCritValue)
+                    + (nHolyPrismInstantHeal * cMasteryLightbringer * cFlashofLightCritValue * levelScale)
 
                 cHolyPrismHotHeal = cHolyPrismHotHeal
 

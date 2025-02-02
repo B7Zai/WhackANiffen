@@ -11,6 +11,7 @@ local nWordofGloryHeal, nWordofGloryMaxRange = 0, 0
 
 -- Init trait data
 local nMasteryLightbringer = 0
+local nHealingHands= 0
 local nExtrication = 0
 local nLightoftheTitans = 0
 local nEternalFlameHotHeal, nEternalFlame = 0, 0
@@ -60,6 +61,13 @@ local function CheckAbilityValue()
 
     local bHandoftheProtector = wan.traitData.HandoftheProtector.known
 
+    ---- RETRIBUTION TRAITS ----
+
+    local cHealingHands = 1
+    if wan.traitData.HealingHands.entryid then
+        cHealingHands = cHealingHands + nHealingHands
+    end
+
     ---- HERALD OF THE SUN TRAITS ----
 
     local bDawnlight = wan.traitData.Dawnlight.known
@@ -86,6 +94,7 @@ local function CheckAbilityValue()
 
                 local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
                 local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth, nWordofGloryHeal)
+                local levelScale = wan.UnitState.LevelScale[groupUnitToken] or 1
                 wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
 
                 ---- HOLY TRAITS ----
@@ -105,7 +114,7 @@ local function CheckAbilityValue()
                 if bLightoftheTitans then
                     cLightoftheTitans = cLightoftheTitans + (nWordofGloryHeal * nLightoftheTitans)
 
-                    wan.HotValue[groupUnitToken][sLightoftheTitansFormattedBuffName] = cLightoftheTitans * cWordofGloryCritValue * hotPotency
+                    wan.HotValue[groupUnitToken][sLightoftheTitansFormattedBuffName] = cLightoftheTitans * cWordofGloryCritValue * hotPotency * levelScale
                 end
 
                 local cHandoftheProtector = 1
@@ -119,7 +128,7 @@ local function CheckAbilityValue()
                 if bDawnlight then
                     cDawnlightHotHeal = cDawnlightHotHeal + nDawnlightHotHeal
 
-                    wan.HotValue[groupUnitToken][sDawnlightFormattedBuffName] = cDawnlightHotHeal * cWordofGloryCritValueBase * hotPotency
+                    wan.HotValue[groupUnitToken][sDawnlightFormattedBuffName] = cDawnlightHotHeal * cWordofGloryCritValueBase * hotPotency * levelScale
                 end
 
                 local cEternalFlame = 1
@@ -131,17 +140,17 @@ local function CheckAbilityValue()
                         cEternalFlame = cEternalFlame + nEternalFlame
                     end
 
-                    wan.HotValue[groupUnitToken][sEternalFlameFormattedBuffName] = cEternalFlameHotHeal * cEternalFlame * cWordofGloryCritValue * hotPotency
+                    wan.HotValue[groupUnitToken][sEternalFlameFormattedBuffName] = cEternalFlameHotHeal * cEternalFlame * cWordofGloryCritValue * hotPotency * levelScale
                 end
 
                 cWordofGloryInstantHeal = cWordofGloryInstantHeal
-                    + (nWordofGloryHeal * cHandoftheProtector * cMasteryLightbringer * cEternalFlame * cWordofGloryCritValue)
-                    + (cRecompense * cMasteryLightbringer * cEternalFlame * cWordofGloryCritValue)
+                    + (nWordofGloryHeal * cHealingHands * cHandoftheProtector * cMasteryLightbringer * cEternalFlame * cWordofGloryCritValue * levelScale)
+                    + (cRecompense * cHealingHands * cMasteryLightbringer * cEternalFlame * cWordofGloryCritValue * levelScale)
 
                 cWordofGloryHotHeal = cWordofGloryHotHeal
-                    + (cLightoftheTitans * cHandoftheProtector * hotPotency * cWordofGloryCritValue)
-                    + (cDawnlightHotHeal * hotPotency * cWordofGloryCritValueBase)
-                    + (cEternalFlameHotHeal * hotPotency * cEternalFlame * cWordofGloryCritValue)
+                    + (cLightoftheTitans * cHandoftheProtector * hotPotency * cWordofGloryCritValue * levelScale)
+                    + (cDawnlightHotHeal * hotPotency * cWordofGloryCritValueBase * levelScale)
+                    + (cEternalFlameHotHeal * hotPotency * cEternalFlame * cWordofGloryCritValue * levelScale)
 
                 local cWordofGloryHeal = cWordofGloryInstantHeal + cWordofGloryHotHeal
 
@@ -266,6 +275,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "TRAIT_DATA_READY" then
+        nHealingHands = wan.GetTraitDescriptionNumbers(wan.traitData.HealingHands.entryid, { 2 }) * 0.01
+
         nExtrication = wan.GetTraitDescriptionNumbers(wan.traitData.Extrication.entryid, { 1 })
 
         nLightoftheTitans = wan.GetTraitDescriptionNumbers(wan.traitData.LightoftheTitans.entryid, { 1 }) * 0.01

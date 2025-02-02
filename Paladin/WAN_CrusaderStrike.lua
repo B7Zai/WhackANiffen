@@ -12,6 +12,7 @@ local nCrusaderStrikeMaxRange = 0
 local nHeartOfTheCrusader = 0
 local nBlessedChampionUnitCap, nBlessedChampion = 0, 0
 local nHammeroftheRighteousAoEDmg = 0
+local nBlessedAssurance = 0
 
 
 -- Ability value calculation
@@ -42,57 +43,6 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    ---- RETRIBUTION TRAITS ----
-
-    local cTemplarStrikesDotDmg = 0
-    local cTemplarStrikesDotDmgAoE = 0
-    if wan.traitData.TemplarStrikes.known and wan.spellData.CrusaderStrike.name == "Templar Slash" then
-        local checkTemplarStrikesDebuff = wan.CheckUnitDebuff(targetUnitToken, wan.spellData.CrusaderStrike.basename)
-        if not checkTemplarStrikesDebuff then
-            local dotPotency = wan.CheckDotPotency(nCrusaderStrikeDmg)
-
-            cTemplarStrikesDotDmg = cTemplarStrikesDotDmg + (nCrusaderStrikeDmg * nCrusaderStrikeDotDmg * dotPotency)
-        end
-
-        if wan.traitData.BlessedChampion.known then
-            local countBlessedChampionUnits = 0
-
-            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-
-                if nameplateGUID ~= targetGUID then
-                    local checkUnitTemplarStrikesDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.spellData.CrusaderStrike.basename)
-                    if not checkUnitTemplarStrikesDebuff then
-                        local dotUnitPotency = wan.CheckDotPotency(nCrusaderStrikeDmg, nameplateUnitToken)
-
-                        cTemplarStrikesDotDmgAoE = cTemplarStrikesDotDmgAoE + (nCrusaderStrikeDmg * nCrusaderStrikeDotDmg * nBlessedChampion * dotUnitPotency)
-                        countBlessedChampionUnits = countBlessedChampionUnits + 1
-
-                        if countBlessedChampionUnits >= nBlessedChampionUnitCap then break end
-                    end
-                end
-            end
-        end
-    end
-
-    local cBlessedChampionInstantDmgAoE = 0
-    if wan.traitData.BlessedChampion.known then
-        local countBlessedChampionUnits = 0
-
-        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-
-            if nameplateGUID ~= targetGUID then
-                local checkUnitPhysicalDR = ((wan.traitData.TemplarStrikes.known or wan.traitData.BladesofLight.known) and 1) or wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
-                cBlessedChampionInstantDmgAoE = cBlessedChampionInstantDmgAoE + (nCrusaderStrikeDmg * checkUnitPhysicalDR * nBlessedChampion)
-                countBlessedChampionUnits = countBlessedChampionUnits + 1
-                if countBlessedChampionUnits >= nBlessedChampionUnitCap then break end
-            end
-        end
-    end
-
-    if wan.traitData.HeartoftheCrusader.known then
-        critDamageMod = critDamageMod + nHeartOfTheCrusader
-    end
-
     ---- PROTECTION TRAITS ----
 
     local cHammeroftheRighteousInstantDmgAoE = 0
@@ -116,20 +66,79 @@ local function CheckAbilityValue()
         end
     end
 
+    ---- RETRIBUTION TRAITS ----
+
+    local cTemplarStrikesDotDmg = 0
+    local cTemplarStrikesDotDmgAoE = 0
+    if wan.traitData.TemplarStrikes.known and wan.spellData.CrusaderStrike.name == "Templar Slash" then
+        local checkTemplarStrikesDebuff = wan.CheckUnitDebuff(targetUnitToken, wan.spellData.CrusaderStrike.basename)
+        if not checkTemplarStrikesDebuff then
+            local dotPotency = wan.CheckDotPotency(nCrusaderStrikeDmg)
+
+            cTemplarStrikesDotDmg = cTemplarStrikesDotDmg + (nCrusaderStrikeDmg * nCrusaderStrikeDotDmg * dotPotency)
+        end
+
+        if wan.traitData.BlessedChampion.known then
+            local countBlessedChampionUnits = 0
+
+            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+                if nameplateGUID ~= targetGUID then
+                    local checkUnitTemplarStrikesDebuff = wan.CheckUnitDebuff(nameplateUnitToken,
+                        wan.spellData.CrusaderStrike.basename)
+                    if not checkUnitTemplarStrikesDebuff then
+                        local dotUnitPotency = wan.CheckDotPotency(nCrusaderStrikeDmg, nameplateUnitToken)
+
+                        cTemplarStrikesDotDmgAoE = cTemplarStrikesDotDmgAoE + (nCrusaderStrikeDmg * nCrusaderStrikeDotDmg * nBlessedChampion * dotUnitPotency)
+                        countBlessedChampionUnits = countBlessedChampionUnits + 1
+
+                        if countBlessedChampionUnits >= nBlessedChampionUnitCap then break end
+                    end
+                end
+            end
+        end
+    end
+
+    local cBlessedChampionInstantDmgAoE = 0
+    if wan.traitData.BlessedChampion.known then
+        local countBlessedChampionUnits = 0
+
+        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+            if nameplateGUID ~= targetGUID then
+                local checkUnitPhysicalDR = ((wan.traitData.TemplarStrikes.known or wan.traitData.BladesofLight.known) and 1) or wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+                cBlessedChampionInstantDmgAoE = cBlessedChampionInstantDmgAoE + (nCrusaderStrikeDmg * checkUnitPhysicalDR * nBlessedChampion)
+                countBlessedChampionUnits = countBlessedChampionUnits + 1
+                if countBlessedChampionUnits >= nBlessedChampionUnitCap then break end
+            end
+        end
+    end
+
+    if wan.traitData.HeartoftheCrusader.known then
+        critDamageMod = critDamageMod + nHeartOfTheCrusader
+    end
+
+    ---- HERALD OF THE SUN TRAITS ----
+
+    local cBlessedAssurance = 1
+    if wan.traitData.BlessedAssurance.known then
+        local checkBlessedAssuranceBuff = wan.CheckUnitBuff(nil, wan.traitData.BlessedAssurance.traitkey)
+        if checkBlessedAssuranceBuff then
+            cBlessedAssurance = cBlessedAssurance + nBlessedAssurance
+        end
+    end
 
     local checkPhysicalBypass = wan.traitData.TemplarStrikes.known or wan.traitData.BladesofLight.known or wan.spellData.CrusaderStrike.name == "Blessed Hammer"
     local checkPhysicalDR = (checkPhysicalBypass and 1) or wan.CheckUnitPhysicalDamageReduction()
     local cCrusaderStrikeCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
-    cCrusaderStrikeInstantDmg = cCrusaderStrikeInstantDmg * cBlessedHammer * checkPhysicalDR * cCrusaderStrikeCritValue
+    cCrusaderStrikeInstantDmg = cCrusaderStrikeInstantDmg * cBlessedAssurance * cBlessedHammer * checkPhysicalDR * cCrusaderStrikeCritValue
 
     cCrusaderStrikeDotDmg = cCrusaderStrikeDotDmg 
         + (cTemplarStrikesDotDmg * checkPhysicalDR * cCrusaderStrikeCritValue)
 
     cCrusaderStrikeInstantDmgAoE = cCrusaderStrikeInstantDmgAoE
         + (cBlessedChampionInstantDmgAoE * cCrusaderStrikeCritValue)
-        + (cHammeroftheRighteousInstantDmgAoE * cCrusaderStrikeCritValue)
-        + (cBlessedHammerInstantDmgAoE * cBlessedHammer * cCrusaderStrikeCritValue)
+        + (cHammeroftheRighteousInstantDmgAoE * cBlessedAssurance * cCrusaderStrikeCritValue)
+        + (cBlessedHammerInstantDmgAoE * cBlessedHammer * cBlessedAssurance * cCrusaderStrikeCritValue)
 
     cCrusaderStrikeDotDmgAoE = cCrusaderStrikeDotDmgAoE
         + (cTemplarStrikesDotDmgAoE * cCrusaderStrikeCritValue)
@@ -177,6 +186,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         local nBlessedChampionValues = wan.GetTraitDescriptionNumbers(wan.traitData.BlessedChampion.entryid, { 1, 2 })
         nBlessedChampionUnitCap = nBlessedChampionValues[1]
         nBlessedChampion = 1 - (nBlessedChampionValues[2] * 0.01)
+
+        nBlessedAssurance = wan.GetTraitDescriptionNumbers(wan.traitData.BlessedAssurance.entryid, { 1 }) * 0.01
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
