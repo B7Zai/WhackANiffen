@@ -250,12 +250,13 @@ function wan.CheckClassBuff(buffName)
 end
 
 -- Counts units that have a specific debuff
-function wan.CheckSelfBuff(buffName)
+function wan.CheckSelfBuff(buffName, expirationThreshold)
+    local expirationTime = expirationThreshold or 360
     local currentTime = GetTime()
     local aura = wan.auraData.player["buff_" .. buffName]
     local remainingDuration = aura and (aura.expirationTime - currentTime)
 
-    if aura and remainingDuration > 360 then return true end
+    if aura and remainingDuration > expirationTime then return true end
 
     return false
 end

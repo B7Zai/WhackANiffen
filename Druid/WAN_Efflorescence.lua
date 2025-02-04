@@ -24,7 +24,7 @@ local function CheckAbilityValue()
         return
     end
 
-    local castTime = 0.1
+    local castTime = 100
 
     -- Cast time layer
     local castEfficiency = wan.CheckCastEfficiency(wan.spellData.Efflorescence.id, castTime)

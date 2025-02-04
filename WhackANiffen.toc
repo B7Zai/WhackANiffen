@@ -129,6 +129,27 @@ Hunter\WAN_Trueshot.lua
 Hunter\WAN_Volley.lua
 Hunter\WAN_WildfireBomb.lua
 
+# Mage
+Mage\WAN_ArcaneBarrage.lua
+Mage\WAN_ArcaneBlast.lua
+Mage\WAN_ArcaneExplosion.lua
+Mage\WAN_ArcaneIntellect.lua
+Mage\WAN_ArcaneMissiles.lua
+Mage\WAN_ArcaneOrb.lua
+Mage\WAN_ArcaneSurge.lua
+Mage\WAN_ConeofCold.lua
+Mage\WAN_FireBlast.lua
+Mage\WAN_Frostbolt.lua
+Mage\WAN_FrostNova.lua
+Mage\WAN_IceBlock.lua
+Mage\WAN_MirrorImage.lua
+Mage\WAN_PrismaticBarrier.lua
+Mage\WAN_RemoveCurse.lua
+Mage\WAN_ShiftingPower.lua
+Mage\WAN_Spellsteal.lua
+Mage\WAN_Supernova.lua
+Mage\WAN_TouchoftheMagi.lua
+
 # Paladin
 Paladin\WAN_ArdentDefender.lua
 Paladin\WAN_AuraMastery.lua

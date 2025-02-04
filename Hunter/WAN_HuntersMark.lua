@@ -23,16 +23,24 @@ local function CheckAbilityValue()
         return
     end
 
+    local targetUnitToken = wan.TargetUnitID
+    local targetGUID = wan.UnitState.GUID[targetUnitToken]
+
+    local formattedDebuffName = wan.spellData.HuntersMark.basename
+    local checkHuntersMarkDebuff = wan.CheckUnitDebuff(targetUnitToken, formattedDebuffName)
+    if checkHuntersMarkDebuff then
+        wan.UpdateMechanicData(wan.spellData.HuntersMark.basename)
+        return
+    end
+
     for nameplateUnitToken, _ in pairs(idValidUnit) do
-        local checkUnitHuntersMarkDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.spellData.HuntersMark.basename]
+        local checkUnitHuntersMarkDebuff = wan.CheckUnitDebuff(nameplateUnitToken, formattedDebuffName)
         if checkUnitHuntersMarkDebuff then
             wan.UpdateMechanicData(wan.spellData.HuntersMark.basename)
             return
         end
     end
 
-    local targetUnitToken = wan.TargetUnitID
-    local targetGUID = wan.UnitState.GUID[targetUnitToken]
     local checkClass = wan.UnitState.Class[targetUnitToken]
     local checkClassification = UnitIsBossMob(targetUnitToken)
     local checkHuntersMark = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.spellData.HuntersMark.basename]

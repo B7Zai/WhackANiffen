@@ -10,8 +10,9 @@ local nBestialWrath, nBestialWrathMaxRange = 0, 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player["buff_" .. wan.spellData.BestialWrath.basename]
-     or not wan.IsSpellUsable(wan.spellData.BestialWrath.id)
+    if not wan.PlayerState.Status or not wan.PlayerState.Combat
+        or wan.auraData.player["buff_" .. wan.spellData.BestialWrath.basename]
+        or not wan.IsSpellUsable(wan.spellData.BestialWrath.id)
     then
         wan.UpdateAbilityData(wan.spellData.BestialWrath.basename)
         return

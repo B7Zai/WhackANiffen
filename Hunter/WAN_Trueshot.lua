@@ -10,8 +10,9 @@ local nTrueshot, nTrueShotMaxRange = 0, 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player["buff_" .. wan.spellData.Trueshot.basename]
-     or not wan.IsSpellUsable(wan.spellData.Trueshot.id)
+    if not wan.PlayerState.Status or not wan.PlayerState.Combat
+        or wan.auraData.player["buff_" .. wan.spellData.Trueshot.basename]
+        or not wan.IsSpellUsable(wan.spellData.Trueshot.id)
     then
         wan.UpdateAbilityData(wan.spellData.Trueshot.basename)
         return

@@ -144,13 +144,13 @@ local function AddonLoad(self, event, addonName)
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local nBarrageValues = wan.GetSpellDescriptionNumbers(wan.spellData.Barrage.id, { 1, 2, 3 })
-            nBarrageCastTime = nBarrageValues[1]
+            nBarrageCastTime = nBarrageValues[1] * 1000
             nBarrageDmg = nBarrageValues[2]
             nBarrageSoftCap = nBarrageValues[3]
 
             local nRapidFireValues = wan.GetSpellDescriptionNumbers(wan.spellData.RapidFire.id, { 1, 2, 3 })
             nRapidFireArrows = nRapidFireValues[1]
-            nRapidFireCastTime = nRapidFireValues[2]
+            nRapidFireCastTime = nRapidFireValues[2] * 1000
             nRapidFireDmgPerArrow = nRapidFireValues[3] / nRapidFireValues[1]
             nRapidFireDmg = nRapidFireValues[3]
         end

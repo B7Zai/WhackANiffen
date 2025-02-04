@@ -194,3 +194,22 @@ function wan.CheckPurgeBool(unitToken)
 
     return false
 end
+
+function wan.CheckStealBool(unitToken)
+    local unit = unitToken or wan.TargetUnitID
+    if not wan.auraData[unit] then return false end
+
+    local currentTime = GetTime()
+    for auraName, aura in pairs(wan.auraData[unit]) do
+        if auraName:find("buff_") then
+            if aura.isStealable then
+                local expirationTime = aura.expirationTime - currentTime
+                local hasDuration = expirationTime > 10 or aura.expirationTime == 0
+                local hasStacks = aura.applications and aura.applications >= 3
+                if hasDuration or hasStacks then return true end
+            end
+        end
+    end
+
+    return false
+end

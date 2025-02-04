@@ -88,7 +88,7 @@ local function AddonLoad(self, event, addonName)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local nFuryOfTheEagleValues = wan.GetSpellDescriptionNumbers(wan.spellData.FuryoftheEagle.id, { 1, 2, 3, 4, 5 })
             nFuryOfTheEagleDmg = nFuryOfTheEagleValues[1]
-            nFuryOfTheEagleCastTime = nFuryOfTheEagleValues[2]
+            nFuryOfTheEagleCastTime = nFuryOfTheEagleValues[2] * 1000
             nFuryOfTheEagleCrit = nFuryOfTheEagleValues[3]
             nFuryOfTheEagleThreshold = nFuryOfTheEagleValues[4] * 0.01
             nFuryOfTheEagleSoftCap = nFuryOfTheEagleValues[5]
