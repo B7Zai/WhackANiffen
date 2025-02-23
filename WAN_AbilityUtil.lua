@@ -148,9 +148,10 @@ function wan.ValueFromCritical(critChance, critMod, critDamageMod)
     local critChance = critChance or GetCritChance()
     local critMod = critMod or 0
     local critDamageMod = critDamageMod or 0
-    local critValue = 1 + (critChance / 100) + (critMod / 100)
-    local critDamageValue = (critDamageMod / 100) + 1
-    return critValue * critDamageValue
+    local critValue = math.min((1 + (critChance * 0.01) + (critMod * 0.01)), 2)
+    local critDamageValue =  1 + (critDamageMod * 0.01)
+
+    return (critValue * critDamageValue)
 end
 
 -- Checks spell cost
@@ -167,7 +168,7 @@ function wan.GetSpellCost(spellIndentifier, powerType)
 end
 
 -- Checks cast efficiency against gcd
-local lastMoved = GetTime()
+local lastStationary = 0
 function wan.CheckCastEfficiency(spellID, spellCastTime, canMoveCast)
     local valueModifier = 1
     local castTime = spellCastTime / 1000
@@ -180,12 +181,11 @@ function wan.CheckCastEfficiency(spellID, spellCastTime, canMoveCast)
         local movingCast = canMoveCast or false
         local playerSpeed = GetUnitSpeed("player") or 0
         local currentTime = GetTime()
-        if not movingCast and playerSpeed > 0 then
-            if not lastMoved or lastMoved < currentTime - wan.Options.DetectMovement.Slider then
-                return 0
-            end
-        else
-            lastMoved = currentTime
+
+        if playerSpeed == 0 then lastStationary = currentTime end
+
+        if not movingCast and currentTime - lastStationary > wan.Options.DetectMovement.Slider then
+            return 0
         end
     end
 

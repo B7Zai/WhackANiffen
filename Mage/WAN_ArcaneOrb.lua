@@ -8,8 +8,9 @@ local abilityActive = false
 local nArcaneOrbDmg = 0
 
 -- Init trait data
-local nTraitWithRanks = 0
-local nTraitWithUnitCap, nTrait
+local nOverflowingEnergy = 0
+local nArcaneSplinterDmg, nArcaneSplinterDotDmg = 0, 0
+local nSplinteringOrbSplinterCount, nSplinteringOrbSplinterCap = 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -33,7 +34,7 @@ local function CheckAbilityValue()
     local critChanceModBase = 0
     local critDamageModBase = 0
 
-    local cArcaneOrbInstantDmg = nArcaneOrbDmg
+    local cArcaneOrbInstantDmg = 0
     local cArcaneOrbDotDmg = 0
     local cArcaneOrbInstantDmgAoE = 0
     local cArcaneOrbDotDmgAoE = 0
@@ -41,14 +42,28 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local nArcaneOrbBaseDmgAoE = 0
-    for nameplateUnitToken, _ in pairs(idValidUnit) do
-        local unitAoEPotency = wan.CheckDotPotency(nil, nameplateUnitToken)
+    ---- CLASS TRAITS ----
 
-        nArcaneOrbBaseDmgAoE = nArcaneOrbBaseDmgAoE + (nArcaneOrbDmg * unitAoEPotency)
+    if wan.traitData.OverflowingEnergy.known then
+        critDamageMod = critDamageMod + nOverflowingEnergy
     end
 
-    ---- TRAITS ----
+    ---- SPELLSLINGER TRAITS ----
+
+    local cSplinteringOrbsInstantDmgAoE = 0
+    local cSplinteringOrbsDotDmgAoE = 0
+    if wan.traitData.SplinteringOrbs.known then
+        local countSplinteringOrbSplinters = 0
+        for nameplateUnitToken, _ in pairs(idValidUnit) do
+            cSplinteringOrbsInstantDmgAoE = cSplinteringOrbsInstantDmgAoE + (nArcaneSplinterDmg * nSplinteringOrbSplinterCount)
+
+            local dotPotency = wan.CheckDotPotency(nArcaneOrbDmg, nameplateUnitToken)
+            cSplinteringOrbsDotDmgAoE = cSplinteringOrbsDotDmgAoE + (nArcaneSplinterDotDmg * nSplinteringOrbSplinterCount * dotPotency)
+            
+            countSplinteringOrbSplinters = countSplinteringOrbSplinters + nSplinteringOrbSplinterCount
+            if countSplinteringOrbSplinters >= nSplinteringOrbSplinterCap then break end
+        end
+    end
 
     local cArcaneOrbCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
@@ -57,9 +72,11 @@ local function CheckAbilityValue()
     cArcaneOrbDotDmg = cArcaneOrbDotDmg
 
     cArcaneOrbInstantDmgAoE = cArcaneOrbInstantDmgAoE
-        + (nArcaneOrbBaseDmgAoE * cArcaneOrbCritValue)
+        + (nArcaneOrbDmg * countValidUnit * cArcaneOrbCritValue)
+        + (cSplinteringOrbsInstantDmgAoE * cArcaneOrbCritValue)
 
     cArcaneOrbDotDmgAoE = cArcaneOrbDotDmgAoE
+        + (cSplinteringOrbsDotDmgAoE * cArcaneOrbCritValue)
 
     local cArcaneOrbDmg = cArcaneOrbInstantDmg + cArcaneOrbDotDmg + cArcaneOrbInstantDmgAoE + cArcaneOrbDotDmgAoE
 
@@ -78,6 +95,10 @@ local function AddonLoad(self, event, addonName)
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nArcaneOrbDmg = wan.GetSpellDescriptionNumbers(wan.spellData.ArcaneOrb.id, { 2 })
+
+            local nSplinteringSorceryValues = wan.GetTraitDescriptionNumbers(wan.traitData.SplinteringSorcery.entryid, { 4, 5 })
+            nArcaneSplinterDmg = nSplinteringSorceryValues[1]
+            nArcaneSplinterDotDmg = nSplinteringSorceryValues[2]
         end
     end)
 end
@@ -94,11 +115,11 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "TRAIT_DATA_READY" then 
-        nTraitWithRanks = wan.GetTraitDescriptionNumbers(wan.traitData.TraitName.entryid, { 1 }, wan.traitData.TraitName.rank)
+        nOverflowingEnergy = wan.GetTraitDescriptionNumbers(wan.traitData.OverflowingEnergy.entryid, { 1 })
 
-        local nTraitValues = wan.GetTraitDescriptionNumbers(wan.traitData.TraitName.entryid, { 1, 2 })
-        nTraitWithUnitCap = nTraitValues[1]
-        nTrait = nTraitValues[2] * 0.01
+        local nSplinteringOrbValues = wan.GetTraitDescriptionNumbers(wan.traitData.SplinteringOrbs.entryid, { 1, 2 })
+        nSplinteringOrbSplinterCount = nSplinteringOrbValues[1]
+        nSplinteringOrbSplinterCap = nSplinteringOrbValues[2]
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

@@ -8,14 +8,16 @@ local abilityActive = false
 local nShiftingPowerDmg, nShiftingPowerMaxRange, nShiftingPowerCastTime = 0, 0, 0
 
 -- Init trait data
-local nTraitWithRanks = 0
-local nTraitWithUnitCap, nTrait
-
+local nOverflowingEnergy = 0
+local nArcaneSplinterDmg, nArcaneSplinterDotDmg = 0, 0
+local nShiftingShardsSplinterCount = 0
+local nMoltenFuryThreshold, nMoltenFury = 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.ShiftingPower.id)
+    if not wan.PlayerState.Status or not wan.PlayerState.Combat
+        or not wan.IsSpellUsable(wan.spellData.ShiftingPower.id)
     then
         wan.UpdateAbilityData(wan.spellData.ShiftingPower.basename)
         return
@@ -41,7 +43,7 @@ local function CheckAbilityValue()
     local critChanceModBase = 0
     local critDamageModBase = 0
 
-    local cShiftingPowerInstantDmg = nShiftingPowerDmg
+    local cShiftingPowerInstantDmg = 0
     local cShiftingPowerDotDmg = 0
     local cShiftingPowerInstantDmgAoE = 0
     local cShiftingPowerDotDmgAoE = 0
@@ -56,16 +58,57 @@ local function CheckAbilityValue()
         cShiftingPowerBaseDmgAoE = cShiftingPowerBaseDmgAoE + (nShiftingPowerDmg * unitAoEPotency)
     end
 
-    ---- TRAITS ----
+    ---- CLASS TRAITS ----
+
+    if wan.traitData.OverflowingEnergy.known then
+        critDamageMod = critDamageMod + nOverflowingEnergy
+    end
+
+    ---- FIRE TRAITS ----
+
+    if wan.traitData.Combustion.known then
+        local checkCombustionBuff = wan.CheckUnitBuff(nil, wan.spellData.Combustion.formattedName)
+        if checkCombustionBuff then
+            critChanceMod = critChanceMod + 100
+        end
+    end
+
+    local cMoltenFury = 1
+    if wan.traitData.MoltenFury.known then
+        local countMoltenFury = 0
+        for _, nameplateGUID in pairs(idValidUnit) do
+            local checkPercentageHealth = targetGUID and UnitPercentHealthFromGUID(nameplateGUID) or 1
+            if checkPercentageHealth < nMoltenFuryThreshold then
+                countMoltenFury = countMoltenFury + 1
+            end
+        end
+
+        if countMoltenFury > 0 then
+            cMoltenFury = cMoltenFury + ((nMoltenFury * countMoltenFury) / countValidUnit)
+        end
+    end
+
+    ---- SPELLSLINGER TRAITS ----
+
+    local cShiftingShardsInstantDmg = 0
+    local cShiftingShardsDotDmg = 0
+    if wan.traitData.ShiftingShards.known then
+        cShiftingShardsInstantDmg = cShiftingShardsInstantDmg + (nArcaneSplinterDmg * nShiftingShardsSplinterCount)
+
+        local dotPotency = wan.CheckDotPotency(nShiftingPowerDmg, targetUnitToken)
+        cShiftingShardsDotDmg = cShiftingShardsDotDmg + (nArcaneSplinterDotDmg * nShiftingShardsSplinterCount * dotPotency)
+    end
 
     local cShiftingPowerCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
     cShiftingPowerInstantDmg = cShiftingPowerInstantDmg
+        + (cShiftingShardsInstantDmg * cShiftingPowerCritValue)
 
     cShiftingPowerDotDmg = cShiftingPowerDotDmg
+        + (cShiftingShardsDotDmg * cShiftingPowerCritValue)
 
     cShiftingPowerInstantDmgAoE = cShiftingPowerInstantDmgAoE
-        + (cShiftingPowerBaseDmgAoE * cShiftingPowerCritValue)
+        + (cShiftingPowerBaseDmgAoE * cMoltenFury * cShiftingPowerCritValue)
 
     cShiftingPowerDotDmgAoE = cShiftingPowerDotDmgAoE
     
@@ -89,6 +132,10 @@ local function AddonLoad(self, event, addonName)
             nShiftingPowerDmg = nShiftingPowerValues[1]
             nShiftingPowerCastTime = nShiftingPowerValues[2] * 1000
             nShiftingPowerMaxRange = nShiftingPowerValues[3]
+
+            local nSplinteringSorceryValues = wan.GetTraitDescriptionNumbers(wan.traitData.SplinteringSorcery.entryid, { 4, 5 })
+            nArcaneSplinterDmg = nSplinteringSorceryValues[1]
+            nArcaneSplinterDotDmg = nSplinteringSorceryValues[2]
         end
     end)
 end
@@ -105,11 +152,13 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "TRAIT_DATA_READY" then 
-        nTraitWithRanks = wan.GetTraitDescriptionNumbers(wan.traitData.TraitName.entryid, { 1 }, wan.traitData.TraitName.rank)
+        nOverflowingEnergy = wan.GetTraitDescriptionNumbers(wan.traitData.OverflowingEnergy.entryid, { 1 })
 
-        local nTraitValues = wan.GetTraitDescriptionNumbers(wan.traitData.TraitName.entryid, { 1, 2 })
-        nTraitWithUnitCap = nTraitValues[1]
-        nTrait = nTraitValues[2] * 0.01
+        nShiftingShardsSplinterCount = wan.GetTraitDescriptionNumbers(wan.traitData.ShiftingShards.entryid, { 1 })
+
+        local nMoltenFuryValues = wan.GetTraitDescriptionNumbers(wan.traitData.MoltenFury.entryid, { 1, 2 })
+        nMoltenFuryThreshold = nMoltenFuryValues[1] * 0.01
+        nMoltenFury = nMoltenFuryValues[2] * 0.01
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

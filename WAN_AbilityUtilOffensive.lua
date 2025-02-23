@@ -141,9 +141,14 @@ function wan.CheckDotPotency(initialValue, unitToken)
     return math.min(calcPotency, 1)
 end
 
-function wan.CheckUnitDebuff(unitToken, formattedDebuffName)
+function wan.CheckUnitDebuff(unitToken, formattedDebuffName, debuffID)
     local unit = unitToken or wan.TargetUnitID
     local checkDebuff = wan.auraData[unit] and wan.auraData[unit]["debuff_" .. formattedDebuffName]
+    
+    if checkDebuff and debuffID and checkDebuff.spellID ~= debuffID then
+         return nil
+    end
+
     if checkDebuff then return checkDebuff end
 
     return nil

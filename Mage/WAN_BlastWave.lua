@@ -5,7 +5,7 @@ if wan.PlayerState.Class ~= "MAGE" then return end
 
 -- Init spell data
 local abilityActive = false
-local nFrostNovaDmg, nFrostNovaMaxRange = 0, 0
+local nBlastWaveDmg, nBlastWaveMaxRange = 0, 0
 
 -- Init trait data
 local nOverflowingEnergy = 0
@@ -15,16 +15,16 @@ local nMoltenFuryThreshold, nMoltenFury = 0, 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.FrostNova.id)
+    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.BlastWave.id)
     then
-        wan.UpdateAbilityData(wan.spellData.FrostNova.basename)
+        wan.UpdateAbilityData(wan.spellData.BlastWave.basename)
         return
     end
 
     -- Check for valid unit
-    local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, nFrostNovaMaxRange)
+    local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, nBlastWaveMaxRange)
     if not isValidUnit then
-        wan.UpdateAbilityData(wan.spellData.FrostNova.basename)
+        wan.UpdateAbilityData(wan.spellData.BlastWave.basename)
         return
     end
 
@@ -34,19 +34,19 @@ local function CheckAbilityValue()
     local critChanceModBase = 0
     local critDamageModBase = 0
 
-    local cFrostNovaInstantDmg = 0
-    local cFrostNovaDotDmg = 0
-    local cFrostNovaInstantDmgAoE = 0
-    local cFrostNovaDotDmgAoE = 0
+    local cBlastWaveInstantDmg = 0
+    local cBlastWaveDotDmg = 0
+    local cBlastWaveInstantDmgAoE = 0
+    local cBlastWaveDotDmgAoE = 0
 
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local nFrostNovaBaseDmgAoE = 0
+    local nBlastWaveBaseDmgAoE = 0
     for nameplateUnitToken, _ in pairs(idValidUnit) do
         local unitAoEPotency = wan.CheckDotPotency(nil, nameplateUnitToken)
 
-        nFrostNovaBaseDmgAoE = nFrostNovaBaseDmgAoE + (nFrostNovaDmg * unitAoEPotency)
+        nBlastWaveBaseDmgAoE = nBlastWaveBaseDmgAoE + (nBlastWaveDmg * unitAoEPotency)
     end
 
     ---- CLASS TRAITS ----
@@ -83,26 +83,26 @@ local function CheckAbilityValue()
         end
     end
 
-    local cFrostNovaCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+    local cBlastWaveCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
-    cFrostNovaInstantDmg = cFrostNovaInstantDmg
+    cBlastWaveInstantDmg = cBlastWaveInstantDmg
 
-    cFrostNovaDotDmg = cFrostNovaDotDmg
+    cBlastWaveDotDmg = cBlastWaveDotDmg
 
-    cFrostNovaInstantDmgAoE = cFrostNovaInstantDmgAoE
-        + (nFrostNovaBaseDmgAoE * cMoltenFury * cFrostNovaCritValue)
+    cBlastWaveInstantDmgAoE = cBlastWaveInstantDmgAoE
+        + (nBlastWaveBaseDmgAoE * cMoltenFury * cBlastWaveCritValue)
 
-    cFrostNovaDotDmgAoE = cFrostNovaDotDmgAoE
+    cBlastWaveDotDmgAoE = cBlastWaveDotDmgAoE
 
-    local cFrostNovaDmg = cFrostNovaInstantDmg + cFrostNovaDotDmg + cFrostNovaInstantDmgAoE + cFrostNovaDotDmgAoE
+    local cBlastWaveDmg = cBlastWaveInstantDmg + cBlastWaveDotDmg + cBlastWaveInstantDmgAoE + cBlastWaveDotDmgAoE
 
     -- Update ability data
-    local abilityValue = math.floor(cFrostNovaDmg)
-    wan.UpdateAbilityData(wan.spellData.FrostNova.basename, abilityValue, wan.spellData.FrostNova.icon, wan.spellData.FrostNova.name)
+    local abilityValue = math.floor(cBlastWaveDmg)
+    wan.UpdateAbilityData(wan.spellData.BlastWave.basename, abilityValue, wan.spellData.BlastWave.icon, wan.spellData.BlastWave.name)
 end
 
 -- Init frame 
-local frameFrostNova = CreateFrame("Frame")
+local frameBlastWave = CreateFrame("Frame")
 local function AddonLoad(self, event, addonName)
     -- Early Exit
     if addonName ~= "WhackANiffen" then return end
@@ -110,22 +110,22 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            local nFrostNovaValues = wan.GetSpellDescriptionNumbers(wan.spellData.FrostNova.id, { 1, 2 })
-            nFrostNovaMaxRange = nFrostNovaValues[1]
-            nFrostNovaDmg = nFrostNovaValues[2]
+            local nBlastWaveValues = wan.GetSpellDescriptionNumbers(wan.spellData.BlastWave.id, { 1, 2 })
+            nBlastWaveDmg = nBlastWaveValues[1]
+            nBlastWaveMaxRange = nBlastWaveValues[2]
         end
     end)
 end
-frameFrostNova:RegisterEvent("ADDON_LOADED")
-frameFrostNova:SetScript("OnEvent", AddonLoad)
+frameBlastWave:RegisterEvent("ADDON_LOADED")
+frameBlastWave:SetScript("OnEvent", AddonLoad)
 
 -- Set update rate based on settings
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "SPELL_DATA_READY" then
-        abilityActive = wan.spellData.FrostNova.known and wan.spellData.FrostNova.id
-        wan.BlizzardEventHandler(frameFrostNova, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
-        wan.SetUpdateRate(frameFrostNova, CheckAbilityValue, abilityActive)
+        abilityActive = wan.spellData.BlastWave.known and wan.spellData.BlastWave.id
+        wan.BlizzardEventHandler(frameBlastWave, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
+        wan.SetUpdateRate(frameBlastWave, CheckAbilityValue, abilityActive)
     end
 
     if event == "TRAIT_DATA_READY" then 
@@ -139,6 +139,6 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
-        wan.SetUpdateRate(frameFrostNova, CheckAbilityValue, abilityActive)
+        wan.SetUpdateRate(frameBlastWave, CheckAbilityValue, abilityActive)
     end
 end)

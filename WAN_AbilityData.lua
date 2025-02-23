@@ -35,13 +35,15 @@ local function GetSpellData(spellDataArray)
                 local spellType, spellID = spellBookItemInfo.itemType, spellBookItemInfo.actionID
                 local isPassive, isOffSpec = spellBookItemInfo.isPassive, spellBookItemInfo.isOffSpec
 
-                if spellType == Enum.SpellBookItemType.Spell and not isOffSpec then
+                if spellType == Enum.SpellBookItemType.Spell then
                     local baseSpellID = FindBaseSpellByID(spellID)
-                    local baseSpellName = C_Spell.GetSpellName(baseSpellID)
                     local overriddenSpellID = C_Spell.GetOverrideSpell(spellID)
+                    local baseSpellName = C_Spell.GetSpellName(baseSpellID)
                     local spellInfo = C_Spell.GetSpellInfo(overriddenSpellID)
                     local isPassive = C_Spell.IsSpellPassive(overriddenSpellID)
                     local keyName = wan.FormatNameForKey(baseSpellName)
+                    local formattedSpellName = wan.FormatNameForKey(spellInfo.name)
+                    local isKnown = IsPlayerSpell(overriddenSpellID)
 
                     if spellInfo then
                         spellDataArray[keyName] = {
@@ -53,8 +55,9 @@ local function GetSpellData(spellDataArray)
                             maxRange = spellInfo.maxRange,
                             id = overriddenSpellID,
                             basename = keyName,
+                            formattedName = formattedSpellName,
                             isPassive = isPassive,
-                            known = true
+                            known = isKnown
                         }
                     end
 

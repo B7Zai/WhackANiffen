@@ -23,12 +23,12 @@ local function CheckAbilityValue()
     end
 
     local formattedBuffName = wan.spellData.PrismaticBarrier.basename
-    local checPrismatickBarrierBuff = wan.CheckUnitBuff(nil, formattedBuffName)
+    local checkPrismaticBarrierBuff = wan.CheckUnitBuff(nil, formattedBuffName)
     local bPrismaticBarrierDesaturation = false
-    if checPrismatickBarrierBuff then
+    if checkPrismaticBarrierBuff then
         local checkTime = GetTime()
-        local nBarrierDurationThreshold = checPrismatickBarrierBuff.duration / 4
-        local nBarrierRemainingTime = checPrismatickBarrierBuff.expirationTime - checkTime
+        local nBarrierDurationThreshold = checkPrismaticBarrierBuff.duration / 4
+        local nBarrierRemainingTime = checkPrismaticBarrierBuff.expirationTime - checkTime
         if nBarrierRemainingTime > nBarrierDurationThreshold then
             wan.UpdateMechanicData(wan.spellData.PrismaticBarrier.basename)
             return

@@ -7,30 +7,33 @@ if wan.PlayerState.Class ~= "MAGE" then return end
 local playerGUID = wan.PlayerState.GUID
 local playerUnitToken = "player"
 local abilityActive = false
-local nMirrorImage = 0
+local nMassBarrier = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or wan.auraData.player["buff_" .. wan.spellData.IceBlock.formattedName]
+        or wan.auraData.player.buff_IceBlock
+        or wan.auraData.player.buff_PrismaticBarrier
+        or wan.auraData.player.buff_BlazingBarrier
+        or wan.auraData.player.buff_IceBarrier
         or wan.auraData.player["buff_" .. wan.spellData.Invisibility.formattedName]
         or wan.auraData.player.buff_MassInvisibility
-        or not wan.IsSpellUsable(wan.spellData.MirrorImage.id)
+        or not wan.IsSpellUsable(wan.spellData.MassBarrier.id)
     then
-        wan.UpdateMechanicData(wan.spellData.MirrorImage.basename)
+        wan.UpdateMechanicData(wan.spellData.MassBarrier.basename)
         return
     end
 
     local currentPercentHealth = UnitPercentHealthFromGUID(playerGUID) or 1
-    local cMirrorImage = nMirrorImage
+    local cMassBarrier = nMassBarrier
 
-    local abilityValue = wan.UnitAbilityHealValue(playerUnitToken, cMirrorImage, currentPercentHealth)
-    wan.UpdateMechanicData(wan.spellData.MirrorImage.basename, abilityValue, wan.spellData.MirrorImage.icon, wan.spellData.MirrorImage.name)
+    local abilityValue = wan.UnitAbilityHealValue(playerUnitToken, cMassBarrier, currentPercentHealth)
+    wan.UpdateMechanicData(wan.spellData.MassBarrier.basename, abilityValue, wan.spellData.MassBarrier.icon, wan.spellData.MassBarrier.name)
 end
 
 -- Init frame 
-local frameMirrorImage = CreateFrame("Frame")
+local frameMassBarrier = CreateFrame("Frame")
 local function AddonLoad(self, event, addonName)
     -- Early Exit
     if addonName ~= "WhackANiffen" then return end
@@ -38,33 +41,33 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            nMirrorImage = wan.DefensiveCooldownToValue(wan.spellData.MirrorImage.id)
+            nMassBarrier = wan.DefensiveCooldownToValue(wan.spellData.MassBarrier.id)
         end
     end)
 end
-frameMirrorImage:RegisterEvent("ADDON_LOADED")
-frameMirrorImage:SetScript("OnEvent", AddonLoad)
+frameMassBarrier:RegisterEvent("ADDON_LOADED")
+frameMassBarrier:SetScript("OnEvent", AddonLoad)
 
 -- Set update rate based on settings
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "SPELL_DATA_READY" then
-        abilityActive = wan.spellData.MirrorImage.known and wan.spellData.MirrorImage.id
-        wan.BlizzardEventHandler(frameMirrorImage, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
-        wan.SetUpdateRate(frameMirrorImage, CheckAbilityValue, abilityActive)
+        abilityActive = wan.spellData.MassBarrier.known and wan.spellData.MassBarrier.id
+        wan.BlizzardEventHandler(frameMassBarrier, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
+        wan.SetUpdateRate(frameMassBarrier, CheckAbilityValue, abilityActive)
     end
 
     if event == "TRAIT_DATA_READY" then end
 
     if event == "HEALERMODE_FRAME_TOGGLE" then
         if wan.PlayerState.InHealerMode then
-            wan.UpdateMechanicData(wan.spellData.MirrorImage.basename)
+            wan.UpdateMechanicData(wan.spellData.MassBarrier.basename)
         else
-            wan.UpdateSupportData(nil, wan.spellData.MirrorImage.basename)
+            wan.UpdateSupportData(nil, wan.spellData.MassBarrier.basename)
         end
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
-        wan.SetUpdateRate(frameMirrorImage, CheckAbilityValue, abilityActive)
+        wan.SetUpdateRate(frameMassBarrier, CheckAbilityValue, abilityActive)
     end
 end)

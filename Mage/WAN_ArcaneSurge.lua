@@ -11,7 +11,7 @@ local nArcaneSurge, nArcaneSurgeMaxRange = 0, 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or wan.aurahalData.player["buff_" .. wan.spellData.ArcaneSurge.basename]
+        or wan.auraData.player["buff_" .. wan.spellData.ArcaneSurge.formattedName]
         or not wan.IsSpellUsable(wan.spellData.ArcaneSurge.id)
     then
         wan.UpdateAbilityData(wan.spellData.ArcaneSurge.basename)

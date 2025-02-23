@@ -50,14 +50,23 @@ function wan.UpdateSupportData(unitToken, abilityName, value, icon, name, desatu
     }
 end
 
-function wan.CheckUnitBuff(unitToken, formattedBuffName)
+function wan.CheckUnitBuff(unitToken, formattedBuffName, buffID)
     if not formattedBuffName then return nil end
     
     local unit = unitToken or "player"
-    local checkDebuff = wan.auraData[unit] and wan.auraData[unit]["buff_" .. formattedBuffName]
-    if checkDebuff then return checkDebuff end
+    local checkBuff = wan.auraData[unit] and wan.auraData[unit]["buff_" .. formattedBuffName]
 
-    return nil
+    if checkBuff then
+        if buffID and checkBuff.spellId ~= buffID then
+            return nil
+        end
+
+        local currentTime = GetTime()
+        local checkExpiration = checkBuff.expirationTime - currentTime
+        if checkExpiration <= 0 then checkBuff = nil end
+    end
+
+    return checkBuff
 end
 
 -- Counts the number of group members in range

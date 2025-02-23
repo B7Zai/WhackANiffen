@@ -8,8 +8,12 @@ local abilityActive = false
 local nArcaneBlastDmg = 0
 
 -- Init trait datat
+local nOverflowingEnergy = 0
+local nDematerialize = 0
 local nArcaneDebilitation = 0
 local nLeydrinker, nLeydrinkerUnitCap = 0, 4
+local nArcaneSplinterCount, nArcaneSplinterDmg, nArcaneSplinterDotDmg = 0, 0, 0
+local nControlledInstincts, nControlledInstinctsSoftCap = 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -46,7 +50,21 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
+    ---- CLASS TRAITS ----
+
+    if wan.traitData.OverflowingEnergy.known then
+        critDamageMod = critDamageMod + nOverflowingEnergy
+    end
+
     ---- ARCANE TRAITS ----
+
+    local cDematerialize = 0
+    if wan.traitData.Dematerialize.known then
+        local checkNetherPrecisionBuff = wan.CheckUnitBuff(nil, wan.traitData.NetherPrecision.traitkey)
+        if checkNetherPrecisionBuff then
+            cDematerialize = cDematerialize + nDematerialize
+        end
+    end
 
     local cArcaneDebilitation = 1
     if wan.traitData.ArcaneDebilitation.known then
@@ -66,15 +84,43 @@ local function CheckAbilityValue()
         end
     end
 
+    ---- SPELLSLINGER TRAITS ----
+
+    local cArcaneSplinterInstantDmg = 0
+    local cArcaneSplinterDotDmg = 0
+    local cControlledInstinctsInstantDmgAoE = 0
+    if wan.traitData.SplinteringSorcery.known then
+        local checkNetherPrecisionBuff = wan.CheckUnitBuff(nil, wan.traitData.NetherPrecision.traitkey)
+        if checkNetherPrecisionBuff then
+            cArcaneSplinterInstantDmg = cArcaneSplinterInstantDmg + (nArcaneSplinterDmg * nArcaneSplinterCount)
+
+            local dotPotency = wan.CheckDotPotency(nArcaneBlastDmg, targetUnitToken)
+            cArcaneSplinterDotDmg = cArcaneSplinterDotDmg + (nArcaneSplinterDotDmg * nArcaneSplinterCount * dotPotency)
+        end
+
+        if wan.traitData.ControlledInstincts.known then
+            local checkControlledInstinctsDebuff = wan.CheckUnitDebuff(nil, wan.traitData.ControlledInstincts.traitkey)
+            if checkControlledInstinctsDebuff then
+                local countControlledInstinctsUnit = math.max(countValidUnit - 1, 0)
+                local cControlledInstinctsUnit = wan.AdjustSoftCapUnitOverflow(nControlledInstinctsSoftCap, countControlledInstinctsUnit)
+                cControlledInstinctsInstantDmgAoE = cControlledInstinctsInstantDmgAoE + (nArcaneSplinterDmg * nArcaneSplinterCount * nControlledInstincts * cControlledInstinctsUnit)
+            end
+        end
+    end
+
     local cArcaneBlastCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
     cArcaneBlastInstantDmg = cArcaneBlastInstantDmg
         + (nArcaneBlastDmg * cArcaneDebilitation * cArcaneBlastCritValue)
+        + (cArcaneSplinterInstantDmg * cArcaneBlastCritValue)
 
     cArcaneBlastDotDmg = cArcaneBlastDotDmg 
+        + (nArcaneBlastDmg * cArcaneDebilitation * cArcaneBlastCritValue * cDematerialize)
+        + (cArcaneSplinterDotDmg * cArcaneBlastCritValue)
 
     cArcaneBlastInstantDmgAoE = cArcaneBlastInstantDmgAoE
         + (cLeydrinkerInstantDmgAoE * cArcaneBlastCritValue)
+        + (cControlledInstinctsInstantDmgAoE * cArcaneBlastCritValue)
 
     cArcaneBlastDotDmgAoE = cArcaneBlastDotDmgAoE
 
@@ -96,6 +142,10 @@ local function AddonLoad(self, event, addonName)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nArcaneBlastDmg = wan.GetSpellDescriptionNumbers(wan.spellData.ArcaneBlast.id, { 1 })
 
+            local nSplinteringSorceryValues = wan.GetTraitDescriptionNumbers(wan.traitData.SplinteringSorcery.entryid, { 1, 4, 5 })
+            nArcaneSplinterCount = nSplinteringSorceryValues[1]
+            nArcaneSplinterDmg = nSplinteringSorceryValues[2]
+            nArcaneSplinterDotDmg = nSplinteringSorceryValues[3]
         end
     end)
 end
@@ -112,9 +162,17 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "TRAIT_DATA_READY" then 
+        nOverflowingEnergy = wan.GetTraitDescriptionNumbers(wan.traitData.OverflowingEnergy.entryid, { 1 })
+
+        nDematerialize = wan.GetTraitDescriptionNumbers(wan.traitData.Dematerialize.entryid, { 1 }) * 0.01
+
         nArcaneDebilitation = wan.GetTraitDescriptionNumbers(wan.traitData.ArcaneDebilitation.entryid, { 1 }, wan.traitData.ArcaneDebilitation.rank) * 0.01
 
         nLeydrinker = wan.GetTraitDescriptionNumbers(wan.traitData.Leydrinker.entryid, { 2 }) * 0.01
+
+        local nControlledInstinctsValues = wan.GetTraitDescriptionNumbers(wan.traitData.ControlledInstincts.entryid, { 2, 3 })
+        nControlledInstincts = nControlledInstinctsValues[1] * 0.01
+        nControlledInstinctsSoftCap = nControlledInstinctsValues[2]
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

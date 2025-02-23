@@ -119,7 +119,7 @@ local function OnEvent(self, event, ...)
 
         wan.UnitState.Health[unitToken] = health
         wan.UnitState.Classification[unitToken] = unitClassification
-        wan.UnitState.Class[unitToken] = unitPlayer and UnitClassBase(unitToken) or false
+        wan.UnitState.Class[unitToken] = unitPlayer and UnitClassBase(unitToken) or "UNKNOWN"
 
         if unitGUID then
             wan.NameplateUnitID[unitToken] = unitGUID

@@ -14,7 +14,9 @@ local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.PlayerState.Combat
         or wan.auraData.player.debuff_Hypothermia
-        or wan.auraData.player.buff_IceBlock
+        or wan.auraData.player["buff_" .. wan.spellData.IceBlock.formattedName]
+        or wan.auraData.player["buff_" .. wan.spellData.Invisibility.formattedName]
+        or wan.auraData.player.buff_MassInvisibility
         or not wan.IsSpellUsable(wan.spellData.IceBlock.id)
     then
         wan.UpdateMechanicData(wan.spellData.IceBlock.basename)
