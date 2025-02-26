@@ -13,7 +13,6 @@ local nOverflowingEnergy = 0
 local nMasteryIciclesDmg = 0
 local nShatterMultiplier, nShatter = 0, 0
 local nPiercingCold = 0
-local nWintertide = 0
 local nSplittingIce, nSplittingIceUnitCap = 0, 1
 local nExcessFireDmg, nExcessFireSoftCap = 0, 0
 local nArcaneSplinterDmg, nArcaneSplinterDotDmg = 0, 0
@@ -146,13 +145,6 @@ local function CheckAbilityValue()
         cPiercingCold = cPiercingCold + nPiercingCold
     end
 
-    local cWintertide = 1
-    if wan.traitData.Wintertide.known then
-        if checkFingersofFrost and isFrozen then
-            cWintertide = cWintertide + nWintertide
-        end
-    end
-
     local cSplittingIceInstantDmgAoE = 0
     if wan.traitData.SplittingIce.known then
         local countSplittingIceUnit = 0
@@ -173,14 +165,7 @@ local function CheckAbilityValue()
                     end
                 end
 
-                local cWintertideUnit = 1
-                if wan.traitData.Wintertide.known then
-                    if checkFingersofFrost and isFrozenSplittingIce then
-                        cWintertideUnit = cWintertideUnit + nWintertide
-                    end
-                end
-
-                cSplittingIceInstantDmgAoE = cSplittingIceInstantDmgAoE + (nIceLanceDmg * nSplittingIce * cIceLanceShatterAoE * cWintertideUnit)
+                cSplittingIceInstantDmgAoE = cSplittingIceInstantDmgAoE + (nIceLanceDmg * nSplittingIce * cIceLanceShatterAoE)
 
                 countSplittingIceUnit = countSplittingIceUnit + 1
 
@@ -207,7 +192,7 @@ local function CheckAbilityValue()
     local cControlledInstinctsInstantDmgAoE = 0
     if wan.traitData.SplinteringSorcery.known then
         local checkWintersChill = wan.CheckUnitDebuff(nil, "WintersChill")
-        if checkWintersChill then
+        if checkWintersChill or checkFingersofFrost then
             cArcaneSplinterInstantDmg = cArcaneSplinterInstantDmg + nArcaneSplinterDmg
 
             local dotPotency = wan.CheckDotPotency(nIceLanceDmg, targetUnitToken)
@@ -228,7 +213,7 @@ local function CheckAbilityValue()
     local cIceLanceCritValueBase = wan.ValueFromCritical(wan.CritChance, critChanceModBase, critDamageModBase)
 
     cIceLanceInstantDmg = cIceLanceInstantDmg
-        + (nIceLanceDmg * cIcelanceShatter * cIceLanceCritValue * cWintertide)
+        + (nIceLanceDmg * cIcelanceShatter * cIceLanceCritValue)
         + (cMasteryIciclesInstantDmg * cIceLanceCritValue * cPiercingCold)
         + (cArcaneSplinterInstantDmg * cIceLanceCritValueBase)
 
@@ -303,8 +288,6 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nShatter = nShatterValues[2]
 
         nPiercingCold = wan.GetTraitDescriptionNumbers(wan.traitData.PiercingCold.entryid, { 1 }) * 0.01
-
-        nWintertide = wan.GetTraitDescriptionNumbers(wan.traitData.Wintertide.entryid, { 2 }, wan.traitData.Wintertide.rank) * 0.01
 
         nSplittingIce = wan.GetTraitDescriptionNumbers(wan.traitData.SplittingIce.entryid, { 2 }) * 0.01
 

@@ -107,13 +107,13 @@ local function OnEvent(self, event, addonname)
             local function IsParentSelectedDetectMovementToggle() return settingDetectMovementToggle:GetValue() end
 
             do -- slider that set the throttle timer while its updating on every frame
-                wan.Options.DetectMovement.Slider = wan.Options.DetectMovement.Slider or 0.8
+                wan.Options.DetectMovement.Slider = wan.Options.DetectMovement.Slider or 1
                 local function GetValueDetectMovementSlider() return wan.Options.DetectMovement.Slider end
                 local function SetValueDetectMovementSlider(value)
                     wan.Options.DetectMovement.Slider = value
                 end
-                local tooltipDetectMovementSlider = "Set a delay in seconds for movement detection to ignore minor position adjustments."
-                local minValue, maxValue, stepValue = 0.1, 2, 0.1
+                local tooltipDetectMovementSlider = "Set a delay in seconds for movement detection to ignore minor position adjustments. Only works while in combat."
+                local minValue, maxValue, stepValue = 0.1, 3, 0.1
                 local settingDetectMovementSlider = Settings.RegisterProxySetting(
                     category,
                     "Detect_Movement_Slider",

@@ -20,6 +20,7 @@ local nArcaneOrbDmg, nOrbBarrageProcChance, nOrbBarrage = 0, 0, 0
 local nArcaneSplinterCount, nArcaneSplinterDmg, nArcaneSplinterDotDmg = 0, 0, 0
 local nControlledInstincts, nControlledInstinctsSoftCap = 0, 0
 local nFrostboltDmg, nGloriousIncandescenceMeteoriteCount = 0, 0
+local nArcaneReboundDmg, nArcaneReboundUnitThreshold = 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -128,6 +129,13 @@ local function CheckAbilityValue()
         cOrbBarrageInstantDmgAoE = cOrbBarrageInstantDmgAoE + (nArcaneOrbDmg * countValidUnit * cOrbBarrageProcChance * nOrbBarrage)
     end
 
+    local cArcaneReboundInstantDmgAoE = 0
+    if wan.traitData.ArcaneRebound.known and countArcingCleaveUnit >= nArcaneReboundUnitThreshold then
+        local cArcaneReboundUnitOverflow = wan.AdjustSoftCapUnitOverflow(1, countValidUnit)
+        -- cArcaneReboundInstantDmgAoE = cArcaneReboundInstantDmgAoE + (nArcaneReboundDmg * countValidUnit) Talent is bugged? From the description this should be the correct way of calculating the dmg.
+        cArcaneReboundInstantDmgAoE = cArcaneReboundInstantDmgAoE + (nArcaneReboundDmg * cArcaneReboundUnitOverflow) -- this math isnt correct either, but its much closer to the observed results
+    end
+
     ---- SPELLSLINGER TRAITS ----
 
     local cArcaneSplinterInstantDmg = 0
@@ -198,7 +206,7 @@ local function AddonLoad(self, event, addonName)
     self:SetScript("OnEvent", function(self, event, ...)
 
         if event == "SPELLS_CHANGED" then
-            maxArcaneCharges = UnitPowerMax("player", 16) or 0
+            maxArcaneCharges = (UnitPowerMax("player", 16) - 1) or 0
             currentArcaneCharges = UnitPower("player", 16) or 0
         end
 
@@ -220,6 +228,10 @@ local function AddonLoad(self, event, addonName)
             nArcaneSplinterDotDmg = nSplinteringSorceryValues[3]
 
             nFrostboltDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Frostbolt.id, { 1 })
+
+            local nArcaneReboundValues = wan.GetTraitDescriptionNumbers(wan.traitData.ArcaneRebound.entryid, { 1, 2 })
+            nArcaneReboundUnitThreshold = nArcaneReboundValues[1]
+            nArcaneReboundDmg = nArcaneReboundValues[2]
         end
     end)
 end

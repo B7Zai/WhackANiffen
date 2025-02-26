@@ -12,6 +12,7 @@ local nOverflowingEnergy = 0
 local nShatterMultiplier, nShatter, sFrozenDebuffs = 0, 0, {}
 local nArcaneSplinterDmg, nArcaneSplinterDotDmg = 0, 0
 local nSplinteringOrbSplinterCount = 0
+local nFreezingWinds = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -72,6 +73,23 @@ local function CheckAbilityValue()
         critChanceMod = critChanceMod / countValidUnit
     end
 
+    local cFreezingWinds = 1
+    if wan.traitData.FreezingWinds.entryid then
+        local countBlizzardDebuff = 0
+
+        for nameplateUnitToken, _ in pairs(idValidUnit) do
+            local checkBlizzardDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.spellData.Blizzard.formattedName)
+
+            if checkBlizzardDebuff then
+                countBlizzardDebuff = countBlizzardDebuff + 1
+            end
+        end
+
+        if countBlizzardDebuff then
+            cFreezingWinds = cFreezingWinds + ((nFreezingWinds * countBlizzardDebuff) / countValidUnit)
+        end
+    end
+
     ---- SPELLSLINGER TRAITS ----
 
     local cSplinteringOrbsInstantDmgAoE = 0
@@ -91,7 +109,7 @@ local function CheckAbilityValue()
     cFrozenOrbDotDmg = cFrozenOrbDotDmg
 
     cFrozenOrbInstantDmgAoE = cFrozenOrbInstantDmgAoE
-        + (cFrozenOrbBaseDmgAoE * cFrozenOrbCritValue)
+        + (cFrozenOrbBaseDmgAoE * cFrozenOrbCritValue * cFreezingWinds)
         + (cSplinteringOrbsInstantDmgAoE * cFrozenOrbCritValueBase)
 
     cFrozenOrbDotDmgAoE = cFrozenOrbDotDmgAoE
@@ -151,6 +169,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nShatter = nShatterValues[2]
 
         nSplinteringOrbSplinterCount = wan.GetTraitDescriptionNumbers(wan.traitData.SplinteringOrbs.entryid, { 2 })
+
+        nFreezingWinds = wan.GetTraitDescriptionNumbers(wan.traitData.FreezingWinds.entryid, { 1 }) * 0.01
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

@@ -177,12 +177,12 @@ function wan.CheckCastEfficiency(spellID, spellCastTime, canMoveCast)
         return valueModifier
     end
 
-    if wan.Options.DetectMovement.Toggle then
+    if wan.Options.DetectMovement.Toggle and wan.PlayerState.Combat then
         local movingCast = canMoveCast or false
         local playerSpeed = GetUnitSpeed("player") or 0
         local currentTime = GetTime()
 
-        if playerSpeed == 0 then lastStationary = currentTime end
+        if playerSpeed == 0 or not wan.PlayerState.Combat then lastStationary = currentTime end
 
         if not movingCast and currentTime - lastStationary > wan.Options.DetectMovement.Slider then
             return 0
