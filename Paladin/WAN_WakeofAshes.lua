@@ -14,6 +14,7 @@ local checkHammerofLight, nHammerofLightDmg, nHammerofLightDmgAoE, nHammerofLigh
 local nEmpyreanHammer, nEmpyreanHammerTicks = 0, 0
 local nShaketheHeavensProcRate, nShaketheHeavensDuration, nShaketheHeavensTicks = 0, 0, 0
 local nWrathfulDescent = 0
+local nFinalReckoning = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -58,6 +59,16 @@ local function CheckAbilityValue()
     end
 
     ---- RETRIBUTION TRAITS ----
+
+    local cFinalReckoning = 1
+    if wan.traitData.FinalReckoning.known then
+        local formattedDebuffName = wan.traitData.FinalReckoning.traitkey
+        local checkFinalReckoningDebuff = wan.CheckUnitDebuff(nil, formattedDebuffName)
+
+        if checkFinalReckoningDebuff then
+            cFinalReckoning = cFinalReckoning + nFinalReckoning
+        end
+    end
 
     local cSeethingFlames = 1
     local cSeethingFlamesInstantDmgAoE = 0
@@ -116,7 +127,7 @@ local function CheckAbilityValue()
     local cWakeofAshesCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
     cWakeofAshesInstantDmg = cWakeofAshesInstantDmg
-        + (cHammerofLightInstantDmg * cWakeofAshesCritValue)
+        + (cHammerofLightInstantDmg * cWakeofAshesCritValue * cFinalReckoning)
         + (cEmpyreanHammerInstantDmg * cWakeofAshesCritValue)
 
     cWakeofAshesDotDmg = cWakeofAshesDotDmg
@@ -182,6 +193,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nShaketheHeavensTicks = nShaketheHeavensDuration / nShaketheHeavensProcRate
 
         nWrathfulDescent = wan.GetTraitDescriptionNumbers(wan.traitData.WrathfulDescent.entryid, { 1 }) * 0.01
+
+        nFinalReckoning = wan.GetTraitDescriptionNumbers(wan.traitData.FinalReckoning.entryid, { 3 }) * 0.01
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

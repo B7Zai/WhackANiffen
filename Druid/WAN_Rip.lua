@@ -22,7 +22,7 @@ local function CheckAbilityValue()
         return
     end
 
-    local maxRange = wan.spellData.PrimalWrath.maxRange or 5
+    local maxRange = wan.spellData.Rip.maxRange or 5
 
     -- Check for valid unit
     local isValidUnit = wan.ValidUnitBoolCounter(nil, maxRange)
@@ -37,33 +37,57 @@ local function CheckAbilityValue()
     end
 
     -- Dot values
+    local critChanceMod = 0
+    local critDamageMod = 0
+    local critChanceModBase = 0
+    local critDamageModBase = 0
+
+    local cRipInstantDmg = 0
     local cRipDotDmg = 0
+    local cRipInstantDmgAoE = 0
+    local cRipDotDmgAoE = 0
 
     local targetUnitToken = wan.TargetUnitID
-    local checkRipDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.spellData.Rip.basename]
+    local targetGUID = wan.UnitState.GUID[targetUnitToken]
+
+    local cRipDotDmgBase = 0
+    local checkRipDebuff = wan.CheckUnitDebuff(nil, wan.spellData.Rip.formattedName)
     if not checkRipDebuff then
         local dotPotency = wan.CheckDotPotency()
-        cRipDotDmg = cRipDotDmg + (nRipDotDmg * comboCorrection * dotPotency)
+        cRipDotDmgBase = cRipDotDmgBase + (nRipDotDmg * comboCorrection * dotPotency)
     end
 
-    -- Rip and Tear
+    ---- FERAL TRAITS ----
+
     local cTearDotDmg = 0
     if wan.traitData.RipandTear.known then
-        local checkTearDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken].debuff_Tear
+        local checkTearDebuff = wan.CheckUnitDebuff(nil, "Tear")
         if not checkTearDebuff then
             local dotPotency = wan.CheckDotPotency()
              cTearDotDmg = cTearDotDmg + (nRipDotDmg * currentCombo * nRipAndTear * dotPotency)
         end
     end
 
-    -- Master Shapeshifter
+    ---- RESTORATION TRAITS ----
+    
     local cMasterShapeshifter = 1
     if wan.traitData.MasterShapeshifter.known and currentCombo == nMasterShapeshifterCombo then
         cMasterShapeshifter = cMasterShapeshifter + nMasterShapeshifter
     end
 
     -- Crit layer
-    local cRipCritValue = wan.ValueFromCritical(wan.CritChance)
+    local cRipCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+    
+    cRipInstantDmg = cRipInstantDmg
+
+    cRipDotDmg = cRipDotDmg
+        + (cRipDotDmgBase * cRipCritValue * cMasterShapeshifter)
+        + (cTearDotDmg * cRipCritValue)
+
+    cRipInstantDmgAoE = cRipInstantDmgAoE
+
+    cRipDotDmgAoE = cRipDotDmgAoE
+
 
     local cRipDmg = (cRipDotDmg + cTearDotDmg) * cMasterShapeshifter * cRipCritValue
 

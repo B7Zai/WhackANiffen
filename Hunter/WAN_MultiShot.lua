@@ -6,15 +6,12 @@ if wan.PlayerState.Class ~= "HUNTER" then return end
 -- Init spell data
 local abilityActive = false
 local nMultiShotDmg, nMultiShotSoftCap = 0, 0
-local nMultiShotSpellCost = 0
 
 -- Init trait data
 local nPenetratingShots = 0
-local nExplosiveVenomInstantDmg, nExplosiveVenomDotDmg, nExplosiveVenomStacks = 0, 0, 0
-local nSalvoUnitCap = 0
-local nExplosiveShotDmg, nExplosiveShotSoftCap = 0, 0
+local nShrapnelShot = 0
 local nSymphonicArsenal, nSymphonicArsenalUnitCap = 0, 0
-local nHowlOfThePack = 0
+local nUnerringVision = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -24,7 +21,6 @@ local function CheckAbilityValue()
         wan.UpdateAbilityData(wan.spellData.MultiShot.basename)
         return
     end
-
 
     -- Check for valid unit
     local isValidUnit, countValidUnit ,idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.MultiShot.id)
@@ -36,66 +32,55 @@ local function CheckAbilityValue()
     -- Base values
     local critChanceMod = 0
     local critDamageMod = 0
+    local critChanceModBase = 0
+    local critDamageModBase = 0
 
     local cMultiShotInstantDmg = 0
     local cMultiShotDotDmg = 0
-    local cMultiShotInstantAoEDmg = 0
+    local cMultiShotInstantDmgAoE = 0
     local cMultiShotDotDmgAoE = 0
 
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local mechanicBuff = wan.auraData.player.buff_TrickShots
+    local checkTrickShotsBuff = wan.CheckUnitBuff(nil, wan.traitData.TrickShots.traitkey)
     local cMultiShotUnitOverflow = wan.SoftCapOverflow(nMultiShotSoftCap, countValidUnit)
+    local cMultiShotInstantDmgBaseAoE = 0
     for nameplateUnitToken, _ in pairs(idValidUnit) do
-        local checkPhysicalDR = mechanicBuff and 1 or wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+        local checkPhysicalDR = not checkTrickShotsBuff and wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken) or 1
 
-        cMultiShotInstantAoEDmg = cMultiShotInstantAoEDmg + (nMultiShotDmg * checkPhysicalDR * cMultiShotUnitOverflow)
-    end
-
-    ---- BEAST MASTERY TRAITS ----
-
-    local cExplosiveVenomInstantDmgAoE = 0
-    local cExplosiveVenomDotDmgAoE = 0
-    if wan.traitData.ExplosiveVenom.known then
-        local checkExplosiveVenomBuff = wan.auraData.player["buff_" .. wan.traitData.ExplosiveVenom.traitkey]
-
-        if checkExplosiveVenomBuff and checkExplosiveVenomBuff.applications == (nExplosiveVenomStacks - 1) then
-
-            for nameplateUnitToken, _ in pairs(idValidUnit) do
-                local checkUnitExplosiveVenomBuff = wan.auraData[nameplateUnitToken].debuff_SerpentSting
-                cExplosiveVenomInstantDmgAoE = cExplosiveVenomInstantDmgAoE + nExplosiveVenomInstantDmg
-
-                if not checkUnitExplosiveVenomBuff then
-                    local dotPotency = wan.CheckDotPotency(nExplosiveVenomInstantDmg, nameplateUnitToken)
-                    cExplosiveVenomDotDmgAoE = cExplosiveVenomDotDmgAoE + (nExplosiveVenomDotDmg * dotPotency)
-                end
-
-            end
-        end
+        cMultiShotInstantDmgBaseAoE = cMultiShotInstantDmgBaseAoE + (nMultiShotDmg * checkPhysicalDR * cMultiShotUnitOverflow)
     end
 
     ---- MARKSMAN TRAITS ----
-    
+
     if wan.traitData.PenetratingShots.known then
         critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
     end
 
-    local cSalvoInstantDmgAoE = 0
-    if wan.traitData.Salvo.known and wan.auraData.player["buff_" .. wan.traitData.Salvo.traitkey] then
-        local cExplosiveShotUnitOverflow = wan.AdjustSoftCapUnitOverflow(nExplosiveShotSoftCap, countValidUnit)
-        local cSalvoUnitCap = math.min(nSalvoUnitCap, countValidUnit)
+    local cShrapnelShot = 1
+    if wan.traitData.ShrapnelShot.known then
+        local formattedDebuffName = wan.traitData.ShrapnelShot.traitkey
+        local countDebuff = 0
 
-        cSalvoInstantDmgAoE = cSalvoInstantDmgAoE + (nExplosiveShotDmg * cExplosiveShotUnitOverflow * cSalvoUnitCap)
+        for nameplateUnitToken, _ in pairs(idValidUnit) do
+            local checkShrapnelShotDebuff = wan.CheckUnitDebuff(nameplateUnitToken, formattedDebuffName)
+
+            if checkShrapnelShotDebuff then
+                countDebuff = countDebuff + 1
+            end
+        end
+
+        if countDebuff > 0 then
+            cShrapnelShot = cShrapnelShot + ((nShrapnelShot * countDebuff) / countValidUnit)
+        end
     end
 
-    ---- PACK LEADER TRAITS----
-
-    if wan.traitData.HowlofthePack.known then
-        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
-        if checkHowlOfThePackBuff then
-            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
-            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
+    if wan.traitData.UnerringVision.known then
+        local checkTrueshotBuff = wan.CheckUnitBuff(nil, wan.spellData.Trueshot.formattedName)
+        if checkTrueshotBuff then
+            critDamageMod = critDamageMod + nUnerringVision
+            critDamageModBase = critDamageModBase + nUnerringVision
         end
     end
 
@@ -105,7 +90,7 @@ local function CheckAbilityValue()
     if wan.traitData.SymphonicArsenal.known then
         local cSymphonicArsenalUnitCap = math.min(countValidUnit, nSymphonicArsenalUnitCap)
         for nameplateUnitToken, _ in pairs(idValidUnit) do
-            local checkSentinelDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.Sentinel.traitkey]
+            local checkSentinelDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.traitData.Sentinel.traitkey)
             if checkSentinelDebuff then
                 cSymphonicArsenalInstantDmgAoE = cSymphonicArsenalInstantDmgAoE + (nSymphonicArsenal * cSymphonicArsenalUnitCap)
             end
@@ -115,17 +100,20 @@ local function CheckAbilityValue()
     local cMultiShotCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
     cMultiShotInstantDmg = cMultiShotInstantDmg
+        + (cMultiShotInstantDmgBaseAoE * cMultiShotCritValue * cShrapnelShot)
+
     cMultiShotDotDmg = cMultiShotDotDmg
-    cMultiShotInstantAoEDmg = (cMultiShotInstantAoEDmg + cExplosiveVenomInstantDmgAoE + cSymphonicArsenalInstantDmgAoE + cSalvoInstantDmgAoE) * cMultiShotCritValue
-    cMultiShotDotDmgAoE = cMultiShotDotDmgAoE + (cExplosiveVenomDotDmgAoE * cMultiShotCritValue)
 
-    local cMultiShotDmg = cMultiShotInstantDmg + cMultiShotDotDmg + cMultiShotInstantAoEDmg + cMultiShotDotDmgAoE
+    cMultiShotInstantDmgAoE = cMultiShotInstantDmgAoE 
+        + (cSymphonicArsenalInstantDmgAoE * cMultiShotCritValue)
 
-    if (wan.traitData.BeastCleave.known or wan.traitData.TrickShots.known) and countValidUnit > 2
-    and wan.spellData.AimedShot.name ~= wan.traitData.WailingArrow.name
-    then
+    cMultiShotDotDmgAoE = cMultiShotDotDmgAoE
+
+    local cMultiShotDmg = cMultiShotInstantDmg + cMultiShotDotDmg + cMultiShotInstantDmgAoE + cMultiShotDotDmgAoE
+
+    if (wan.traitData.BeastCleave.known or wan.traitData.TrickShots.known) and countValidUnit > 2 then
         local currentTime = GetTime()
-        local checkEnablerBuff = wan.auraData.player.buff_BeastCleave or wan.auraData.player.buff_TrickShots
+        local checkEnablerBuff = wan.CheckUnitBuff(nil, wan.traitData.BeastCleave.traitkey) or wan.CheckUnitBuff(nil, wan.traitData.TrickShots.traitkey)
         local addonUpdateRate = (wan.Options.UpdateRate.Toggle and wan.Options.UpdateRate.Slider * 0.01) or 0.4
         local expirationTime = (checkEnablerBuff and checkEnablerBuff.expirationTime - currentTime) or math.huge
         if not checkEnablerBuff or expirationTime < addonUpdateRate then
@@ -150,17 +138,6 @@ local function AddonLoad(self, event, addonName)
             nMultiShotDmg = nMultiShotValues[1]
             nMultiShotSoftCap = nMultiShotValues[2]
 
-            nMultiShotSpellCost = (wan.traitData.AimedShot.known and wan.GetSpellCost(wan.spellData.AimedShot.id, 2))
-            or wan.GetSpellCost(wan.spellData.MultiShot.id, 2)
-
-            local nExplosiveVenomValues = wan.GetTraitDescriptionNumbers(wan.traitData.VenomsBite.entryid, { 4, 5 })
-            nExplosiveVenomInstantDmg = nExplosiveVenomValues[1]
-            nExplosiveVenomDotDmg = nExplosiveVenomValues[2]
-
-            local nExplosiveShotValues = wan.GetSpellDescriptionNumbers(wan.spellData.ExplosiveShot.id, { 2, 4 })
-            nExplosiveShotDmg = nExplosiveShotValues[1]
-            nExplosiveShotSoftCap = nExplosiveShotValues[2]
-
             local nSymphonicArsenalValues = wan.GetTraitDescriptionNumbers(wan.traitData.SymphonicArsenal.entryid, { 1, 2 })
             nSymphonicArsenal = nSymphonicArsenalValues[1]
             nSymphonicArsenalUnitCap = nSymphonicArsenalValues[2]
@@ -182,11 +159,9 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     if event == "TRAIT_DATA_READY" then
         nPenetratingShots = wan.GetTraitDescriptionNumbers(wan.traitData.PenetratingShots.entryid, { 1 }) * 0.01
 
-        nExplosiveVenomStacks = wan.GetTraitDescriptionNumbers(wan.traitData.ExplosiveVenom.entryid, { 1 })
+        nShrapnelShot = wan.GetTraitDescriptionNumbers(wan.traitData.ShrapnelShot.entryid, { 1 }) * 0.01
 
-        nSalvoUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.Salvo.entryid, { 1 })
-
-        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
+        nUnerringVision = wan.GetTraitDescriptionNumbers(wan.traitData.UnerringVision.entryid, { 2 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

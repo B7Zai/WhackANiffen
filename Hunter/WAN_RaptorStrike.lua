@@ -10,7 +10,7 @@ local nRaptorStrikeDmg = 0
 -- Init trait datat
 local nVipersVenomInstantDmg, nVipersVenomDotDmg = 0, 0
 local nContagiousReagentsUnitCap = 0
-local nHowlOfThePack = 0
+local nHogstriderUnitCap = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -31,9 +31,10 @@ local function CheckAbilityValue()
     -- Base values
     local critChanceMod = 0
     local critDamageMod = 0
+    local critChanceModBase = 0
     local critDamageModBase = 0
 
-    local cRaptorStrikeInstantDmg = nRaptorStrikeDmg
+    local cRaptorStrikeInstantDmg = 0
     local cRaptorStrikeDotDmg = 0
     local cRaptorStrikeInstantDmgAoE = 0
     local cRaptorStrikeDotDmgAoE = 0
@@ -41,6 +42,8 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
+    ---- SURVIVAL TRAITS ----
+    
     local cVipersVenomInstantDmg = 0
     local cVipersVenomDotDmg = 0
     if wan.traitData.VipersVenom.known then
@@ -78,21 +81,45 @@ local function CheckAbilityValue()
 
     ---- PACK LEADER TRAITS ----
 
-    if wan.traitData.HowlofthePack.known then
-        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
-        if checkHowlOfThePackBuff then
-            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
-            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
+    local nHogstriderInstantDmgAoE = 0
+    if wan.traitData.Hogstrider.known then
+        local checkHogstriderBuff = wan.CheckUnitBuff(nil, wan.traitData.Hogstrider.traitkey)
+        if checkHogstriderBuff then
+            local cHogstriderStacks = checkHogstriderBuff.applications
+            local cHogstriderUnitCap = nHogstriderUnitCap * cHogstriderStacks
+            local countHogstriderUnit = 0
+
+            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+                if nameplateGUID ~= targetGUID then
+                    local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+
+                    nHogstriderInstantDmgAoE = nHogstriderInstantDmgAoE + (nRaptorStrikeDmg * checkUnitPhysicalDR)
+
+                    countHogstriderUnit = countHogstriderUnit + 1
+
+                    if countHogstriderUnit >= cHogstriderUnitCap then break end
+                end
+            end
         end
     end
 
     local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
     local cRaptorStrikeCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
-    cRaptorStrikeInstantDmg = (cRaptorStrikeInstantDmg * checkPhysicalDR * cRaptorStrikeCritValue) + (cVipersVenomInstantDmg * cRaptorStrikeCritValue)
-    cRaptorStrikeDotDmg = (cRaptorStrikeDotDmg * cRaptorStrikeCritValue) + (cVipersVenomDotDmg * cRaptorStrikeCritValue)
-    cRaptorStrikeInstantDmgAoE = cRaptorStrikeInstantDmgAoE + (cContagiousReagentsInstantDmgAoE * cRaptorStrikeCritValue)
-    cRaptorStrikeDotDmgAoE = cRaptorStrikeDotDmgAoE + (cContagiousReagentsDotDmgAoE * cRaptorStrikeCritValue)
+    cRaptorStrikeInstantDmg = cRaptorStrikeInstantDmg
+        + (nRaptorStrikeDmg * checkPhysicalDR * cRaptorStrikeCritValue)
+        + (cVipersVenomInstantDmg * cRaptorStrikeCritValue)
+
+    cRaptorStrikeDotDmg = cRaptorStrikeDotDmg 
+        + (cVipersVenomDotDmg * cRaptorStrikeCritValue)
+        + (nHogstriderInstantDmgAoE * cRaptorStrikeCritValue)
+
+    cRaptorStrikeInstantDmgAoE = cRaptorStrikeInstantDmgAoE
+         + (cContagiousReagentsInstantDmgAoE * cRaptorStrikeCritValue)
+
+    cRaptorStrikeDotDmgAoE = cRaptorStrikeDotDmgAoE
+        + (cContagiousReagentsDotDmgAoE * cRaptorStrikeCritValue)
 
     local cRaptorStrikeDmg = cRaptorStrikeInstantDmg + cRaptorStrikeDotDmg + cRaptorStrikeInstantDmgAoE + cRaptorStrikeDotDmgAoE
 
@@ -133,7 +160,7 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     if event == "TRAIT_DATA_READY" then 
         nContagiousReagentsUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.ContagiousReagents.entryid, { 1 })
 
-        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
+        nHogstriderUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.Hogstrider.entryid, { 2 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

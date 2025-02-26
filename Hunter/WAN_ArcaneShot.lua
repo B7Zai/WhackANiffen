@@ -10,6 +10,10 @@ local nArcaneShotSpellCost = 0
 
 -- Init trait data
 local nPenetratingShots = 0
+local nAspectoftheHydra, nAspectoftheHydraUnitCap = 0, 1
+local nShrapnelShot = 0
+local nUnerringVision = 0
+local nHogstriderUnitCap = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -40,21 +44,87 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local cPenetratingShots = 0
-    if wan.traitData.PenetratingShots.known then
-        cPenetratingShots = cPenetratingShots + (wan.CritChance * nPenetratingShots)
-        critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
-    end
+    ---- MARKSMAN TRAITS ----
 
-    local cChimaeraShotInstantDmgAoE = 0
-    if wan.traitData.ChimaeraShot.known then
+    local cAspectoftheHydra = 0
+    if wan.traitData.AspectoftheHydra.known then
+        local countAspectoftheHydraUnit = 0
 
         for _, nameplateGUID in pairs(idValidUnit) do
 
             if nameplateGUID ~= targetGUID then
 
-                cArcaneShotInstantDmgAoE = cArcaneShotInstantDmgAoE + nArcaneShotDmgAoE
-                break
+                cAspectoftheHydra = cAspectoftheHydra + (nArcaneShotDmg * nAspectoftheHydra)
+
+                countAspectoftheHydraUnit = countAspectoftheHydraUnit + 1
+
+                if countAspectoftheHydraUnit >= nAspectoftheHydraUnitCap then break end
+            end
+        end
+    end
+
+    if wan.traitData.PenetratingShots.known then
+        critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
+    end
+
+    local cShrapnelShot = 1
+    local cShrapnelShotAoE = 1
+    if wan.traitData.ShrapnelShot.known then
+        local formattedDebuffName = wan.traitData.ShrapnelShot.traitkey
+        local checkShrapnelShotDebuff = wan.CheckUnitDebuff(nil, formattedDebuffName)
+
+        if checkShrapnelShotDebuff then
+            cShrapnelShot = cShrapnelShot + nShrapnelShot
+        end
+
+        if wan.traitData.AspectoftheHydra.known then
+            local countAspectoftheHydraUnit = 0
+
+            for _, nameplateGUID in pairs(idValidUnit) do
+
+                if nameplateGUID ~= targetGUID then
+                    local checkShrapnelShotDebuff = wan.CheckUnitDebuff(nil, formattedDebuffName)
+
+                    if checkShrapnelShotDebuff then
+                        cShrapnelShotAoE = cShrapnelShotAoE + nShrapnelShot
+                    end
+
+                    countAspectoftheHydraUnit = countAspectoftheHydraUnit + 1
+
+                    if countAspectoftheHydraUnit >= nAspectoftheHydraUnitCap then break end
+                end
+            end
+        end
+    end
+
+    if wan.traitData.UnerringVision.known then
+        local checkTrueshotBuff = wan.CheckUnitBuff(nil, wan.spellData.Trueshot.formattedName)
+        if checkTrueshotBuff then
+            critDamageMod = critDamageMod + nUnerringVision
+        end
+    end
+
+    ---- PACK LEADER TRAITS ----
+
+    local nHogstriderInstantDmgAoE = 0
+    if wan.traitData.Hogstrider.known then
+        local checkHogstriderBuff = wan.CheckUnitBuff(nil, wan.traitData.Hogstrider.traitkey)
+        if checkHogstriderBuff then
+            local cHogstriderStacks = checkHogstriderBuff.applications
+            local cHogstriderUnitCap = nHogstriderUnitCap * cHogstriderStacks
+            local countHogstriderUnit = 0
+
+            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+                if nameplateGUID ~= targetGUID then
+                    local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+
+                    nHogstriderInstantDmgAoE = nHogstriderInstantDmgAoE + (nArcaneShotDmg * checkUnitPhysicalDR)
+
+                    countHogstriderUnit = countHogstriderUnit + 1
+
+                    if countHogstriderUnit >= cHogstriderUnitCap then break end
+                end
             end
         end
     end
@@ -62,9 +132,15 @@ local function CheckAbilityValue()
     local checkPhysicalDR = wan.traitData.CobraShot.known and wan.CheckUnitPhysicalDamageReduction() or 1
     local cArcaneShotCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
-    cArcaneShotInstantDmg = cArcaneShotInstantDmg + (nArcaneShotDmg * checkPhysicalDR * cArcaneShotCritValue)
+    cArcaneShotInstantDmg = cArcaneShotInstantDmg
+        + (nArcaneShotDmg * checkPhysicalDR * cArcaneShotCritValue * cShrapnelShot)
+
     cArcaneShotDotDmg = cArcaneShotDotDmg
-    cArcaneShotInstantDmgAoE = cArcaneShotInstantDmgAoE + (cChimaeraShotInstantDmgAoE * cArcaneShotCritValue)
+
+    cArcaneShotInstantDmgAoE = cArcaneShotInstantDmgAoE
+        + (cAspectoftheHydra * cArcaneShotCritValue * cShrapnelShotAoE)
+        + (nHogstriderInstantDmgAoE * cArcaneShotCritValue)
+
     cArcaneShotDotDmgAoE = cArcaneShotDotDmgAoE
 
     if (wan.traitData.BeastCleave.known or wan.traitData.TrickShots.known) and countValidUnit > 2 then
@@ -114,6 +190,14 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "TRAIT_DATA_READY" then 
         nPenetratingShots = wan.GetTraitDescriptionNumbers(wan.traitData.PenetratingShots.entryid, { 1 }) * 0.01
+
+        nHogstriderUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.Hogstrider.entryid, { 2 })
+
+        nAspectoftheHydra = wan.GetTraitDescriptionNumbers(wan.traitData.AspectoftheHydra.entryid, { 1 }) * 0.01
+
+        nShrapnelShot = wan.GetTraitDescriptionNumbers(wan.traitData.ShrapnelShot.entryid, { 1 }) * 0.01
+
+        nUnerringVision = wan.GetTraitDescriptionNumbers(wan.traitData.UnerringVision.entryid, { 2 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

@@ -11,7 +11,8 @@ local nBestialWrath, nBestialWrathMaxRange = 0, 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or wan.auraData.player["buff_" .. wan.spellData.BestialWrath.basename]
+        or not wan.IsPetUsable()
+        or wan.CheckUnitDebuff(nil, wan.spellData.BestialWrath.formattedName)
         or not wan.IsSpellUsable(wan.spellData.BestialWrath.id)
     then
         wan.UpdateAbilityData(wan.spellData.BestialWrath.basename)

@@ -86,7 +86,8 @@ local function CheckAbilityValue()
                         countHots = countHots + nHarmoniousBlooming
                     end
 
-                    local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
+                    local cMasteryHarmonyOverflow = wan.SoftCapOverflow(1, countHots)
+                    local cMasteryHarmony = cMasteryHarmonyOverflow > 0 and 1 + (nMasteryHarmony * cMasteryHarmonyOverflow) or 1
                     cSymbioticBlooms = cSymbioticBlooms * cMasteryHarmony
                     wan.HotValue[groupUnitToken][wan.traitData.GroveTending.traitkey] = cSwiftmendHotHeal
                     wan.HotValue[groupUnitToken][sSymbioticBloomsKey] = cSymbioticBlooms
@@ -137,7 +138,8 @@ local function CheckAbilityValue()
                 countHots = countHots + nHarmoniousBlooming
             end
 
-            local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
+            local cMasteryHarmonyOverflow = wan.SoftCapOverflow(1, countHots)
+            local cMasteryHarmony = cMasteryHarmonyOverflow > 0 and 1 + (nMasteryHarmony * cMasteryHarmonyOverflow) or 1
             cSwiftmendHotHeal = cSwiftmendHotHeal * cMasteryHarmony
             cSymbioticBlooms = cSymbioticBlooms * cMasteryHarmony
             wan.HotValue[playerUnitToken][wan.traitData.GroveTending.traitkey] = cSwiftmendHotHeal

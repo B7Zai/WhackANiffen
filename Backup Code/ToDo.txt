@@ -1,6 +1,43 @@
 -- make aura updates as efficient as possible
 -- add better event coverage for aura data updates
 
+-- add nature swiftness for healer druid
+
 -- maybe add a cast potency to low health group units so instant cast abilities will become top priority
 -- add separate settings for raid frames ?
 -- auto hide one of the text if texts overlap on each other
+
+-- 11.1 TO DO LIST:
+
+d
+
+MAGE:
+
+-- Arcane Barrage: new talent, Intuition
+
+-- Ice Lance: remove talent, Execess Fire
+
+-- Fire Blast: remove talent, Excess Fire
+
+-- Meteor: add talent, Excess Fire
+
+-- Comet Storm: add talent, Excess Fire
+
+PALADIN: 
+
+GENERAL
+
+HOLY
+
+-- Light of Dawn: unending light redesigned, check code
+
+PROTECTION
+
+-- check code for Undisputed Ruling in the Templar adv class
+
+RETRIBUTION
+
+-- Divine Hammer redesigned, check code
+-- check code for Undisputed Ruling in the Templar adv class
+-- check code for hammer of light (Hammer of Light now benefits from the stacks it adds to Crusade, Hammer of Light initial hit now benefits from Final Reckoning.)
+

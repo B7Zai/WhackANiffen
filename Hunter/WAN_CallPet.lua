@@ -14,7 +14,7 @@ local callPetAbilityName = "Call Pet"
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or UnitExists("pet")
-        or (wan.traitData.LoneWolf.known and wan.PlayerState.InGroup)
+        or (not wan.traitData.UnbreakableBond.known)
         or (wan.PlayerState.Resting and not wan.PlayerState.Combat)
         or not wan.IsSpellUsable(wan.spellData.CallPet1.id)
     then

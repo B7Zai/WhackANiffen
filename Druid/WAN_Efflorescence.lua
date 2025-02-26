@@ -81,7 +81,8 @@ local function CheckAbilityValue()
                     end
 
                     -- add mastery layer to hot value and update array with max hot value
-                    local cMasteryHarmony = countHots > 0 and 1 + (nMasteryHarmony * countHots) or 1
+                    local cMasteryHarmonyOverflow = wan.SoftCapOverflow(1, countHots)
+                    local cMasteryHarmony = cMasteryHarmonyOverflow > 0 and 1 + (nMasteryHarmony * cMasteryHarmonyOverflow) or 1
                     cSprintBlossomsHotHeal = cSprintBlossomsHotHeal * cMasteryHarmony
                     wan.HotValue[groupUnitToken][wan.traitData.SpringBlossoms.traitkey] = cSprintBlossomsHotHeal
                 end

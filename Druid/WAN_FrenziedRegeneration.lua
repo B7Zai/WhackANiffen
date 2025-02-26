@@ -8,6 +8,7 @@ local playerGUID = wan.PlayerState.GUID
 local playerUnitToken = "player"
 local abilityActive = false
 local nFrenziedRegenerationHeal = 0
+local nReinvigoration, nRejuvenationHotHeal, nRegrowthInstantHeal, nRegrowthHotHeal = 0, 0, 0, 0
 
 -- Init traid data
 local nInnateResolve = 0
@@ -26,6 +27,7 @@ local function CheckAbilityValue()
     -- Base values
     local cFrenziedRegenerationHeal = nFrenziedRegenerationHeal
     local hotPotency = wan.HotPotency(playerUnitToken, currentPercentHealth)
+    wan.HotValue[playerUnitToken] = wan.HotValue[playerUnitToken] or {}
 
     -- Innate Resolve
     local cInnateResolve = 1
@@ -37,9 +39,15 @@ local function CheckAbilityValue()
         cInnateResolve = cInnateResolve * (1 + nInnateResolve)
     end
 
-    cFrenziedRegenerationHeal = cFrenziedRegenerationHeal * hotPotency * cInnateResolve
+    local cInvigoration = 1
+    local cInvigorationHotHeal = 0
+    if wan.traitData.Reinvigoration.known then
+        cInvigoration = cInvigoration + nReinvigoration 
+        cInvigorationHotHeal = cInvigorationHotHeal + ((nRejuvenationHotHeal + nRegrowthInstantHeal + nRegrowthHotHeal) * cInvigoration)
+    end
 
-    wan.HotValue[playerUnitToken] = wan.HotValue[playerUnitToken] or {}
+    cFrenziedRegenerationHeal = ((cFrenziedRegenerationHeal * cInnateResolve) + cInvigorationHotHeal) * hotPotency
+
     wan.HotValue[playerUnitToken][wan.spellData.FrenziedRegeneration.basename] = cFrenziedRegenerationHeal
 
     -- subtract healing value of ability's hot from ability's max healing value
@@ -64,6 +72,12 @@ local function AddonLoad(self, event, addonName)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local nFrenziedRegeneration = wan.GetSpellDescriptionNumbers(wan.spellData.FrenziedRegeneration.id, { 1 })
             nFrenziedRegenerationHeal = wan.AbilityPercentageToValue(nFrenziedRegeneration)
+
+            nRejuvenationHotHeal = wan.GetTraitDescriptionNumbers(wan.traitData.Rejuvenation.entryid, { 1 })
+            
+            local nRegrowthValues = wan.GetSpellDescriptionNumbers(wan.spellData.Regrowth.id, { 1, 2 })
+            nRegrowthInstantHeal = nRegrowthValues[1]
+            nRegrowthHotHeal = nRegrowthValues[2]
         end
     end)
 end
@@ -81,6 +95,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "TRAIT_DATA_READY" then
         nInnateResolve = wan.GetTraitDescriptionNumbers(wan.traitData.InnateResolve.entryid, { 1 }) * 0.01
+
+        nReinvigoration = wan.GetTraitDescriptionNumbers(wan.traitData.Reinvigoration.entryid, { 2 }, wan.traitData.Reinvigoration.rank) * 0.01
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

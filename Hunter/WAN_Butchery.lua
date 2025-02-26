@@ -10,7 +10,6 @@ local nButcheryDmg, nButcherySoftCap = 0, 0
 -- Init trait data
 local nMercilessBlow = 0
 local nSymphonicArsenal, nSymphonicArsenalUnitCap = 0, 0
-local nHowlOfThePack = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -34,47 +33,43 @@ local function CheckAbilityValue()
 
     local cButcheryInstantDmg = 0
     local cButcheryDotDmg = 0
-    local cButcheryInstantAoEDmg = 0
+    local cButcheryInstantDmgAoE = 0
     local cButcheryDotDmgAoE = 0
 
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
     local cButcheryUnitOverflow = wan.SoftCapOverflow(nButcherySoftCap, countValidUnit)
+    local cButcheryInstantDmgBaseAoE = 0
     for nameplateUnitToken, _ in pairs(idValidUnit) do
         local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
 
-        cButcheryInstantAoEDmg = cButcheryInstantAoEDmg + (nButcheryDmg * checkPhysicalDR * cButcheryUnitOverflow)
+        cButcheryInstantDmgBaseAoE = cButcheryInstantDmgBaseAoE + (nButcheryDmg * checkPhysicalDR * cButcheryUnitOverflow)
     end
+
+    ---- SURVIVAL TRAITS ----
 
     local cMercilessBlowDotDmgAoE = 0
     if wan.traitData.MercilessBlow.known then
         for nameplateUnitToken, _ in pairs(idValidUnit) do
-            local checkMercilessBlowDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.MercilessBlow.traitkey]
+            local checkMercilessBlowDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.traitData.MercilessBlow.traitkey)
 
             if not checkMercilessBlowDebuff then
-                cMercilessBlowDotDmgAoE = cMercilessBlowDotDmgAoE + nMercilessBlow
+                local dotPotency = wan.CheckDotPotency(nButcheryDmg, nameplateUnitToken)
+                cMercilessBlowDotDmgAoE = cMercilessBlowDotDmgAoE + (nMercilessBlow * dotPotency)
             end
         end
     end
 
-    ---- PACK LEADER TRAITS----
-
-    if wan.traitData.HowlofthePack.known then
-        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
-        if checkHowlOfThePackBuff then
-            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
-            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
-        end
-    end
-
     ---- SENTINEL TRAITS ----
-    
+
     local cSymphonicArsenalInstantDmgAoE = 0
     if wan.traitData.SymphonicArsenal.known then
         local cSymphonicArsenalUnitCap = math.min(countValidUnit, nSymphonicArsenalUnitCap)
+
         for nameplateUnitToken, _ in pairs(idValidUnit) do
-            local checkSentinelDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.Sentinel.traitkey]
+            local checkSentinelDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.traitData.Sentinel.traitkey)
+
             if checkSentinelDebuff then
                 cSymphonicArsenalInstantDmgAoE = cSymphonicArsenalInstantDmgAoE + (nSymphonicArsenal * cSymphonicArsenalUnitCap)
             end
@@ -84,11 +79,17 @@ local function CheckAbilityValue()
     local cButcheryCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
     cButcheryInstantDmg = cButcheryInstantDmg
-    cButcheryDotDmg = cButcheryDotDmg
-    cButcheryInstantAoEDmg = (cButcheryInstantAoEDmg * cButcheryCritValue) + (cSymphonicArsenalInstantDmgAoE * cButcheryCritValue)
-    cButcheryDotDmgAoE = cButcheryDotDmgAoE + (cMercilessBlowDotDmgAoE * cButcheryCritValue)
 
-    local cButcheryDmg = cButcheryInstantDmg + cButcheryDotDmg + cButcheryInstantAoEDmg + cButcheryDotDmgAoE
+    cButcheryDotDmg = cButcheryDotDmg
+
+    cButcheryInstantDmgAoE = cButcheryInstantDmgAoE
+        + (cButcheryInstantDmgBaseAoE * cButcheryCritValue)
+        + (cSymphonicArsenalInstantDmgAoE * cButcheryCritValue)
+
+    cButcheryDotDmgAoE = cButcheryDotDmgAoE
+        + (cMercilessBlowDotDmgAoE * cButcheryCritValue)
+
+    local cButcheryDmg = cButcheryInstantDmg + cButcheryDotDmg + cButcheryInstantDmgAoE + cButcheryDotDmgAoE
 
     local abilityValue = math.floor(cButcheryDmg)
     wan.UpdateAbilityData(wan.spellData.Butchery.basename, abilityValue, wan.spellData.Butchery.icon, wan.spellData.Butchery.name)
@@ -103,9 +104,9 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            local nMultiShotValues = wan.GetSpellDescriptionNumbers(wan.spellData.Butchery.id, { 2, 3 })
-            nButcheryDmg = nMultiShotValues[1]
-            nButcherySoftCap = nMultiShotValues[2]
+            local nButcheryValues = wan.GetSpellDescriptionNumbers(wan.spellData.Butchery.id, { 2, 3 })
+            nButcheryDmg = nButcheryValues[1]
+            nButcherySoftCap = nButcheryValues[2]
 
             nMercilessBlow = wan.GetTraitDescriptionNumbers(wan.traitData.MercilessBlow.entryid, { 1 })
 
@@ -127,9 +128,7 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         wan.SetUpdateRate(frameButchery, CheckAbilityValue, abilityActive)
     end
 
-    if event == "TRAIT_DATA_READY" then
-        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
-    end
+    if event == "TRAIT_DATA_READY" then end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
         wan.SetUpdateRate(frameButchery, CheckAbilityValue, abilityActive)

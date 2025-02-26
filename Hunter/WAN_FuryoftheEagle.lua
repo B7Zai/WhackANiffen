@@ -7,8 +7,8 @@ if wan.PlayerState.Class ~= "HUNTER" then return end
 local abilityActive = false
 local nFuryOfTheEagleDmg, nFuryOfTheEagleCrit, nFuryOfTheEagleCastTime, nFuryOfTheEagleThreshold, nFuryOfTheEagleSoftCap = 0, 0, 0, 0, 0
 local nFuryOfTheEagleMaxRange = 10
+
 -- Init trait data
-local nHowlOfThePack = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -26,6 +26,14 @@ local function CheckAbilityValue()
         return
     end
 
+    local canMoveCast = true
+    local cFuryoftheEagleCastEfficiency = wan.CheckCastEfficiency(wan.spellData.FuryoftheEagle.id, nFuryOfTheEagleCastTime, canMoveCast)
+    if cFuryoftheEagleCastEfficiency == 0 then
+        wan.UpdateAbilityData(wan.spellData.AimedShot.basename)
+        return
+    end
+
+    local critChanceMod = 0
     local critDamageMod = 0
 
     local cFuryOfTheEagleInstantDmg = 0
@@ -36,40 +44,37 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    ---- PACK LEADER TRAITS ----
-
-    if wan.traitData.HowlofthePack.known then
-        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
-        if checkHowlOfThePackBuff then
-            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
-            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
-        end
-    end
-
-    local canMoveCast = true
-    local castEfficiency = wan.CheckCastEfficiency(wan.spellData.FuryoftheEagle.id, nFuryOfTheEagleCastTime, canMoveCast)
+    local cFuryOfTheEagleInstantDmgBaseAoE = 0
+    local countFuryoftheEagleBelowThresholdUnit = 0
     local cFuryOfTheEagleUnitOverflow = wan.SoftCapOverflow(nFuryOfTheEagleSoftCap, countValidUnit)
-    for _, nameplateGUID in pairs(idValidUnit) do
-        local critChanceMod = 0
-        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
+    for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
 
         local targetPercentHealth = nameplateGUID and UnitPercentHealthFromGUID(nameplateGUID) or 1
         if targetPercentHealth < nFuryOfTheEagleThreshold then
-            critChanceMod = critChanceMod + nFuryOfTheEagleCrit
+            countFuryoftheEagleBelowThresholdUnit = countFuryoftheEagleBelowThresholdUnit + 1
         end
 
-        local cFuryOfTheEagleCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
-
-        cFuryOfTheEagleInstantDmgAoE =  cFuryOfTheEagleInstantDmgAoE + (nFuryOfTheEagleDmg * checkPhysicalDR * cFuryOfTheEagleCritValue * castEfficiency * cFuryOfTheEagleUnitOverflow)
+        cFuryOfTheEagleInstantDmgBaseAoE =  cFuryOfTheEagleInstantDmgBaseAoE + (nFuryOfTheEagleDmg * checkPhysicalDR * cFuryOfTheEagleUnitOverflow)
     end
 
+    if countFuryoftheEagleBelowThresholdUnit > 0 then
+        critChanceMod = critChanceMod + ((nFuryOfTheEagleCrit * countFuryoftheEagleBelowThresholdUnit) / countValidUnit)
+    end
+
+    local cFuryOfTheEagleCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
     cFuryOfTheEagleInstantDmg = cFuryOfTheEagleInstantDmg
+
     cFuryOfTheEagleDotDmg = cFuryOfTheEagleDotDmg
+
     cFuryOfTheEagleInstantDmgAoE = cFuryOfTheEagleInstantDmgAoE
+        + (cFuryOfTheEagleInstantDmgBaseAoE * cFuryOfTheEagleCritValue)
+
     cFuryOfTheEagleDotDmgAoE = cFuryOfTheEagleDotDmgAoE
 
-    local cFuryOfTheEagleDmg = cFuryOfTheEagleInstantDmg + cFuryOfTheEagleDotDmg + cFuryOfTheEagleInstantDmgAoE + cFuryOfTheEagleDotDmgAoE
+    local cFuryOfTheEagleDmg = (cFuryOfTheEagleInstantDmg + cFuryOfTheEagleDotDmg + cFuryOfTheEagleInstantDmgAoE + cFuryOfTheEagleDotDmgAoE) * cFuryoftheEagleCastEfficiency
+
     local cdPotency = wan.CheckOffensiveCooldownPotency(cFuryOfTheEagleDmg, isValidUnit, idValidUnit)
 
     -- Update ability data
@@ -107,9 +112,7 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         wan.SetUpdateRate(frameFuryOfTheEagle, CheckAbilityValue, abilityActive)
     end
 
-    if event == "TRAIT_DATA_READY" then
-        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
-    end
+    if event == "TRAIT_DATA_READY" then end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
         wan.SetUpdateRate(frameFuryOfTheEagle, CheckAbilityValue, abilityActive)

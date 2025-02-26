@@ -6,7 +6,7 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 -- Init spell data
 local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
-local nTrashInstantDmg, nThrashDotDmg, nThrashDotDuration, nThrashDotDps, nThrashMaxStacks = 0, 0, 0, 0, 0
+local nTrashInstantDmg, nThrashDotDmg = 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -24,26 +24,43 @@ local function CheckAbilityValue()
         return
     end
 
+    -- Base values
+    local critChanceMod = 0
+    local critChanceModBase = 0
+    local critDamageMod = 0
+    local critDamageModBase = 0
+
     local cThrashInstantDmg = 0
     local cThrashDotDmg = 0
-    
-    for nameplateUnitToken, _ in pairs(idValidUnit) do
-        cThrashInstantDmg = cThrashInstantDmg + nTrashInstantDmg
+    local cThrashInstantDmgAoE = 0
+    local cThrashDotDmgAoE = 0
 
-        local checkThrashDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.spellData.Thrash.basename]
+    local cThrashInstantDmgBaseAoE = 0
+    local cThrashDotDmgBaseAoE = 0
+    for nameplateUnitToken, _ in pairs(idValidUnit) do
+        cThrashInstantDmgBaseAoE = cThrashInstantDmgBaseAoE + nTrashInstantDmg
+
+        local checkThrashDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.spellData.Thrash.formattedName)
         if not checkThrashDebuff then
             local dotPotency = wan.CheckDotPotency(cThrashInstantDmg, nameplateUnitToken)
-            cThrashDotDmg = cThrashDotDmg + (nThrashDotDmg * dotPotency)
+            cThrashDotDmgBaseAoE = cThrashDotDmgBaseAoE + (nThrashDotDmg * dotPotency)
         end
     end
 
     -- Crit layer
-    local cThrashCritValue = wan.ValueFromCritical(wan.CritChance)
+    local cThrashCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
-    cThrashInstantDmg = cThrashInstantDmg * cThrashCritValue
-    cThrashDotDmg = cThrashDotDmg * cThrashCritValue
+    cThrashInstantDmg = cThrashInstantDmg
+        + (cThrashInstantDmgBaseAoE * cThrashCritValue)
 
-    local cThrashDmg = cThrashInstantDmg + cThrashDotDmg
+    cThrashDotDmg = cThrashDotDmg
+        + (cThrashDotDmgBaseAoE * cThrashCritValue)
+
+    cThrashInstantDmgAoE = cThrashInstantDmgAoE
+
+    cThrashDotDmgAoE = cThrashDotDmgAoE
+
+    local cThrashDmg = cThrashInstantDmg + cThrashDotDmg + cThrashInstantDmgAoE + cThrashDotDmgAoE
 
      -- Update ability data
     local abilityValue = math.floor(cThrashDmg)
@@ -60,11 +77,9 @@ local function AddonLoad(self, event, addonName)
     self:SetScript("OnEvent", function(self, event, ...)
 
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            local thrashValues = wan.GetSpellDescriptionNumbers(wan.spellData.Thrash.id, { 1, 2, 3, 4 })
+            local thrashValues = wan.GetSpellDescriptionNumbers(wan.spellData.Thrash.id, { 1, 2 })
             nTrashInstantDmg = thrashValues[1]
             nThrashDotDmg = thrashValues[2]
-            nThrashDotDuration = thrashValues[3]
-            nThrashDotDps = thrashValues[2] / thrashValues[3]
         end
     end)
 end

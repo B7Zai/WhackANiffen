@@ -10,8 +10,10 @@ local nRapidFireArrows, nRapidFireCastTime, nRapidFireDmgPerArrow, nRapidFireDmg
 -- Init trait datat
 local nPenetratingShots = 0
 local nTrickShots, nTrickShotsUnitCap = 0, 0
-local nFanTheHammer = 0
-local nLunarStormDuration, nLunarStormDmg, nLunarStormTickRate, nLunarStorm, nLunarStormICD, cLunarStormLastProc = 0, 0, 0, 0, 0, GetTime()
+local nAspectoftheHydra, nAspectoftheHydraUnitCap = 0, 1
+local nAmmoConservation = 0
+local nUnerringVision = 0
+local nLunarStormDuration, nLunarStormDmg, nLunarStormTickRate, nLunarStorm = 0, 0, 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -19,7 +21,6 @@ local function CheckAbilityValue()
     if not wan.PlayerState.Status
         or not wan.IsSpellUsable(wan.spellData.RapidFire.id)
         or wan.UnitIsCasting("player", wan.spellData.AimedShot.name)
-        or wan.UnitIsCasting("player", wan.spellData.Barrage.name)
     then
         wan.UpdateAbilityData(wan.spellData.RapidFire.basename)
         return
@@ -37,9 +38,18 @@ local function CheckAbilityValue()
        return
     end
 
+    local canMoveCast = true
+    local castEfficiency = wan.CheckCastEfficiency(wan.spellData.RapidFire.id, nRapidFireCastTime, canMoveCast)
+    if castEfficiency == 0 then
+        wan.UpdateAbilityData(wan.spellData.RapidFire.basename)
+        return
+    end
+
     -- Base values
     local critChanceMod = 0
     local critDamageMod = 0
+    local critChanceModBase = 0
+    local critDamageModBase = 0
 
     local cRapidFireInstantDmg = 0
     local cRapidFireDotDmg = 0
@@ -49,19 +59,11 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local cPenetratingShots = 0
-    if wan.traitData.PenetratingShots.known then
-        cPenetratingShots = cPenetratingShots + (wan.CritChance * nPenetratingShots)
-        critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
-    end
-
-    local cFanTheHammer = 0
-    if wan.traitData.FantheHammer.known then
-        cFanTheHammer = cFanTheHammer + (nRapidFireDmgPerArrow * nFanTheHammer)
-    end
+    ---- MARKSMAN TRAITS ----
 
     local cTrickShotsInstantDmgAoE = 0
-    if wan.traitData.TrickShots.known and wan.auraData.player.buff_TrickShots then
+    local checkTrickShotsBuff = wan.CheckUnitBuff(nil, wan.traitData.TrickShots.traitkey)
+    if checkTrickShotsBuff then
         local countTrickShots = 0
 
         for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
@@ -69,7 +71,7 @@ local function CheckAbilityValue()
             if nameplateGUID ~= targetGUID then
                 local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
 
-                cTrickShotsInstantDmgAoE = cTrickShotsInstantDmgAoE + ((nRapidFireDmg + cFanTheHammer) * nTrickShots * checkUnitPhysicalDR)
+                cTrickShotsInstantDmgAoE = cTrickShotsInstantDmgAoE + (nRapidFireDmg * nTrickShots * checkUnitPhysicalDR)
                 countTrickShots = countTrickShots + 1
 
                 if countTrickShots >= nTrickShotsUnitCap then break end
@@ -77,28 +79,62 @@ local function CheckAbilityValue()
         end
     end
 
-    local cLunarStorm = 0
-    if wan.traitData.LunarStorm.known then
-        local currentTime = GetTime()
-        local cLunarStormLast = currentTime - cLunarStormLastProc
-        if cLunarStormLast > nLunarStormICD then
-            for nameplateUnitToken, _ in pairs(idValidUnit) do
-                local checkLunarStormDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.LunarStorm.traitkey]
-                if checkLunarStormDebuff then cLunarStormLastProc = GetTime() break end
+    local cAspectoftheHydra = 0
+    if wan.traitData.AspectoftheHydra.known then
+        local countAspectoftheHydraUnit = 0
+
+        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+            if nameplateGUID ~= targetGUID then
+                local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+
+                cAspectoftheHydra = cAspectoftheHydra + (nRapidFireDmg * nAspectoftheHydra * checkUnitPhysicalDR)
+
+                countAspectoftheHydraUnit = countAspectoftheHydraUnit + 1
+
+                if countAspectoftheHydraUnit >= nAspectoftheHydraUnitCap then break end
             end
-            cLunarStorm = cLunarStorm + nLunarStorm 
         end
     end
 
-    local canMoveCast = true
-    local castEfficiency = wan.CheckCastEfficiency(wan.spellData.RapidFire.id, nRapidFireCastTime, canMoveCast)
+    local cPenetratingShots = 0
+    if wan.traitData.PenetratingShots.known then
+        cPenetratingShots = cPenetratingShots + (wan.CritChance * nPenetratingShots)
+        critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
+    end
+
+    if wan.traitData.UnerringVision.known then
+        local checkTrueshotBuff = wan.CheckUnitBuff(nil, wan.spellData.Trueshot.formattedName)
+        if checkTrueshotBuff then
+            critDamageMod = critDamageMod + nUnerringVision
+            critDamageModBase = critDamageModBase + nUnerringVision
+        end
+    end
+
+    ---- SENTINEL TRAITS ----
+
+    local cLunarStormInstantDmgAoE = 0
+    if wan.traitData.LunarStorm.known then
+        local checkLunarStormDebuff = wan.CheckUnitDebuff("player", wan.traitData.LunarStorm.traitkey)
+        if not checkLunarStormDebuff then
+            cLunarStormInstantDmgAoE = cLunarStormInstantDmgAoE + nLunarStorm
+        end
+    end
+
     local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
     local cRapidFireCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
-    local cBaseCritValue = wan.ValueFromCritical(wan.CritChance)
+    local cRapidFireCritValueBase = wan.ValueFromCritical(wan.CritChance, critChanceModBase, critDamageModBase)
 
-    cRapidFireInstantDmg = cRapidFireInstantDmg + ((nRapidFireDmg + cFanTheHammer) * checkPhysicalDR * cRapidFireCritValue)
-    cRapidFireDotDmg = cRapidFireDotDmg 
-    cRapidFireInstantDmgAoE = cRapidFireInstantDmgAoE + ((cTrickShotsInstantDmgAoE + cLunarStorm) * cRapidFireCritValue)
+    cRapidFireInstantDmg = cRapidFireInstantDmg
+        + (nRapidFireDmg * checkPhysicalDR * cRapidFireCritValue)
+
+    cRapidFireDotDmg = cRapidFireDotDmg
+
+    cRapidFireInstantDmgAoE = cRapidFireInstantDmgAoE
+        + (cTrickShotsInstantDmgAoE * cRapidFireCritValue)
+        + (cAspectoftheHydra * cRapidFireCritValue)
+        + (cLunarStormInstantDmgAoE * cRapidFireCritValueBase)
+
     cRapidFireDotDmgAoE = cRapidFireDotDmgAoE
 
     local cRapidFireDmg = (cRapidFireInstantDmg + cRapidFireDotDmg + cRapidFireInstantDmgAoE + cRapidFireDotDmgAoE) * castEfficiency
@@ -118,17 +154,16 @@ local function AddonLoad(self, event, addonName)
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local nRapidFireValues = wan.GetSpellDescriptionNumbers(wan.spellData.RapidFire.id, { 1, 2, 3 })
-            nRapidFireArrows = nRapidFireValues[1]
+            nRapidFireArrows = nRapidFireValues[1] + (wan.traitData.AmmoConservation.known and nAmmoConservation)
             nRapidFireCastTime = nRapidFireValues[2] * 1000
             nRapidFireDmgPerArrow = nRapidFireValues[3] / nRapidFireValues[1]
-            nRapidFireDmg = nRapidFireValues[3]
+            nRapidFireDmg = nRapidFireDmgPerArrow * nRapidFireArrows
 
-            local nLunarStormValues = wan.GetTraitDescriptionNumbers(wan.traitData.LunarStorm.entryid, { 1, 3, 4, 5 })
-            nLunarStormICD = nLunarStormValues[1]
+            local nLunarStormValues = wan.GetTraitDescriptionNumbers(wan.traitData.LunarStorm.entryid, { 3, 4, 6 })
+            nLunarStormDmg = nLunarStormValues[1]
             nLunarStormDuration = nLunarStormValues[2]
-            nLunarStormDmg = nLunarStormValues[3]
-            nLunarStormTickRate = nLunarStormValues[4]
-            nLunarStorm = nLunarStormValues[3] *  (nLunarStormValues[2] / nLunarStormValues[4])
+            nLunarStormTickRate = nLunarStormValues[3]
+            nLunarStorm = nLunarStormDmg * (nLunarStormDuration / nLunarStormTickRate)
         end
     end)
 end
@@ -151,7 +186,11 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nTrickShots = nTrickShotsValues[2] * 0.01
         nTrickShotsUnitCap = nTrickShotsValues[1]
 
-        nFanTheHammer = wan.GetTraitDescriptionNumbers(wan.traitData.FantheHammer.entryid, { 1 })
+        nAspectoftheHydra = wan.GetTraitDescriptionNumbers(wan.traitData.AspectoftheHydra.entryid, { 1 }) * 0.01
+
+        nAmmoConservation = wan.GetTraitDescriptionNumbers(wan.traitData.AmmoConservation.entryid, { 1 })
+
+        nUnerringVision = wan.GetTraitDescriptionNumbers(wan.traitData.UnerringVision.entryid, { 2 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

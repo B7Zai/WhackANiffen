@@ -7,11 +7,12 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 local playerUnitToken = "player"
 local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
-local nMaulDmg, nMaulDmgAoE = 0, 0
+local nMaulDmg, nMaulDmgAoE, nMaulSoftCap = 0, 0, 0
 
 -- Init trait data
 local nVulnerableFlesh = 0
 local nUrsocsFury = 0
+local nRazeMaxRange = 8
 local nDreadfulWoundDmg, nDreadfulWoundHeal, nDreadfulWoundDR = 0, 0, 0
 
 -- Ability value calculation
@@ -26,7 +27,7 @@ local function CheckAbilityValue()
     end
 
     -- Check for valid unit
-    local isValidUnit, _, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.Maul.id)
+    local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.Maul.id, nRazeMaxRange)
     if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.Maul.basename)
         wan.UpdateMechanicData(wan.spellData.Maul.basename)
@@ -36,26 +37,43 @@ local function CheckAbilityValue()
     -- Base values
     local critChanceMod = 0
     local critDamageMod = 0
-    local cMaulInstantDmg = nMaulDmg
+
+    local cMaulInstantDmg = 0
+    local cMaulDotDmg = 0
+    local cMaulInstantDmgAoE = 0
+    local cMaulDotDmgAoE = 0
 
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    -- Vulnerable Flesh
     if wan.traitData.VulnerableFlesh.known then
         critChanceMod = critDamageMod + nVulnerableFlesh
     end
 
-    --Ravage AoE
-    local cMaulInstantDmgAoE = 0
-    local cMaulDotDmgAoE = 0
-    if wan.traitData.Ravage.known and wan.auraData.player.buff_Ravage then
+    local cRazeInstantDmgAoE = 0
+    if wan.spellData.Maul.name == "Raze" and not wan.CheckUnitBuff(nil, wan.traitData.Ravage.traitkey) then
+        local cRazeUnitOverflow = wan.SoftCapOverflow(nMaulSoftCap, countValidUnit)
+
+        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+            if nameplateGUID ~= targetGUID then
+
+                local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+
+                cRazeInstantDmgAoE = cRazeInstantDmgAoE + (nMaulDmgAoE * checkPhysicalDR * cRazeUnitOverflow)
+            end
+        end
+    end
+
+    local cRavageInstantDmgAoE = 0
+    local cRavageDotDmgAoE = 0
+    if wan.traitData.Ravage.known and wan.CheckUnitBuff(nil, wan.traitData.Ravage.traitkey) then
         for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
             if nameplateGUID ~= targetGUID then
                 local cRavageAoE = nMaulDmgAoE
                 local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
 
-                cMaulInstantDmgAoE = cMaulInstantDmgAoE + (cRavageAoE * checkPhysicalDR)
+                cRavageInstantDmgAoE = cRavageInstantDmgAoE + (cRavageAoE * checkPhysicalDR)
             end
 
             local cDreadfulWoundDmg = 0
@@ -67,20 +85,27 @@ local function CheckAbilityValue()
                 end
             end
 
-            cMaulDotDmgAoE = cMaulDotDmgAoE + cDreadfulWoundDmg
+            cRavageDotDmgAoE = cMaulDotDmgAoE + cDreadfulWoundDmg
         end
     end
 
-    -- Remove physical layer
     local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
-
-    -- Crit layer
     local cMaulCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
     local cMaulDotCritValue = wan.ValueFromCritical(wan.CritChance)
 
-    cMaulInstantDmg = cMaulInstantDmg * checkPhysicalDR * cMaulCritValue
-    cMaulInstantDmgAoE = cMaulInstantDmgAoE * cMaulCritValue
-    cMaulDotDmgAoE = cMaulDotDmgAoE * cMaulDotCritValue
+    cMaulInstantDmg = cMaulInstantDmg
+        + (nMaulDmg * checkPhysicalDR * cMaulCritValue)
+
+    cMaulDotDmg = cMaulDotDmg
+
+    cMaulInstantDmgAoE = cMaulInstantDmgAoE
+        + (cRazeInstantDmgAoE * cMaulCritValue)
+        + (cRavageInstantDmgAoE * cMaulCritValue)
+
+    cMaulDotDmgAoE = cMaulDotDmgAoE
+        + (cRavageDotDmgAoE * cMaulDotCritValue)
+
+
 
     local cMaulDmg = cMaulInstantDmg + cMaulInstantDmgAoE + cMaulDotDmgAoE
     local cMaulHeal = 0
@@ -111,9 +136,10 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            local nMaulValues = wan.GetSpellDescriptionNumbers(wan.spellData.Maul.id, { 1, 2 })
+            local nMaulValues = wan.GetSpellDescriptionNumbers(wan.spellData.Maul.id, { 1, 2, 3 })
             nMaulDmg = nMaulValues[1]
             nMaulDmgAoE = nMaulValues[2]
+            nMaulSoftCap = nMaulValues[3]
 
             local nDreadfulWoundValues = wan.GetTraitDescriptionNumbers(wan.traitData.DreadfulWound.entryid, { 1, 3 })
             nDreadfulWoundDmg = nDreadfulWoundValues[1]
@@ -136,6 +162,7 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "TRAIT_DATA_READY" then
         nVulnerableFlesh = wan.GetTraitDescriptionNumbers(wan.traitData.VulnerableFlesh.entryid, { 1 }, wan.traitData.VulnerableFlesh.rank)
+
         nUrsocsFury = wan.GetTraitDescriptionNumbers(wan.traitData.UrsocsFury.entryid, { 1 }) / 100
     end
 

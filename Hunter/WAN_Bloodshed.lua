@@ -9,7 +9,6 @@ local nBloodshedDotDmg, nBloodshedInstantDmg = 0, 0
 
 -- Init trait data
 local nShowerofBloodUnitCap = 0
-local nHowlOfThePack = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -38,7 +37,7 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local checkBloodshedDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.spellData.Bloodshed.basename]
+    local checkBloodshedDebuff = wan.CheckUnitDebuff(nil, wan.spellData.Bloodshed.formattedName)
     if not checkBloodshedDebuff then
         local dotPotency = wan.CheckDotPotency()
         cBloodshedDotDmg = cBloodshedDotDmg + (nBloodshedDotDmg * dotPotency)
@@ -54,7 +53,7 @@ local function CheckAbilityValue()
             if nameplateGUID ~= targetGUID then
 
                 local cShowerOfBlood = 0
-                local checkBloodshedDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.spellData.Bloodshed.basename]
+                local checkBloodshedDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.spellData.Bloodshed.formattedName)
 
                 if not checkBloodshedDebuff then
                     local unitDotPotency = wan.CheckDotPotency()
@@ -68,15 +67,6 @@ local function CheckAbilityValue()
 
                 if countShowerOfBlood >= nShowerofBloodUnitCap then break end
             end
-        end
-    end
-
-    -- howl of the pack trait layer
-    if wan.traitData.HowlofthePack.known then
-        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
-        if checkHowlOfThePackBuff then
-            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
-            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
         end
     end
 
@@ -125,8 +115,6 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "TRAIT_DATA_READY" then
         nShowerofBloodUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.ShowerofBlood.entryid, { 1 })
-
-        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

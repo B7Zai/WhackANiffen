@@ -7,27 +7,27 @@ if wan.PlayerState.Class ~= "HUNTER" then return end
 local abilityActive = false
 local nKillCommandDmg = 0
 local nExplosiveShotDmg, nExplosiveShotSoftCap = 0, 0
-local checkDebuffs = {}
 
 -- Init trait data
+local nSolitaryCompanion = 0
 local nGoForTheThroat = 0
 local nKillCleave, nKillCleaveAoECap = 0, 0
 local nQuickShotProcChance, nQuickShotDmg, nArcaneShotDmg = 0, 0, 0
 local nSerpentineRhythm = 0
 local nBloodseeker = 0
 local nAMurderOfCrows, nAMurderOfCrowsStacks, nAMurderofCrownsStacksCap = 0, 0, 0
+local nBestialWrath = 0
 local nKillerInstinct, nKillerInstinctThreshold = 0, 0
-local nBasiliskCollar = 0
 local nBloodshed = 0
 local nShowerOfBloodUnitCap = 0
 local nVenomousBite = 0
-local nViciousHunt = 0
-local nFrenziedTear = 0
+local nHowlofthePackLeaderWyvern, nHowlofthePackLeaderBoarAttacks, nHowlofthePackLeaderBoarInstantDmg, nHowlofthePackLeaderBoarInstantDmgAoE, nHowlofthePackLeaderBoarSoftCap, nHowlofthePackLeaderBearDotDmg, nHowlofthePackLeaderBearUnitCap = 0, 0, 0, 0, 0, 0, 0
+local nPackMentality = 0
+local nLeadFromtheFront = 0
 local nPhantomPain = 0
 local nPiercingFangs = 0
 local nExposedFlank, nExposedFlankUnitCap = 0, 0
 local nSulfurLinedPockets = 0
-local nHowlOfThePack = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -40,7 +40,7 @@ local function CheckAbilityValue()
     end
 
     -- Check for valid unit
-    local isValidUnit, countValidUnit ,idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.KillCommand.id)
+    local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.KillCommand.id)
     if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.KillCommand.basename)
         return
@@ -48,6 +48,7 @@ local function CheckAbilityValue()
 
     -- Base values
     local critChanceMod = 0
+    local critChanceModBase = 0
     local critDamageMod = 0
     local critDamageModBase = 0
 
@@ -64,7 +65,12 @@ local function CheckAbilityValue()
     -- animal companion trait layer
     local cAnimalCompanion = 1
     if wan.traitData.AnimalCompanion.known then
-        cAnimalCompanion = cAnimalCompanion * 2
+        cAnimalCompanion = cAnimalCompanion + 1
+    end
+
+    local cSolitaryCompanion = 1
+    if wan.traitData.SolitaryCompanion.known then
+        cSolitaryCompanion = cSolitaryCompanion + nSolitaryCompanion
     end
 
     -- go for the throat trait layer
@@ -75,8 +81,11 @@ local function CheckAbilityValue()
 
     -- serpentine rhythm trait layer
     local cSerpentineRhythm = 1
-    if wan.traitData.SerpentineRhythm.known and wan.auraData.player.buff_SerpentineBlessing then
-        cSerpentineRhythm = cSerpentineRhythm + nSerpentineRhythm
+    if wan.traitData.SerpentineRhythm.known then
+        local checkSerpentineBlessingBuff = wan.CheckUnitBuff(nil, wan.traitData.SerpentineRhythm.traitkey)
+        if checkSerpentineBlessingBuff then
+            cSerpentineRhythm = cSerpentineRhythm + nSerpentineRhythm
+        end
     end
 
     -- kill cleave trait layer
@@ -95,12 +104,26 @@ local function CheckAbilityValue()
 
     -- a murder of crows trait layer
     local cAMurderOfCrows = 0
-    if wan.traitData.AMurderofCrows.known and wan.auraData.player.buff_AMurderofCrows then
-        local cAMurderofCrownsStacks = wan.auraData.player.buff_AMurderofCrows.applications
+    if wan.traitData.AMurderofCrows.known then
+        local checkAMurderofCrowsBuff = wan.CheckUnitBuff(nil, wan.traitData.AMurderofCrows.traitkey)
+        local cAMurderofCrownsStacks = checkAMurderofCrowsBuff and checkAMurderofCrowsBuff.applications
 
         if cAMurderofCrownsStacks == nAMurderofCrownsStacksCap then
-            local checkPhysicalDRAMurderOfCrows = wan.traitData.BansheesMark.known and 1 or wan.CheckUnitPhysicalDamageReduction()
+            local checkPhysicalDRAMurderOfCrows = not wan.traitData.BansheesMark.known and wan.CheckUnitPhysicalDamageReduction() or 1
             cAMurderOfCrows = cAMurderOfCrows + (nAMurderOfCrows * checkPhysicalDRAMurderOfCrows)
+        end
+    end
+
+    -- bestial wrath trait layer
+    local cBestialWrath = 1
+    if wan.traitData.BestialWrath.known then
+        local checkBestialWrathBuff = wan.CheckUnitBuff(nil, wan.spellData.BestialWrath.formattedName)
+        if checkBestialWrathBuff then
+            cBestialWrath = cBestialWrath + nBestialWrath
+
+            if wan.traitData.LeadFromtheFront.known then
+                cBestialWrath = cBestialWrath + nLeadFromtheFront
+            end
         end
     end
 
@@ -114,24 +137,12 @@ local function CheckAbilityValue()
         end
     end
 
-    -- basilisk collar trait layer
-    local cBasiliskCollar = 1
-    local cBasiliskCollarAoE = 1
-    if wan.traitData.BasiliskCollar.known then
-        local countDebuff = wan.CountUnitDebuff(targetUnitToken, checkDebuffs)
-        cBasiliskCollar = cBasiliskCollar + (nBasiliskCollar * countDebuff)
-
-        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-            if nameplateGUID ~= targetGUID then
-                local countDebuff = wan.CountUnitDebuff(nameplateUnitToken, checkDebuffs)
-                cBasiliskCollarAoE = cBasiliskCollarAoE + (nBasiliskCollar * countDebuff)
-            end
-        end
-    end
-
     -- piercing fangs trait layer
-    if wan.traitData.PiercingFangs.known and wan.auraData.player["buff_" .. wan.spellData.BestialWrath.basename] then
-        critDamageMod = critDamageMod + nPiercingFangs
+    if wan.traitData.PiercingFangs.known then
+        local checkBestialWrathBuff = wan.CheckUnitBuff(nil, wan.traitData.BestialWrath.traitkey)
+        if checkBestialWrathBuff then
+            critDamageMod = critDamageMod + nPiercingFangs
+        end
     end
 
     -- bloodshed trait layer
@@ -139,7 +150,7 @@ local function CheckAbilityValue()
     local cBloodshedAoE = 1
     if wan.traitData.Bloodshed.known then
         if wan.traitData.ShowerofBlood.known then
-            local checkBloodshedDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.traitData.Bloodshed.traitkey]
+            local checkBloodshedDebuff = wan.CheckUnitDebuff(nil, wan.traitData.Bloodshed.traitkey)
 
             if checkBloodshedDebuff then
                 cBloodshed = cBloodshed + nBloodshed
@@ -149,21 +160,18 @@ local function CheckAbilityValue()
                     cBloodshed = cBloodshed + nVenomousBite
                 end
             end
-            local countShowerofBlood = 0
 
+            local countShowerofBlood = 0
             for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+                
                 if nameplateGUID ~= targetGUID then
-                    local checkBloodshedDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.Bloodshed.traitkey]
+                    local checkBloodshedDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.traitData.Bloodshed.traitkey)
 
                     if checkBloodshedDebuff then
                         cBloodshedAoE = cBloodshedAoE + nBloodshed
                         countShowerofBlood = countShowerofBlood + 1
 
-                        if (checkBloodshedDebuff and countShowerofBlood >= nShowerOfBloodUnitCap)
-                            or (countShowerofBlood > nShowerOfBloodUnitCap)
-                        then
-                            break
-                        end
+                        if countShowerofBlood >= nShowerOfBloodUnitCap then break end
                     end
                 end
             end
@@ -178,9 +186,9 @@ local function CheckAbilityValue()
     if wan.traitData.QuickShot.known then
         cQuickShotInstantDmg = cQuickShotInstantDmg + (nArcaneShotDmg * nQuickShotProcChance * nQuickShotDmg)
 
-        if wan.traitData.SulfurLinedPockets.known and wan.auraData.player["buff_" .. wan.traitData.SulfurLinedPockets.traitkey] then
-            local checkSulfurLinedPocketsBuffID = wan.auraData.player["buff_" .. wan.traitData.SulfurLinedPockets.traitkey].spellId
-            if checkSulfurLinedPocketsBuffID == 459834 then
+        if wan.traitData.SulfurLinedPockets.known then
+            local checkSulfurLinedPocketsBuff = wan.CheckUnitBuff(nil, wan.traitData.SulfurLinedPockets.traitkey)
+            if checkSulfurLinedPocketsBuff and checkSulfurLinedPocketsBuff.spellId == 459834 then
                 local cExplosiveShotUnitOverflow = wan.AdjustSoftCapUnitOverflow(nExplosiveShotSoftCap, countValidUnit)
                 local cExplosiveShotDmg = nExplosiveShotDmg * cExplosiveShotUnitOverflow
                 cQuickShotInstantDmgAoE = cQuickShotInstantDmgAoE + (cExplosiveShotDmg * nSulfurLinedPockets * nQuickShotProcChance)
@@ -191,8 +199,7 @@ local function CheckAbilityValue()
     -- bloodseeker trait layer
     local cBloodseeker = 0
     if wan.traitData.Bloodseeker.known then
-        local checkBloodseekerDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.spellData.KillCommand.basename]
-
+        local checkBloodseekerDebuff = wan.CheckUnitDebuff(nil, wan.spellData.KillCommand.formattedName)
         if not checkBloodseekerDebuff then
             cBloodseeker = cBloodseeker + nBloodseeker
         end
@@ -203,7 +210,7 @@ local function CheckAbilityValue()
     local countExposedFlank = 0
     local cExposedFlankInstantDmgAoE = 0
     if wan.traitData.ExposedFlank.known then
-        local checkExposedFlankBuff = wan.auraData.player["buff_" .. wan.traitData.ExposedFlank.traitkey]
+        local checkExposedFlankBuff = wan.CheckUnitBuff(nil, wan.traitData.ExposedFlank.traitkey)
         cExposedFlank = cExposedFlank + nExposedFlank
 
         if checkExposedFlankBuff then
@@ -224,26 +231,66 @@ local function CheckAbilityValue()
 
     ---- PACK LEADER TRAITS ----
 
-    -- vicious hunt trait layer
-    local cViciousHunt = 0
-    if wan.traitData.ViciousHunt.known and wan.auraData.player["buff_" .. wan.traitData.ViciousHunt.traitkey] then
-        cViciousHunt = cViciousHunt + nViciousHunt
-    end
+    -- howl of the pack leader trait layer
+    local cHowlOfThePackLeaderWyvern = 1
+    local cHowlOfThePackLeaderBoarInstantDmg = 0
+    local cHowlOfThePackLeaderBoarInstantDmgAoE = 0
+    local cHowlOfThePackLeaderBearDotDmgAoE = 0
+    local cPackMentality = 1
+    if wan.traitData.HowlofthePackLeader.known then
 
-    -- howl of the pack trait layer
-    if wan.traitData.HowlofthePack.known then
-        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
-        if checkHowlOfThePackBuff then
-            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
-            critDamageModBase = critDamageModBase + (nHowlOfThePack * stacksHowlOfThePack)
-            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
+        local checkWyvernsCryBuff = wan.CheckUnitBuff(nil, "WyvernsCry")
+        if checkWyvernsCryBuff then
+            local cWyvernsCryStacks = checkWyvernsCryBuff.applications
+            cHowlOfThePackLeaderWyvern = cHowlOfThePackLeaderWyvern + (nHowlofthePackLeaderWyvern * cWyvernsCryStacks)
+
+            if wan.traitData.PackMentality.known then
+                cPackMentality = cPackMentality + nPackMentality
+            end
         end
-    end
 
-    -- frenzied tear trait layer
-    local cFrenziedTear = 1
-    if wan.traitData.FrenziedTear.known and wan.auraData.player["buff_" .. wan.traitData.FrenziedTear.traitkey] then
-        cFrenziedTear = cFrenziedTear + nFrenziedTear
+        local checkHowlOfThePackLeaderBuff = wan.CheckUnitBuff(nil, wan.traitData.HowlofthePackLeader.traitkey)
+        if checkHowlOfThePackLeaderBuff then
+            if checkHowlOfThePackLeaderBuff.spellId == 472324 then
+                local cHowlOfThePackLeaderBoarSecondaryUnits = math.max(countValidUnit - 1, 0)
+                local cHowlOfThePackLeaderBoarUnitOverflow = wan.SoftCapOverflow(nHowlofthePackLeaderBoarSoftCap, cHowlOfThePackLeaderBoarSecondaryUnits)
+                local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(targetUnitToken)
+                local dotPotency = wan.CheckDotPotency(nHowlofthePackLeaderBoarInstantDmg)
+
+                cHowlOfThePackLeaderBoarInstantDmg = cHowlOfThePackLeaderBoarInstantDmg + (nHowlofthePackLeaderBoarInstantDmg * nHowlofthePackLeaderBoarAttacks * checkPhysicalDR * dotPotency)
+
+                for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+                    if nameplateGUID ~= targetGUID then
+                        local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+                        local unitDotPotency = wan.CheckDotPotency(nHowlofthePackLeaderBoarInstantDmg, nameplateUnitToken)
+
+                        cHowlOfThePackLeaderBoarInstantDmgAoE = cHowlOfThePackLeaderBoarInstantDmgAoE + (nHowlofthePackLeaderBoarInstantDmgAoE * nHowlofthePackLeaderBoarAttacks * cHowlOfThePackLeaderBoarUnitOverflow * checkUnitPhysicalDR * unitDotPotency)
+                    end
+                end
+
+                if wan.traitData.PackMentality.known then
+                    cPackMentality = cPackMentality + nPackMentality
+                end
+
+            elseif checkHowlOfThePackLeaderBuff.spellId == 472325 then
+                local countHowlofthePackLeaderUnit = 0
+
+                for nameplateUnitToken, _ in pairs(idValidUnit) do
+                    local unitDotPotency = wan.CheckDotPotency(nHowlofthePackLeaderBoarInstantDmg, nameplateUnitToken)
+
+                    cHowlOfThePackLeaderBearDotDmgAoE = cHowlOfThePackLeaderBearDotDmgAoE + (nHowlofthePackLeaderBearDotDmg * unitDotPotency)
+
+                    countHowlofthePackLeaderUnit = countHowlofthePackLeaderUnit + 1
+
+                    if countHowlofthePackLeaderUnit >= nHowlofthePackLeaderBearUnitCap then break end
+                end
+
+                if wan.traitData.PackMentality.known then
+                    cPackMentality = cPackMentality + nPackMentality
+                end
+            end
+        end
     end
 
     ---- DARK RANGER TRAITS ----
@@ -251,22 +298,38 @@ local function CheckAbilityValue()
     -- phantom pain trait layer
     local cPhantomPain = 0
     if wan.traitData.PhantomPain.known then
+
         for nameplateUnitToken, _ in pairs(idValidUnit) do
-            local checkBlackArrowDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.BlackArrow.traitkey]
+            local checkBlackArrowDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.traitData.BlackArrow.traitkey)
+
             if checkBlackArrowDebuff then
-                cPhantomPain = cPhantomPain + (nKillCommandDmg * cAnimalCompanion * cSerpentineRhythm * cKillerInstinct * cBasiliskCollar * cBloodshed * cFrenziedTear * nPhantomPain)
+                cPhantomPain = cPhantomPain + (nKillCommandDmg * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cKillerInstinct * cBloodshed * nPhantomPain)
             end
         end
     end
-    
+
     local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
     local cKillCommandCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
-    local cKillCommandBaseCritValue = wan.ValueFromCritical(wan.CritChance, nil, critDamageModBase)
+    local cKillCommandBaseCritValue = wan.ValueFromCritical(wan.CritChance, critChanceModBase, critDamageModBase)
 
-    cKillCommandInstantDmg = cKillCommandInstantDmg + (nKillCommandDmg * cAnimalCompanion * cSerpentineRhythm * cKillerInstinct * cBasiliskCollar * cBloodshed * cFrenziedTear * cExposedFlank * checkPhysicalDR * cKillCommandCritValue) + (cQuickShotInstantDmg * cKillCommandBaseCritValue)  + (cViciousHunt * checkPhysicalDR * cKillCommandBaseCritValue)
-    cKillCommandDotDmg = cKillCommandDotDmg + ((cAMurderOfCrows + cBloodseeker) * cKillCommandBaseCritValue)
-    cKillCommandInstantDmgAoE = cKillCommandInstantDmgAoE + (cKillCleaveInstantDmgAoE * cAnimalCompanion * cSerpentineRhythm * cKillerInstinct * cBasiliskCollarAoE * cBloodshedAoE * cFrenziedTear * cKillCommandCritValue) + (cExposedFlankInstantDmgAoE * cExposedFlank * cKillCommandCritValue) + (cQuickShotInstantDmgAoE * cKillCommandBaseCritValue) + cPhantomPain
-    cKillCommandDotDmgAoE = cKillCommandDotDmgAoE + (cBloodseeker * countExposedFlank * cKillCommandBaseCritValue)
+    cKillCommandInstantDmg = cKillCommandInstantDmg
+        + (nKillCommandDmg * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cBestialWrath * cKillerInstinct * cBloodshed * cHowlOfThePackLeaderWyvern * cPackMentality * cExposedFlank * checkPhysicalDR * cKillCommandCritValue)
+        + (cQuickShotInstantDmg * cKillCommandBaseCritValue)
+        + (cHowlOfThePackLeaderBoarInstantDmg * cKillCommandBaseCritValue)
+
+    cKillCommandDotDmg = cKillCommandDotDmg
+        + ((cAMurderOfCrows + cBloodseeker) * cKillCommandBaseCritValue)
+
+    cKillCommandInstantDmgAoE = cKillCommandInstantDmgAoE
+        + (cKillCleaveInstantDmgAoE * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cBestialWrath * cKillerInstinct * cBloodshedAoE * cHowlOfThePackLeaderWyvern * cPackMentality * cKillCommandCritValue)
+        + (cExposedFlankInstantDmgAoE * cExposedFlank * cKillCommandCritValue)
+        + (cQuickShotInstantDmgAoE * cKillCommandBaseCritValue)
+        + (cHowlOfThePackLeaderBoarInstantDmgAoE * cKillCommandBaseCritValue)
+        + cPhantomPain
+
+    cKillCommandDotDmgAoE = cKillCommandDotDmgAoE
+        + (cBloodseeker * countExposedFlank * cKillCommandBaseCritValue)
+        + (cHowlOfThePackLeaderBearDotDmgAoE * cKillCommandBaseCritValue)
 
     local cKillCommandDmg = cKillCommandInstantDmg + cKillCommandDotDmg + cKillCommandInstantDmgAoE + cKillCommandDotDmgAoE
 
@@ -291,8 +354,6 @@ local function AddonLoad(self, event, addonName)
             nAMurderofCrownsStacksCap = math.max((nAMurderOfCrowsStacks - 1), 0)
             nAMurderOfCrows = nAMurderOfCrowsValues[2]
 
-            nViciousHunt = wan.GetTraitDescriptionNumbers(wan.traitData.ViciousHunt.entryid, { 1 })
-
             nArcaneShotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.ArcaneShot.id, { 1 })
 
             nBloodseeker = wan.GetTraitDescriptionNumbers(wan.traitData.Bloodseeker.entryid, { 1 })
@@ -313,19 +374,10 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         abilityActive = wan.spellData.KillCommand.known and wan.spellData.KillCommand.id
         wan.BlizzardEventHandler(frameKillCommand, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
         wan.SetUpdateRate(frameKillCommand, CheckAbilityValue, abilityActive)
-
-        checkDebuffs = {
-            wan.spellData.BarbedShot.basename,
-            wan.traitData.Laceration.traitkey,
-            "SerpentSting",
-            wan.traitData.AMurderofCrows.traitkey,
-            "RavenousLeap",
-            wan.traitData.Bloodshed.traitkey,
-            wan.traitData.BlackArrow.traitkey,
-        }
     end
 
     if event == "TRAIT_DATA_READY" then
+        nSolitaryCompanion = wan.GetTraitDescriptionNumbers(wan.traitData.SolitaryCompanion.entryid, { 1 }) * 0.01
 
         nGoForTheThroat = wan.GetTraitDescriptionNumbers(wan.traitData.GofortheThroat.entryid, { 1 }) * 0.01
 
@@ -343,11 +395,24 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nKillCleave = nKillCleaveValues[1] * 0.01
         nKillCleaveAoECap = nKillCleaveValues[2]
 
+        nBestialWrath = wan.GetTraitDescriptionNumbers(wan.traitData.BestialWrath.entryid, { 2 }) * 0.01
+
         local nKillerInstinctValues = wan.GetTraitDescriptionNumbers(wan.traitData.KillerInstinct.entryid, { 1, 2 }, wan.traitData.KillerInstinct.rank)
         nKillerInstinct = nKillerInstinctValues[1] * 0.01
         nKillerInstinctThreshold = nKillerInstinctValues[2] * 0.01
 
-        nBasiliskCollar = wan.GetTraitDescriptionNumbers(wan.traitData.BasiliskCollar.entryid, { 1 }, wan.traitData.BasiliskCollar.rank) * 0.01
+        local nHowlofthePackLeaderValues = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePackLeader.entryid, { 4, 8, 9, 10, 11, 14, 16 })
+        nHowlofthePackLeaderWyvern = nHowlofthePackLeaderValues[1] * 0.001
+        nHowlofthePackLeaderBoarAttacks = nHowlofthePackLeaderValues[2]
+        nHowlofthePackLeaderBoarInstantDmg = nHowlofthePackLeaderValues[3]
+        nHowlofthePackLeaderBoarInstantDmgAoE = nHowlofthePackLeaderValues[4]
+        nHowlofthePackLeaderBoarSoftCap = nHowlofthePackLeaderValues[5]
+        nHowlofthePackLeaderBearDotDmg = nHowlofthePackLeaderValues[6]
+        nHowlofthePackLeaderBearUnitCap = nHowlofthePackLeaderValues[7]
+
+        nPackMentality = wan.GetTraitDescriptionNumbers(wan.traitData.PackMentality.entryid, { 1 }) * 0.01
+
+        nLeadFromtheFront = wan.GetTraitDescriptionNumbers(wan.traitData.LeadFromtheFront.entryid, { 2 }) * 0.01
 
         nPiercingFangs = wan.GetTraitDescriptionNumbers(wan.traitData.PiercingFangs.entryid, { 1 })
 
@@ -357,13 +422,9 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
         nVenomousBite = wan.GetTraitDescriptionNumbers(wan.traitData.VenomousBite.entryid, { 1 }) * 0.01
 
-        nFrenziedTear = wan.GetTraitDescriptionNumbers(wan.traitData.FrenziedTear.entryid, { 1 }) * 0.01
-
         nPhantomPain = wan.GetTraitDescriptionNumbers(wan.traitData.PhantomPain.entryid, { 1 }) * 0.01
 
         nSulfurLinedPockets = wan.GetTraitDescriptionNumbers(wan.traitData.SulfurLinedPockets.entryid, { 2 }) * 0.01
-
-        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

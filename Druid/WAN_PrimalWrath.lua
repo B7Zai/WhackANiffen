@@ -31,40 +31,61 @@ local function CheckAbilityValue()
         return
     end
 
+    local critChanceMod = 0
+    local critDamageMod = 0
+    local critChanceModBase = 0
+    local critDamageModBase = 0
+
     local cPrimalWrathInstantDmg = 0
     local cPrimalWrathDotDmg = 0
+    local cPrimalWrathInstantDmgAoE = 0
+    local cPrimalWrathDotDmgAoE = 0
 
+    local cPrimalWrathInstantDmgBaseAoE = 0
+    local cPrimalWrathDotDmgBaseAoE = 0
+    local formattedDebuffName = wan.spellData.Rip.formattedName
     for nameplateUnitToken, _ in pairs(idValidUnit) do
-        local cRipDmg = 0
-        local cTearDmg = 0
         local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
-        local checkRipDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.spellData.Rip.basename]
+        cPrimalWrathInstantDmgBaseAoE = cPrimalWrathInstantDmgBaseAoE + (nPrimalWrathInstantDmg * comboCorrection * checkPhysicalDR)
 
+        local checkRipDebuff = wan.CheckUnitDebuff(nameplateUnitToken, formattedDebuffName)
         if not checkRipDebuff then
             local dotPotency = wan.CheckDotPotency(nPrimalWrathInstantDmg, nameplateUnitToken)
             local cRipDotDmg = nRipDotDmg * comboCorrection
-            cRipDmg = cRipDotDmg * dotPotency
-
-            -- Rip and Tear
-            if wan.traitData.RipandTear.known then
-                local checkTearDebuff = wan.auraData[nameplateUnitToken].debuff_Tear
-                if not checkTearDebuff then
-                    cTearDmg = cRipDmg * nRipAndTear
-                end
-            end
+            cPrimalWrathDotDmgBaseAoE =  cPrimalWrathDotDmgBaseAoE + (cRipDotDmg * dotPotency)
         end
-
-        cPrimalWrathInstantDmg = cPrimalWrathInstantDmg + (nPrimalWrathInstantDmg * comboCorrection * checkPhysicalDR)
-        cPrimalWrathDotDmg = cPrimalWrathDotDmg + cRipDmg + cTearDmg
     end
 
-    -- Crit layer
-    local nPrimalWrathCritValue = wan.ValueFromCritical(wan.CritChance)
+    ---- FERAL TRAITS ----
 
-    cPrimalWrathInstantDmg = cPrimalWrathInstantDmg * nPrimalWrathCritValue
-    cPrimalWrathDotDmg = cPrimalWrathDotDmg * nPrimalWrathCritValue
+    local cTearDotDmgAoE = 0
+    if wan.traitData.RipandTear.known then
+        local formattedTearDebuffName = "Tear"
+        local cTearDotDmg = nRipDotDmg * comboCorrection * nRipAndTear
+        for nameplateUnitToken, _ in pairs(idValidUnit) do
+    
+            local checkTearDebuff = wan.CheckUnitDebuff(nameplateUnitToken, formattedTearDebuffName)
+            if not checkTearDebuff then
+                local dotPotency = wan.CheckDotPotency(nPrimalWrathInstantDmg, nameplateUnitToken)
+                cTearDotDmgAoE =  cTearDotDmgAoE + (cTearDotDmg * dotPotency)
+            end
+        end
+    end
 
-    local cPrimalWrathDmg = cPrimalWrathInstantDmg + cPrimalWrathDotDmg
+    local cPrimalWrathCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+
+    cPrimalWrathInstantDmg = cPrimalWrathInstantDmg
+
+    cPrimalWrathDotDmg = cPrimalWrathDotDmg
+
+    cPrimalWrathInstantDmgAoE = cPrimalWrathInstantDmgAoE
+        + (cPrimalWrathInstantDmgBaseAoE * cPrimalWrathCritValue)
+
+    cPrimalWrathDotDmgAoE = cPrimalWrathDotDmgAoE
+        + (cPrimalWrathDotDmgBaseAoE * cPrimalWrathCritValue)
+        + (cTearDotDmgAoE * cPrimalWrathCritValue)
+
+    local cPrimalWrathDmg = cPrimalWrathInstantDmg + cPrimalWrathDotDmg + cPrimalWrathInstantDmgAoE + cPrimalWrathDotDmgAoE
 
     -- Update ability data
     local abilityValue = math.floor(cPrimalWrathDmg)

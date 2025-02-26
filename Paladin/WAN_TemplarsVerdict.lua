@@ -9,8 +9,6 @@ local nTemplarsVerdict = 0
 
 -- Init trait data
 local nGreaterJudgment = 0
-local nEmpyreanLegacy = 0
-local nDivineStormDmg, nDivineStormSoftCap = 0, 0
 local nJudgeJuryandExecutionerUnitCap, nJudgeJuryandExecutioner = 0, 0
 local nDivineArbiterStacks, nDivineArbiter, nDivineArbiterAoE = 0, 0, 0
 local nFinalReckoning = 0
@@ -23,28 +21,10 @@ local nDawnlightDotDmg, nDawnlightDotDmgAoE, nDawnlightSoftCap = 0, 0, 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or checkHammerofLight
-        or wan.auraData.player["buff_" .. wan.traitData.DivineHammer.traitkey]
         or not wan.IsSpellUsable(wan.spellData.TemplarsVerdict.id)
     then
         wan.UpdateAbilityData(wan.spellData.TemplarsVerdict.basename)
         return
-    end
-
-    if wan.traitData.DivineHammer.known then
-        local formattedDebuffName = wan.traitData.DivineHammer.traitkey
-        local checkDivineHammerDebuff = wan.CheckUnitDebuff(nil, formattedDebuffName)
-        if checkDivineHammerDebuff then
-            wan.UpdateAbilityData(wan.spellData.TemplarsVerdict.basename)
-            return
-        end
-
-        for nameplateUnitToken, _ in pairs(wan.NameplateUnitID) do
-            local checkDivineHammerDebuff = wan.CheckUnitDebuff(nameplateUnitToken, formattedDebuffName)
-            if checkDivineHammerDebuff then
-                wan.UpdateAbilityData(wan.spellData.TemplarsVerdict.basename)
-                return
-            end
-        end
     end
 
     -- Check for valid unit
@@ -83,21 +63,21 @@ local function CheckAbilityValue()
         if wan.traitData.JudgeJuryandExecutioner.known then
             local formattedBuffName = wan.traitData.JudgeJuryandExecutioner.traitkey
             local checkJudgeJuryandExecutionerBuff = wan.CheckUnitBuff(nil, formattedBuffName)
-    
+
             if checkJudgeJuryandExecutionerBuff then
                 local nGreaterJudgmentUnits = math.max(countValidUnit - 1, 0)
                 local countJudgeJuryandExecutionerUnit = 0
                 local countGreaterJudgmentDebuff = 0
-    
+
                 for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-    
+
                     if nameplateGUID ~= targetGUID then
                         countJudgeJuryandExecutionerUnit = countJudgeJuryandExecutionerUnit + 1
                         local checkUnitGreaterJudgmentDebuff = wan.CheckUnitDebuff(nameplateUnitToken, formattedDebuffName)
                         if checkUnitGreaterJudgmentDebuff then
                             countGreaterJudgmentDebuff = countGreaterJudgmentDebuff + 1
                         end
-    
+
                         if countJudgeJuryandExecutionerUnit >= nJudgeJuryandExecutionerUnitCap then break end
                     end
                 end
@@ -277,10 +257,6 @@ local function AddonLoad(self, event, addonName)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nTemplarsVerdict = wan.GetSpellDescriptionNumbers(wan.spellData.TemplarsVerdict.id, { 1 })
 
-            local nDivineStormValues = wan.GetSpellDescriptionNumbers(wan.spellData.DivineStorm.id, { 1, 2 })
-            nDivineStormDmg = nDivineStormValues[1]
-            nDivineStormSoftCap = nDivineStormValues[2]
-
             local nDivineArbiterValues = wan.GetTraitDescriptionNumbers(wan.traitData.DivineArbiter.entryid, { 1, 2, 3 })
             nDivineArbiterStacks = nDivineArbiterValues[1]
             nDivineArbiter = nDivineArbiterValues[2]
@@ -311,8 +287,6 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "TRAIT_DATA_READY" then
         nGreaterJudgment = wan.GetTraitDescriptionNumbers(wan.traitData.GreaterJudgment.entryid, { 1 }) * 0.01
-
-        nEmpyreanLegacy = wan.GetTraitDescriptionNumbers(wan.traitData.EmpyreanLegacy.entryid, { 1 }) * 0.01 + 1
 
         local nJudgeJuryandExecutionerValues = wan.GetTraitDescriptionNumbers(wan.traitData.JudgeJuryandExecutioner.entryid, { 1, 2 })
         nJudgeJuryandExecutionerUnitCap = nJudgeJuryandExecutionerValues[1]

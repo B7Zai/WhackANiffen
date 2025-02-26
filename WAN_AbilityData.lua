@@ -35,15 +35,13 @@ local function GetSpellData(spellDataArray)
                 local spellType, spellID = spellBookItemInfo.itemType, spellBookItemInfo.actionID
                 local isPassive, isOffSpec = spellBookItemInfo.isPassive, spellBookItemInfo.isOffSpec
 
-                if spellType == Enum.SpellBookItemType.Spell then
+                if spellType == Enum.SpellBookItemType.Spell and not isOffSpec then
                     local baseSpellID = FindBaseSpellByID(spellID)
                     local overriddenSpellID = C_Spell.GetOverrideSpell(spellID)
                     local baseSpellName = C_Spell.GetSpellName(baseSpellID)
                     local spellInfo = C_Spell.GetSpellInfo(overriddenSpellID)
-                    local isPassive = C_Spell.IsSpellPassive(overriddenSpellID)
                     local keyName = wan.FormatNameForKey(baseSpellName)
                     local formattedSpellName = wan.FormatNameForKey(spellInfo.name)
-                    local isKnown = IsPlayerSpell(overriddenSpellID)
 
                     if spellInfo then
                         spellDataArray[keyName] = {
@@ -57,9 +55,34 @@ local function GetSpellData(spellDataArray)
                             basename = keyName,
                             formattedName = formattedSpellName,
                             isPassive = isPassive,
-                            known = isKnown
+                            known = true
                         }
                     end
+
+                elseif spellType == Enum.SpellBookItemType.Spell and isOffSpec then
+                        local baseSpellID = FindBaseSpellByID(spellID)
+                        local overriddenSpellID = C_Spell.GetOverrideSpell(spellID)
+                        local baseSpellName = C_Spell.GetSpellName(baseSpellID)
+                        local spellInfo = C_Spell.GetSpellInfo(overriddenSpellID)
+                        local keyName = wan.FormatNameForKey(baseSpellName)
+                        local formattedSpellName = wan.FormatNameForKey(spellInfo.name)
+    
+                        if spellInfo and spellDataArray[keyName].known == false then
+                            spellDataArray[keyName] = {
+                                name = spellInfo.name,
+                                icon = spellInfo.iconID,
+                                originalIconID = spellInfo.originalIconID,
+                                castTime = spellInfo.castTime,
+                                minRange = spellInfo.minRange,
+                                maxRange = spellInfo.maxRange,
+                                id = overriddenSpellID,
+                                basename = keyName,
+                                formattedName = formattedSpellName,
+                                isPassive = isPassive,
+                                known = false
+                            }
+                        end
+                
 
                 elseif spellType == Enum.SpellBookItemType.Flyout and not isOffSpec then
                     local _, _, numSlots = GetFlyoutInfo(spellID)

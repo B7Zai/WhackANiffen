@@ -11,6 +11,7 @@ local nVolleyInstantDmg = 0
 local nPenetratingShots = 0
 local nSalvoUnitCap = 0
 local nExplosiveShotDmg, nExplosiveShotSoftCap = 0, 0
+local nUnerringVision = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -31,6 +32,8 @@ local function CheckAbilityValue()
     -- Base values
     local critChanceMod = 0
     local critDamageMod = 0
+    local critChanceMod = 0
+    local critDamageModBase = 0
 
     local cVolleyInstantDmg = 0
     local cVolleyDotDmg = 0
@@ -40,12 +43,14 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
+    local cVolleyInstantDmgBaseAoE = 0
     for nameplateUnitToken, _ in pairs(idValidUnit) do
         local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
-        local dotPotency = wan.CheckDotPotency(nil, nameplateUnitToken)
 
-        cVolleyInstantDmgAoE = cVolleyInstantDmgAoE + (nVolleyInstantDmg * checkPhysicalDR * dotPotency)
+        cVolleyInstantDmgBaseAoE = cVolleyInstantDmgBaseAoE + (nVolleyInstantDmg * checkPhysicalDR)
     end
+
+    ---- MARKSMAN TRAITS ----
 
     local cPenetratingShots = 0
     if wan.traitData.PenetratingShots.known then
@@ -53,8 +58,16 @@ local function CheckAbilityValue()
         critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
     end
 
+    if wan.traitData.UnerringVision.known then
+        local checkTrueshotBuff = wan.CheckUnitBuff(nil, wan.spellData.Trueshot.formattedName)
+        if checkTrueshotBuff then
+            critDamageMod = critDamageMod + nUnerringVision
+            critDamageModBase = critDamageModBase + nUnerringVision
+        end
+    end
+
     local cSalvoInstantDmgAoE = 0
-    if wan.traitData.Salvo.known and wan.auraData.player["buff_" .. wan.traitData.Salvo.traitkey] then
+    if wan.traitData.Salvo.known then
         local cExplosiveShotUnitOverflow = wan.AdjustSoftCapUnitOverflow(nExplosiveShotSoftCap, countValidUnit)
         local cSalvoUnitCap = math.min(nSalvoUnitCap, countValidUnit)
 
@@ -65,8 +78,13 @@ local function CheckAbilityValue()
     local cVolleyCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
     cVolleyInstantDmg = cVolleyInstantDmg
+
     cVolleyDotDmg = cVolleyDotDmg
-    cVolleyInstantDmgAoE = (cVolleyInstantDmgAoE + cSalvoInstantDmgAoE) * cVolleyCritValue
+
+    cVolleyInstantDmgAoE = cVolleyInstantDmgAoE
+        + (cVolleyInstantDmgBaseAoE * cVolleyCritValue)
+        + (cSalvoInstantDmgAoE * cVolleyCritValue)
+
     cVolleyDotDmgAoE = cVolleyDotDmgAoE
 
     local cVolleyDmg = cVolleyInstantDmg + cVolleyDotDmg + cVolleyInstantDmgAoE + cVolleyDotDmgAoE
@@ -109,7 +127,9 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     if event == "TRAIT_DATA_READY" then
         nPenetratingShots = wan.GetTraitDescriptionNumbers(wan.traitData.PenetratingShots.entryid, { 1 }) * 0.01
 
-        nSalvoUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.Salvo.entryid, { 1 })
+        nSalvoUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.Salvo.entryid, { 1 }) + 1
+
+        nUnerringVision = wan.GetTraitDescriptionNumbers(wan.traitData.UnerringVision.entryid, { 2 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

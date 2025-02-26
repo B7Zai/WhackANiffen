@@ -5,10 +5,10 @@ if wan.PlayerState.Class ~= "HUNTER" then return end
 
 -- Init spell data
 local abilityActive = false
-local nFlankingStrike = 0
+local nFlankingStrikeDmg = 0
 
 -- Init trait data
-local nHowlOfThePack = 0
+local nMercilessBlowDmg = 0
 
 
 -- Ability value calculation
@@ -21,7 +21,7 @@ local function CheckAbilityValue()
     end
 
     -- Check for valid unit
-    local isValidUnit, countValidUnit ,idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.FlankingStrike.id)
+    local isValidUnit, _ ,idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.FlankingStrike.id)
     if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.FlankingStrike.basename)
         return
@@ -39,22 +39,29 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    ---- PACK LEADER TRAITS ----
+    ---- SURVIVAL TRAITS ----
 
-    if wan.traitData.HowlofthePack.known then
-        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
-        if checkHowlOfThePackBuff then
-            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
-            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
+    local cMercilessBlowDotDmg = 0
+    if wan.traitData.MercilessBlow.known then
+        local checkMercilessBlowDebuff = wan.CheckUnitDebuff(nil, wan.traitData.MercilessBlow.traitkey)
+
+        if not checkMercilessBlowDebuff then
+            local dotPotency = wan.CheckDotPotency(nFlankingStrikeDmg)
+            cMercilessBlowDotDmg = cMercilessBlowDotDmg + (nMercilessBlowDmg * dotPotency)
         end
     end
 
     local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
     local cFlankingStrikeCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
-    cFlankingStrikeInstantDmg = cFlankingStrikeInstantDmg + (nFlankingStrike * checkPhysicalDR * cFlankingStrikeCritValue)
+    cFlankingStrikeInstantDmg = cFlankingStrikeInstantDmg
+        + (nFlankingStrikeDmg * checkPhysicalDR * cFlankingStrikeCritValue)
+
     cFlankingStrikeDotDmg = cFlankingStrikeDotDmg
+
     cFlankingStrikeInstantDmgAoE = cFlankingStrikeInstantDmgAoE
+        + (cMercilessBlowDotDmg * cFlankingStrikeCritValue)
+
     cFlankingStrikeDotDmgAoE = cFlankingStrikeDotDmgAoE
 
     local cFlankingStrikeDmg = cFlankingStrikeInstantDmg + cFlankingStrikeDotDmg + cFlankingStrikeInstantDmgAoE + cFlankingStrikeDotDmgAoE
@@ -74,7 +81,9 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            nFlankingStrike = wan.GetSpellDescriptionNumbers(wan.spellData.FlankingStrike.id, { 1 })
+            nFlankingStrikeDmg = wan.GetSpellDescriptionNumbers(wan.spellData.FlankingStrike.id, { 1 })
+
+            nMercilessBlowDmg = wan.GetTraitDescriptionNumbers(wan.traitData.MercilessBlow.entryid, { 4 })
         end
     end)
 end
@@ -90,9 +99,7 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         wan.SetUpdateRate(frameFlankingStrike, CheckAbilityValue, abilityActive)
     end
 
-    if event == "TRAIT_DATA_READY" then
-        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
-    end
+    if event == "TRAIT_DATA_READY" then end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
         wan.SetUpdateRate(frameFlankingStrike, CheckAbilityValue, abilityActive)

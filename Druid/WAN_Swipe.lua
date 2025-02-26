@@ -18,7 +18,7 @@ local nMercilessClaws = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.Swipe.id)
+    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.Shred.id)
     then
         wan.UpdateAbilityData(wan.spellData.Swipe.basename)
         return
@@ -37,6 +37,8 @@ local function CheckAbilityValue()
 
     local cSwipeInstantDmg = 0
     local cSwipeDotDmg = 0
+
+    local unitOverflow = wan.SoftCapOverflow(nSoftCap, countValidUnit)
 
     for nameplateUnitToken, _ in pairs (idValidUnit) do
         local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
@@ -58,7 +60,7 @@ local function CheckAbilityValue()
             end
         end
 
-        cSwipeInstantDmg = cSwipeInstantDmg + (nSwipeDmg * checkPhysicalDR * cMercilessClaws)
+        cSwipeInstantDmg = cSwipeInstantDmg + (nSwipeDmg * checkPhysicalDR * cMercilessClaws * unitOverflow)
         cSwipeDotDmg = cSwipeDotDmg + cThrashingClaws
     end 
 
@@ -68,13 +70,11 @@ local function CheckAbilityValue()
         critDamageMod = critDamageMod + nStrikeForTheHeart
     end
 
-    local unitOverflow = wan.SoftCapOverflow(nSoftCap, countValidUnit)
-
     -- Crit layer
     local cSwipeInstantCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
     local cSwipeDotCritValue = wan.ValueFromCritical(wan.CritChance)
 
-    cSwipeInstantDmg = cSwipeInstantDmg * cSwipeInstantCritValue * unitOverflow
+    cSwipeInstantDmg = cSwipeInstantDmg * cSwipeInstantCritValue
     cSwipeDotDmg = cSwipeDotDmg * cSwipeDotCritValue
 
     local cSwipeDmg = cSwipeInstantDmg + cSwipeDotDmg

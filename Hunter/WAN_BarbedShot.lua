@@ -10,7 +10,8 @@ local checkDebuffs = {}
 
 -- Init trait data
 local nFuriousAssault = 0
-local nStomp = 0
+local nStompDmg, nStompDmgAoE = 0, 0
+local nPoisonedBarbsProcChance, nPoisonedBarbsDmg, nPoisonedBarbsSoftCap, nSerpentStingInstantDmg, nSerpentStingDotDmg = 0, 0, 0, 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -36,19 +37,51 @@ local function CheckAbilityValue()
 
     local cBarbedShotInstantDmg = 0
     local cBarbedShotDotDmg = 0
+    local cBarbedShotInstantDmgAoE = 0
+    local cBarbedShotDotDmgAoE = 0
 
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local checkBarbedShotDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.spellData.BarbedShot.basename]
+    local cBarbedShotDotDmgBase = 0
+    local checkBarbedShotDebuff = wan.CheckUnitDebuff(nil, wan.spellData.BarbedShot.formattedName)
     if not checkBarbedShotDebuff then
         local dotPotency = wan.CheckDotPotency()
-        cBarbedShotDotDmg = cBarbedShotDotDmg + (nBarbedShotDmg * dotPotency)
+        cBarbedShotDotDmgBase = cBarbedShotDotDmgBase + (nBarbedShotDmg * dotPotency)
     end
 
-    local cStomp = 0
+    local cPoisonedBarbsInstantDmgAoE = 0
+    local cPoisonedBarbsDotDmgAoE = 0
+    if wan.traitData.PoisonedBarbs.known then
+        local cPoisonedBarbsUnitOverflow = wan.AdjustSoftCapUnitOverflow(nPoisonedBarbsSoftCap, countValidUnit)
+        cPoisonedBarbsInstantDmgAoE = cPoisonedBarbsInstantDmgAoE + ((nPoisonedBarbsDmg + nSerpentStingInstantDmg) * cPoisonedBarbsUnitOverflow * nPoisonedBarbsProcChance)
+
+        for nameplateUnitToken, _ in pairs(idValidUnit) do
+            local checkSerpentStingDebuff = wan.CheckUnitDebuff(nil, "SerpentSting")
+
+            if not checkSerpentStingDebuff then
+                local dotPotency = wan.CheckDotPotency((nPoisonedBarbsDmg + nSerpentStingInstantDmg), nameplateUnitToken)
+
+                cPoisonedBarbsDotDmgAoE = cPoisonedBarbsDotDmgAoE + (nSerpentStingDotDmg * dotPotency * nPoisonedBarbsProcChance)
+            end
+        end
+    end
+
+    local cStompInstantDmg = 0
+    local cStompInstantDmgAoE = 0
     if wan.traitData.Stomp.known then
-        cStomp = cStomp + nStomp
+        local activePets = (wan.IsPetUsable() and 1 or 0) * (wan.traitData.AnimalCompanion.known and 2 or 1)
+        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(targetUnitToken)
+        cStompInstantDmg = cStompInstantDmg + (nStompDmg * checkPhysicalDR * activePets)
+
+        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+            if nameplateGUID ~= targetGUID then
+                local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+
+                cStompInstantDmgAoE = cStompInstantDmgAoE + (nStompDmgAoE * checkUnitPhysicalDR * activePets)
+            end
+        end
     end
 
     local cFuriousAssault = 1
@@ -56,37 +89,27 @@ local function CheckAbilityValue()
         cFuriousAssault = cFuriousAssault + nFuriousAssault
     end
 
-    local cBarbedShotInstantAoEDmg = 0
-    local cBarbedShotDotDmgAoE = 0
-    if wan.traitData.Stomp.known and countValidUnit > 1 then
-
-        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-
-            if nameplateGUID ~= targetGUID then
-
-                local checkDebuff = wan.CheckForAnyDebuff(nameplateUnitToken, checkDebuffs)
-                if checkDebuff then
-                    local cUnitStomp = nStomp
-
-                    cBarbedShotInstantAoEDmg = cBarbedShotInstantAoEDmg + cUnitStomp
-                end
-            end
-        end
-    end
-
     -- Crit layer
     local cBarbedShotCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
-    cBarbedShotInstantDmg = (cBarbedShotInstantDmg + cStomp) * cBarbedShotCritValue
-    cBarbedShotDotDmg = cBarbedShotDotDmg * cFuriousAssault * cBarbedShotCritValue
-    cBarbedShotInstantAoEDmg = cBarbedShotInstantAoEDmg * cBarbedShotCritValue
-    cBarbedShotDotDmgAoE = cBarbedShotDotDmgAoE * cBarbedShotCritValue
+    cBarbedShotInstantDmg = cBarbedShotInstantDmg
+        + (cStompInstantDmg * cBarbedShotCritValue)
 
-    local cBarbedShotDmg = cBarbedShotInstantDmg + cBarbedShotDotDmg + cBarbedShotInstantAoEDmg + cBarbedShotDotDmgAoE
+    cBarbedShotDotDmg = cBarbedShotDotDmg
+        + (cBarbedShotDotDmgBase * cBarbedShotCritValue)
+
+    cBarbedShotInstantDmgAoE = cBarbedShotInstantDmgAoE
+        + (cPoisonedBarbsInstantDmgAoE * cBarbedShotCritValue)
+        + (cStompInstantDmgAoE * cBarbedShotCritValue)
+
+    cBarbedShotDotDmgAoE = cBarbedShotDotDmgAoE
+        + (cPoisonedBarbsDotDmgAoE * cBarbedShotCritValue) 
+
+    local cBarbedShotDmg = cBarbedShotInstantDmg + cBarbedShotDotDmg + cBarbedShotInstantDmgAoE + cBarbedShotDotDmgAoE
 
     local mechanicPrio = false
     if wan.traitData.ThrilloftheHunt.known then
-        local checkThrillOfTheHuntBuff = wan.auraData.player.buff_ThrilloftheHunt
+        local checkThrillOfTheHuntBuff = wan.CheckUnitDebuff(nil, wan.traitData.ThrilloftheHunt.traitkey)
         if not checkThrillOfTheHuntBuff then
             mechanicPrio = true
         else
@@ -115,7 +138,16 @@ local function AddonLoad(self, event, addonName)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nBarbedShotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.BarbedShot.id, { 1 })
 
-            nStomp = wan.GetTraitDescriptionNumbers(wan.traitData.Stomp.entryid, { 1 })
+            local nStompValues = wan.GetTraitDescriptionNumbers(wan.traitData.Stomp.entryid, { 1, 2 })
+            nStompDmg = nStompValues[1]
+            nStompDmgAoE = nStompValues[2]
+
+            local nPoisonedBarbsValues = wan.GetTraitDescriptionNumbers(wan.traitData.PoisonedBarbs.entryid, { 1, 2, 3, 6, 7 })
+            nPoisonedBarbsProcChance = nPoisonedBarbsValues[1] * 0.01
+            nPoisonedBarbsDmg = nPoisonedBarbsValues[2]
+            nPoisonedBarbsSoftCap = nPoisonedBarbsValues[3]
+            nSerpentStingInstantDmg = nPoisonedBarbsValues[4]
+            nSerpentStingDotDmg = nPoisonedBarbsValues[5]
         end
     end)
 end
@@ -129,13 +161,6 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         abilityActive = wan.spellData.BarbedShot.known and wan.spellData.BarbedShot.id
         wan.BlizzardEventHandler(frameBarbedShot, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
         wan.SetUpdateRate(frameBarbedShot, CheckAbilityValue, abilityActive)
-
-        checkDebuffs = {
-            wan.traitData.Laceration.traitkey,
-            "SerpentSting",
-            wan.traitData.Bloodshed.traitkey,
-            wan.traitData.BlackArrow.traitkey,
-        }
     end
 
     if event == "TRAIT_DATA_READY" then

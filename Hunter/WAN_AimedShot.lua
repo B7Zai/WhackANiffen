@@ -8,48 +8,51 @@ local abilityActive = false
 local nAimedShotDmg = 0
 
 -- Init trait datat
+local nEyesintheSky = 0
 local nPenetratingShots = 0
 local nTrickShots, nTrickShotsUnitCap = 0, 0
-local nCarefulAim, nCarefulAimThreshold = 0, 0
-local nNightHunter = 0
-local nSerpentstalkersTrickeryInstantDmg, nSerpentstalkersTrickeryDotDmg = 0, 0
-local nHydrasBiteUnitCap = 0
-local nLegacyOfTheWindrunners = 0
-local nWailingArrowInstantDmg, nWailingArrowInstantDmgAoE = 0, 0
-local nReadiness = 0
+local nAspectoftheHydra, nAspectoftheHydraUnitCap = 0, 1
+local nPrecisionDetonation, nExplosiveShotDmg, nExplosiveShotSoftCap = 0, 0, 0
+local nKillerMark = 0
+local nOhnahranWindsUnitCap = 0
 local nPhantomPain = 0
+local nIncendiaryAmmunition = 0
+local nDoubleTapAimShot = 0
+local nUnerringVision = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
 
-    -- Early exits
     if not wan.PlayerState.Status 
         or not wan.IsSpellUsable(wan.spellData.AimedShot.id)
         or wan.UnitIsCasting("player", wan.spellData.AimedShot.name)
-        or wan.UnitIsCasting("player", wan.spellData.RapidFire.name)
-        or wan.UnitIsCasting("player", wan.spellData.Barrage.name)
+        or (wan.traitData.NoScope.known and wan.UnitIsCasting("player", wan.spellData.RapidFire.name))
     then
         wan.UpdateAbilityData(wan.spellData.AimedShot.basename)
         return
     end
 
+    local castEfficiency = wan.CheckCastEfficiency(wan.spellData.AimedShot.id, wan.spellData.AimedShot.castTime)
+    if castEfficiency == 0 then
+        wan.UpdateAbilityData(wan.spellData.AimedShot.basename)
+        return
+    end
 
-    -- Check for valid unit
     local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.AimedShot.id)
     if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.AimedShot.basename)
         return
     end
 
-    if wan.traitData.TrickShots.known and countValidUnit > 2 and not wan.auraData.player.buff_TrickShots
-        and wan.spellData.AimedShot.name ~= wan.traitData.WailingArrow.name then
+    if wan.traitData.TrickShots.known and countValidUnit > 2 and not wan.CheckUnitBuff(nil, wan.traitData.TrickShots.traitkey) then
         wan.UpdateAbilityData(wan.spellData.AimedShot.basename)
         return
     end
 
-    -- Base values
     local critChanceMod = 0
     local critDamageMod = 0
+    local critChanceModBase = 0
+    local critDamageModBase = 0
 
     local cAimedShotInstantDmg = 0
     local cAimedShotDotDmg = 0
@@ -59,43 +62,31 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local cPenetratingShots = 0
-    if wan.traitData.PenetratingShots.known then
-        cPenetratingShots = cPenetratingShots + (wan.CritChance * nPenetratingShots)
-        critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
-    end
+    ---- MARKSMAN TRAITS ----
 
-    local cCarefulAim = 1
-    if wan.traitData.CarefulAim.known then
-        local targetPercentHealth = targetGUID and UnitPercentHealthFromGUID(targetGUID) or 1
+    local cEyesintheSky = 1
+    if wan.spellData.EyesintheSky.known then
+        local checkSpottersMark = wan.CheckUnitDebuff(nil, "SpottersMark")
+        if checkSpottersMark then
+            cEyesintheSky = cEyesintheSky + nEyesintheSky
 
-        if nCarefulAimThreshold < targetPercentHealth then
-            cCarefulAim = cCarefulAim + nCarefulAim
-        end
-    end
-
-    local cWailingArrowInstantDmgAoE = 0
-    local bWailingArrowUsable = false
-    if wan.traitData.WailingArrow.known and wan.spellData.AimedShot.name == wan.traitData.WailingArrow.name then
-        bWailingArrowUsable = true
-
-        for _, nameplateGUID in pairs(idValidUnit) do
-            if nameplateGUID ~= targetGUID  then
-                cWailingArrowInstantDmgAoE = cWailingArrowInstantDmgAoE + nWailingArrowInstantDmgAoE
+            if wan.traitData.KillerMark.known then
+                critChanceMod = critChanceMod + nKillerMark
             end
         end
     end
 
     local cTrickShotsInstantDmgAoE = 0
-    if wan.traitData.TrickShots.known and wan.auraData.player.buff_TrickShots and not bWailingArrowUsable then
+    local checkTrickShotsBuff = wan.CheckUnitBuff(nil, wan.traitData.TrickShots.traitkey)
+    if checkTrickShotsBuff then
         local countTrickShots = 0
 
         for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-
             if nameplateGUID ~= targetGUID then
                 local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
 
                 cTrickShotsInstantDmgAoE = cTrickShotsInstantDmgAoE + (nAimedShotDmg * nTrickShots * checkUnitPhysicalDR)
+
                 countTrickShots = countTrickShots + 1
 
                 if countTrickShots >= nTrickShotsUnitCap then break end
@@ -103,77 +94,146 @@ local function CheckAbilityValue()
         end
     end
 
-    if wan.traitData.NightHunter.known then
-        critChanceMod = critChanceMod + nNightHunter
-    end
+    local cAspectoftheHydra = 0
+    if wan.traitData.AspectoftheHydra.known then
+        local countAspectoftheHydraUnit = 0
 
-    local cSerpentstalkersTrickeryInstantDmg = 0
-    local cSerpentstalkersTrickeryDotDmg = 0
-    if wan.traitData.SerpentstalkersTrickery.known then
-        local checkSerpentstalkersTrickeryDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken].debuff_SerpentSting
-        cSerpentstalkersTrickeryInstantDmg = cSerpentstalkersTrickeryInstantDmg + nSerpentstalkersTrickeryInstantDmg
+        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
 
-        if not checkSerpentstalkersTrickeryDebuff then
-            cSerpentstalkersTrickeryDotDmg = cSerpentstalkersTrickeryDotDmg + nSerpentstalkersTrickeryDotDmg
+            if nameplateGUID ~= targetGUID then
+                local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+
+                cAspectoftheHydra = cAspectoftheHydra + (nAimedShotDmg * nAspectoftheHydra * checkUnitPhysicalDR)
+
+                countAspectoftheHydraUnit = countAspectoftheHydraUnit + 1
+
+                if countAspectoftheHydraUnit >= nAspectoftheHydraUnitCap then break end
+            end
         end
     end
 
-    local cHydrasBiteInstantDmg = 0
-    local cHydrasBiteDotDmg = 0
-    if wan.traitData.HydrasBite.known then
-        local cHydrasBiteUnitCap = math.min(countValidUnit, nHydrasBiteUnitCap)
-        local checkHydrasBiteDebuff = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken].debuff_SerpentSting or bWailingArrowUsable
-        local countHydrasBite = 0
+    if wan.traitData.PenetratingShots.known then
+        critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
+        critChanceModBase = critChanceModBase + (wan.CritChance * nPenetratingShots)
+    end
 
-        if checkHydrasBiteDebuff then
-            cHydrasBiteInstantDmg = cHydrasBiteInstantDmg + (nSerpentstalkersTrickeryInstantDmg * cHydrasBiteUnitCap)
+    local cPrecisionDetonationInstantDmgAoE = 0
+    if wan.traitData.PrecisionDetonation.known then
+        local checkExplosiveShotDebuff = wan.CheckUnitDebuff(nil, wan.spellData.ExplosiveShot.formattedName)
+        if checkExplosiveShotDebuff then
+            local cExplosiveShotUnitOverflow = wan.AdjustSoftCapUnitOverflow(nExplosiveShotSoftCap, countValidUnit)
+
+            cPrecisionDetonationInstantDmgAoE = cPrecisionDetonationInstantDmgAoE + (nExplosiveShotDmg * cExplosiveShotUnitOverflow * nPrecisionDetonation)
+        end
+    end
+
+    local cEyesintheSkyAoE = 1
+    if wan.traitData.OhnahranWinds.known then
+
+        if checkTrickShotsBuff then
+            local countTrickShots = 0
+            local countSpottersMarkDebuff = 0
+            local cTrickShotsUnit =math.min(nTrickShotsUnitCap, countValidUnit)
 
             for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
 
-                if nameplateGUID ~= targetGUID and (not wan.auraData[nameplateUnitToken].debuff_SerpentSting or bWailingArrowUsable) then
+                if nameplateGUID ~= targetGUID then
+                    local checkSpottersMark = wan.CheckUnitDebuff(nameplateUnitToken, "SpottersMark")
+    
+                    if checkSpottersMark then
+                        countSpottersMarkDebuff = countSpottersMarkDebuff + 1
+                    end
+    
+                    countTrickShots = countTrickShots + 1
+    
+                    if countTrickShots >= nOhnahranWindsUnitCap then break end
+                end
+            end
 
-                    cHydrasBiteDotDmg = cHydrasBiteDotDmg + nSerpentstalkersTrickeryDotDmg
+            if countSpottersMarkDebuff > 0 then
+                cEyesintheSkyAoE = cEyesintheSkyAoE + ((nEyesintheSky * countTrickShots) / cTrickShotsUnit)
+            end
 
-                    countHydrasBite = countHydrasBite + 1
-                    if countHydrasBite >= nHydrasBiteUnitCap then break end
+        elseif wan.traitData.AspectoftheHydra.known then
+            local countAspectoftheHydraUnit = 0
+
+            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+                if nameplateGUID ~= targetGUID then
+                    local checkSpottersMark = wan.CheckUnitDebuff(nameplateUnitToken, "SpottersMark")
+
+                    if checkSpottersMark then
+                        cEyesintheSkyAoE = cEyesintheSkyAoE + nEyesintheSky
+                    end
+
+                    countAspectoftheHydraUnit = countAspectoftheHydraUnit + 1
+
+                    if countAspectoftheHydraUnit >= nAspectoftheHydraUnitCap then break end
                 end
             end
         end
     end
 
-    local cLegacyOfTheWindrunners = 0
-    if wan.traitData.LegacyoftheWindrunners.known then
-        cLegacyOfTheWindrunners = cLegacyOfTheWindrunners + nLegacyOfTheWindrunners
+    if wan.traitData.IncendiaryAmmunition.known then
+        local checkBulletstormBuff = wan.CheckUnitBuff(nil, wan.traitData.Bulletstorm.traitkey)
+        if checkBulletstormBuff then
+            local nBulletstormStacks = checkBulletstormBuff.applications
 
-        if wan.traitData.Readiness.known and wan.auraData.player.buff_Trueshot then
-            cLegacyOfTheWindrunners = cLegacyOfTheWindrunners * nReadiness
+            critDamageMod = critDamageMod + (nIncendiaryAmmunition * nBulletstormStacks)
         end
     end
+
+    local cDoubleTap = 1
+    if wan.traitData.DoubleTap.known then
+        local checkDoubleTapBuff = wan.CheckUnitBuff(nil, wan.traitData.DoubleTap.traitkey)
+        if checkDoubleTapBuff then
+            cDoubleTap = cDoubleTap + nDoubleTapAimShot
+        end
+    end
+
+    if wan.traitData.UnerringVision.known then
+        local checkTrueshotBuff = wan.CheckUnitBuff(nil, wan.spellData.Trueshot.formattedName)
+        if checkTrueshotBuff then
+            critDamageMod = critDamageMod + nUnerringVision
+            critDamageModBase = critDamageModBase + nUnerringVision
+        end
+    end
+
+    ---- DARK RANGER TRAITS ----
 
     local cPhantomPain = 0
     if wan.traitData.PhantomPain.known then
         local countPhantomPain = 0
 
         for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
             if nameplateGUID ~= targetGUID then
-                local checkBlackArrowDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.traitData.BlackArrow.traitkey]
+
+                local checkBlackArrowDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.traitData.BlackArrow.traitkey)
                 if checkBlackArrowDebuff then
                     countPhantomPain = countPhantomPain + 1
                 end
             end
         end
-        cPhantomPain = cPhantomPain + (nAimedShotDmg * cCarefulAim * nPhantomPain * countPhantomPain)
+
+        cPhantomPain = cPhantomPain + (nAimedShotDmg * nPhantomPain * countPhantomPain)
     end
 
-    local checkPhysicalDR = wan.spellData.AimedShot.name == wan.traitData.WailingArrow.name and 1 or wan.CheckUnitPhysicalDamageReduction()
-    local castEfficiency = wan.CheckCastEfficiency(wan.spellData.AimedShot.id, wan.spellData.AimedShot.castTime)
+    local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
     local cAimedShotCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
-    local cBaseCritValue = wan.ValueFromCritical(wan.CritChance, nil, cPenetratingShots)
+    local cAimedShotCritValueBase = wan.ValueFromCritical(wan.CritChance, critChanceModBase, critDamageModBase)
 
-    cAimedShotInstantDmg = cAimedShotInstantDmg + (((nAimedShotDmg * cCarefulAim * cAimedShotCritValue) + (cLegacyOfTheWindrunners * cBaseCritValue)) * checkPhysicalDR) + (cSerpentstalkersTrickeryInstantDmg * cBaseCritValue)
-    cAimedShotDotDmg = cAimedShotDotDmg + (cSerpentstalkersTrickeryDotDmg * cBaseCritValue)
-    cAimedShotInstantDmgAoE = cAimedShotInstantDmgAoE + (cTrickShotsInstantDmgAoE * cCarefulAim * cAimedShotCritValue) + (cWailingArrowInstantDmgAoE * cBaseCritValue) + (cHydrasBiteInstantDmg * cBaseCritValue) + (cPhantomPain * cAimedShotCritValue)
-    cAimedShotDotDmgAoE = cAimedShotDotDmgAoE + (cHydrasBiteDotDmg * cBaseCritValue)
+    cAimedShotInstantDmg = cAimedShotInstantDmg
+        + (nAimedShotDmg * checkPhysicalDR * cAimedShotCritValue * cEyesintheSky * cDoubleTap)
+
+    cAimedShotDotDmg = cAimedShotDotDmg
+
+    cAimedShotInstantDmgAoE = cAimedShotInstantDmgAoE
+        + (cTrickShotsInstantDmgAoE * cAimedShotCritValue * cEyesintheSky * cEyesintheSkyAoE * cDoubleTap)
+        + (cAspectoftheHydra * cAimedShotCritValue * cEyesintheSkyAoE * cDoubleTap)
+        + (cPhantomPain * checkPhysicalDR * cAimedShotCritValue * cEyesintheSky)
+
+    cAimedShotDotDmgAoE = cAimedShotDotDmgAoE
 
     local cAimedShotDmg = (cAimedShotInstantDmg + cAimedShotDotDmg + cAimedShotInstantDmgAoE + cAimedShotDotDmgAoE) * castEfficiency
 
@@ -193,16 +253,9 @@ local function AddonLoad(self, event, addonName)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nAimedShotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.AimedShot.id, { 1 })
 
-            local nSerpentstalkersTrickeryValues = wan.GetTraitDescriptionNumbers(wan.traitData.SerpentstalkersTrickery.entryid, { 3, 4 })
-            nSerpentstalkersTrickeryInstantDmg = nSerpentstalkersTrickeryValues[1]
-            nSerpentstalkersTrickeryDotDmg = nSerpentstalkersTrickeryValues[2]
-
-            local nLegacyOfTheWindrunnersValues = wan.GetTraitDescriptionNumbers(wan.traitData.LegacyoftheWindrunners.entryid, { 1, 2 })
-            nLegacyOfTheWindrunners = nLegacyOfTheWindrunnersValues[1] * nLegacyOfTheWindrunnersValues[2]
-
-            local nWailingArrowValues = wan.GetTraitDescriptionNumbers(wan.traitData.WailingArrow.entryid, { 2, 3 })
-            nWailingArrowInstantDmg = nWailingArrowValues[1]
-            nWailingArrowInstantDmgAoE = nWailingArrowValues[2]
+            local nExplosiveShotValues = wan.GetSpellDescriptionNumbers(wan.spellData.ExplosiveShot.id, { 2, 4 })
+            nExplosiveShotDmg = nExplosiveShotValues[1]
+            nExplosiveShotSoftCap = nExplosiveShotValues[2]
         end
     end)
 end
@@ -218,22 +271,28 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         wan.SetUpdateRate(frameAimedShot, CheckAbilityValue, abilityActive)
     end
 
-    if event == "TRAIT_DATA_READY" then 
+    if event == "TRAIT_DATA_READY" then
+        nEyesintheSky = wan.GetSpellDescriptionNumbers(wan.spellData.EyesintheSky.id, { 4 }) * 0.01
+
         nPenetratingShots = wan.GetTraitDescriptionNumbers(wan.traitData.PenetratingShots.entryid, { 1 }) * 0.01
 
         local nTrickShotsValues = wan.GetTraitDescriptionNumbers(wan.traitData.TrickShots.entryid, { 2, 3 })
         nTrickShots = nTrickShotsValues[2] * 0.01
         nTrickShotsUnitCap = nTrickShotsValues[1]
 
-        local nCarefulAimValues = wan.GetTraitDescriptionNumbers(wan.traitData.CarefulAim.entryid, { 1, 2 })
-        nCarefulAim = nCarefulAimValues[1] * 0.01
-        nCarefulAimThreshold = nCarefulAimValues[2] * 0.01
+        nAspectoftheHydra = wan.GetTraitDescriptionNumbers(wan.traitData.AspectoftheHydra.entryid, { 1 }) * 0.01
 
-        nNightHunter = wan.GetTraitDescriptionNumbers(wan.traitData.NightHunter.entryid, { 1 })
+        nPrecisionDetonation = wan.GetTraitDescriptionNumbers(wan.traitData.PrecisionDetonation.entryid, { 1 }) * 0.01
 
-        nHydrasBiteUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.HydrasBite.entryid, { 1 })
+        nKillerMark = wan.GetTraitDescriptionNumbers(wan.traitData.KillerMark.entryid, { 1 })
 
-        nReadiness = wan.GetTraitDescriptionNumbers(wan.traitData.Readiness.entryid, { 1 })
+        nOhnahranWindsUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.OhnahranWinds.entryid, { 2 })
+
+        nIncendiaryAmmunition = wan.GetTraitDescriptionNumbers(wan.traitData.IncendiaryAmmunition.entryid, { 1 })
+
+        nDoubleTapAimShot = wan.GetTraitDescriptionNumbers(wan.traitData.DoubleTap.entryid, { 1 }) * 0.01
+
+        nUnerringVision = wan.GetTraitDescriptionNumbers(wan.traitData.UnerringVision.entryid, { 2 })
 
         nPhantomPain = wan.GetTraitDescriptionNumbers(wan.traitData.PhantomPain.entryid, { 1 }) * 0.01
     end

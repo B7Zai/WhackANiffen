@@ -9,9 +9,9 @@ local nExplosiveShotDmg, nExplosiveShotSoftCap = 0, 0
 
 -- Init trait data
 local nPenetratingShots = 0
-local nExplosiveVenomInstantDmg, nExplosiveVenomDotDmg, nExplosiveVenomStacks = 0, 0, 0
-local nHowlOfThePack = 0
 local nBombardierUnitCap = 0
+local nThunderingHooves, nStompDmg, nStompDmgAoE = 0, 0, 0
+local nUnerringVision = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -43,22 +43,22 @@ local function CheckAbilityValue()
 
     ---- BEAST MASTERY TRAITS ----
 
-    local cExplosiveVenomInstantDmgAoE = 0
-    local cExplosiveVenomDotDmgAoE = 0
-    if wan.traitData.ExplosiveVenom.known then
-        local checkExplosiveVenomBuff = wan.auraData.player["buff_" .. wan.traitData.ExplosiveVenom.traitkey]
+    local cThunderingHooves = 1
+    local cThunderingHoovesInstandDmg = 0
+    local cThunderingHoovesInstandDmgAoE = 0
+    if wan.traitData.ThunderingHooves.entryid then
+        cThunderingHooves = cThunderingHooves + nThunderingHooves
 
-        if checkExplosiveVenomBuff and checkExplosiveVenomBuff.applications == (nExplosiveVenomStacks - 1) then
+        local activePets = (wan.IsPetUsable() and 1 or 0) * (wan.traitData.AnimalCompanion.known and 2 or 1)
+        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(targetUnitToken)
+        cThunderingHoovesInstandDmg = cThunderingHoovesInstandDmg + (nStompDmg * checkPhysicalDR * activePets * cThunderingHooves)
 
-            for nameplateUnitToken, _ in pairs(idValidUnit) do
-                local checkUnitExplosiveVenomBuff = wan.auraData[nameplateUnitToken].debuff_SerpentSting
-                cExplosiveVenomInstantDmgAoE = cExplosiveVenomInstantDmgAoE + nExplosiveVenomInstantDmg
+        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
 
-                if not checkUnitExplosiveVenomBuff then
-                    local dotPotency = wan.CheckDotPotency(nExplosiveVenomInstantDmg, nameplateUnitToken)
-                    cExplosiveVenomDotDmgAoE = cExplosiveVenomDotDmgAoE + (nExplosiveVenomDotDmg * dotPotency)
-                end
+            if nameplateGUID ~= targetGUID then
+                local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
 
+                cThunderingHoovesInstandDmgAoE = cThunderingHoovesInstandDmgAoE + (nStompDmgAoE * checkUnitPhysicalDR * activePets * cThunderingHooves)
             end
         end
     end
@@ -69,20 +69,20 @@ local function CheckAbilityValue()
         critDamageMod = critDamageMod + (wan.CritChance * nPenetratingShots)
     end
 
+    if wan.traitData.UnerringVision.known then
+        local checkTrueshotBuff = wan.CheckUnitBuff(nil, wan.spellData.Trueshot.formattedName)
+        if checkTrueshotBuff then
+            critDamageMod = critDamageMod + nUnerringVision
+        end
+    end
+
     ---- SURVIVAL TRAITS ----
 
     local cBombardier = 1
-    if wan.traitData.Bombardier.known and wan.auraData.player["buff_" .. wan.traitData.Bombardier.traitkey] then
-        cBombardier = nBombardierUnitCap
-    end
-
-    ---- PACK LEADER TRAITS ----
-
-    if wan.traitData.HowlofthePack.known then
-        local checkHowlOfThePackBuff = wan.auraData.player["buff_" .. wan.traitData.HowlofthePack.traitkey]
-        if checkHowlOfThePackBuff then
-            local stacksHowlOfThePack = checkHowlOfThePackBuff.applications
-            critDamageMod = critDamageMod + (nHowlOfThePack * stacksHowlOfThePack)
+    if wan.traitData.Bombardier.known then
+        local checkBombardierBuff = wan.CheckUnitBuff(nil, wan.traitData.Bombardier.traitkey)
+        if checkBombardierBuff then
+            cBombardier = nBombardierUnitCap
         end
     end
 
@@ -90,9 +90,15 @@ local function CheckAbilityValue()
     local cExplosiveShotCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
     cExplosiveShotInstantDmg = cExplosiveShotInstantDmg
+        + (cThunderingHoovesInstandDmg * cExplosiveShotCritValue)
+
     cExplosiveShotDotDmg = cExplosiveShotDotDmg
-    cExplosiveShotInstantDmgAoE = cExplosiveShotInstantDmgAoE + (nExplosiveShotDmg * cExplosiveShotUnitOverflow * cBombardier * cExplosiveShotCritValue) + (cExplosiveVenomInstantDmgAoE * cExplosiveShotCritValue)
-    cExplosiveShotDotDmgAoE = cExplosiveShotDotDmgAoE + (cExplosiveVenomDotDmgAoE * cExplosiveShotCritValue)
+
+    cExplosiveShotInstantDmgAoE = cExplosiveShotInstantDmgAoE
+        + (nExplosiveShotDmg * cExplosiveShotUnitOverflow * cBombardier * cExplosiveShotCritValue)
+        + (cThunderingHoovesInstandDmgAoE * cExplosiveShotCritValue)
+
+    cExplosiveShotDotDmgAoE = cExplosiveShotDotDmgAoE
 
     local cExplosiveShotDmg = cExplosiveShotInstantDmg + cExplosiveShotDotDmg + cExplosiveShotInstantDmgAoE + cExplosiveShotDotDmgAoE
 
@@ -113,9 +119,9 @@ local function AddonLoad(self, event, addonName)
             nExplosiveShotDmg = nExplosiveShotValues[1]
             nExplosiveShotSoftCap = nExplosiveShotValues[2]
 
-            local nExplosiveVenomValues = wan.GetTraitDescriptionNumbers(wan.traitData.VenomsBite.entryid, { 4, 5 })
-            nExplosiveVenomInstantDmg = nExplosiveVenomValues[1]
-            nExplosiveVenomDotDmg = nExplosiveVenomValues[2]
+            local nStompValues = wan.GetTraitDescriptionNumbers(wan.traitData.Stomp.entryid, { 1, 2 })
+            nStompDmg = nStompValues[1]
+            nStompDmgAoE = nStompValues[2]
         end
     end)
 end
@@ -134,11 +140,11 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     if event == "TRAIT_DATA_READY" then
         nPenetratingShots = wan.GetTraitDescriptionNumbers(wan.traitData.PenetratingShots.entryid, { 1 }) * 0.01
 
-        nExplosiveVenomStacks = wan.GetTraitDescriptionNumbers(wan.traitData.ExplosiveVenom.entryid, { 1 })
-
         nBombardierUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.Bombardier.entryid, { 1 })
 
-        nHowlOfThePack = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePack.entryid, { 1 })
+        nThunderingHooves = wan.GetTraitDescriptionNumbers(wan.traitData.ThunderingHooves.entryid, { 1 }) * 0.01
+
+        nUnerringVision = wan.GetTraitDescriptionNumbers(wan.traitData.UnerringVision.entryid, { 2 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

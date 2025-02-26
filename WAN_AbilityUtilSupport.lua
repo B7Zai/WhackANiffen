@@ -63,7 +63,7 @@ function wan.CheckUnitBuff(unitToken, formattedBuffName, buffID)
 
         local currentTime = GetTime()
         local checkExpiration = checkBuff.expirationTime - currentTime
-        if checkExpiration <= 0 then checkBuff = nil end
+        if checkBuff.duration > 0 and checkExpiration <= 0 then checkBuff = nil end
     end
 
     return checkBuff
