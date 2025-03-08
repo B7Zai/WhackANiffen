@@ -151,6 +151,27 @@ local function OnEvent(self, event, addonname)
             local initHealerModeToggle = Settings.CreateCheckbox(category, settingHealerModeToggle, tooltipHealerModeToggle)
         end
 
+        do
+            wan.Options.ZenMode = wan.Options.ZenMode or {}
+            wan.Options.ZenMode.Toggle = wan.Options.ZenMode.Toggle or false
+            local function GetValueZenModeToggle() return wan.Options.ZenMode.Toggle end
+            local function SetValueZenModeToggle(value)
+                wan.Options.ZenMode.Toggle = value
+                wan.CustomEvents("ZENMODE_FRAME_TOGGLE")
+            end
+            local tooltipZenModeToggle = "Hides floating damage and healing numbers."
+            local settingZenModeToggle = Settings.RegisterProxySetting(
+                category,
+                "Zen_Mode_Frame_Toggle",
+                Settings.VarType.Boolean,
+                "Zen Mode",
+                wan.Options.ZenMode.Toggle,
+                GetValueZenModeToggle,
+                SetValueZenModeToggle
+            )
+            local initZenModeToggle = Settings.CreateCheckbox(category, settingZenModeToggle, tooltipZenModeToggle)
+        end
+
         -------- subcatergory settings
         -------- 
         --------

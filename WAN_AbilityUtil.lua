@@ -101,10 +101,16 @@ function wan.GetRangeBracket(unitToken)
     return min or 0, max or 999
 end
 
+---- Check unit remaining health in percetage, actual value is between 0 to 1
+function wan.CheckUnitPercentHealth(unitGUID)
+    local checkUnitPercentHealth = unitGUID and UnitPercentHealthFromGUID(unitGUID) or 1
+    return checkUnitPercentHealth
+end
+
 ---- Checks if player is missing enough health
 function wan.AbilityPercentageToValue(percentValue)
     local percentage = percentValue or 100
-    local maxHealth = wan.UnitState.MaxHealth.player
+    local maxHealth = wan.UnitState.MaxHealth.player or 0
     return maxHealth * (percentage / 100)
 end
 
@@ -112,7 +118,7 @@ end
 function wan.UnitAbilityPercentageToValue(unitToken, percentValue)
     local unit = unitToken or "player"
     local percentage = percentValue or 100
-    local unitMaxHealth = wan.UnitState.MaxHealth[unit] or wan.UnitState.MaxHealth.player
+    local unitMaxHealth = wan.UnitState.MaxHealth[unit] or wan.UnitState.MaxHealth.player or 0
     return unitMaxHealth * (percentage / 100)
 end
 
@@ -125,10 +131,10 @@ function wan.GetTraitInfo()
     end
 end
 
--- Checks if a spell is usable and not on cooldown
+--- checks if a spell is usable and not on cooldown
 function wan.IsSpellUsable(spellIdentifier)
-    local isReady = C_Spell.IsSpellUsable(spellIdentifier)
-    if not isReady then return false end
+    local isUsable, insufficientPower = C_Spell.IsSpellUsable(spellIdentifier)
+    if not isUsable then return isUsable, insufficientPower end
     local cooldownMS, gcdMS = GetSpellBaseCooldown(spellIdentifier)
 
     if cooldownMS > gcdMS then
@@ -140,6 +146,13 @@ function wan.IsSpellUsable(spellIdentifier)
 
     local getCooldown = C_Spell.GetSpellCooldown(spellIdentifier)
     local getGCD = gcdMS and gcdMS / 1000 or 0
+
+    --- this part is a check for weird cooldown duration only present while an ability is on GCD
+    --- this only happens with only a few abilities like maul, minuscule but annoying non the less
+    if getCooldown.duration > getGCD and getCooldown.duration == wan.PlayerState.BaseCooldown.duration then
+        getCooldown.duration = getGCD
+    end
+
     return getCooldown.duration <= getGCD
 end
 
@@ -154,20 +167,20 @@ function wan.ValueFromCritical(critChance, critMod, critDamageMod)
     return (critValue * critDamageValue)
 end
 
--- Checks spell cost
+--- checks spell (max) cost, and min cost
 function wan.GetSpellCost(spellIndentifier, powerType)
     local costTable = C_Spell.GetSpellPowerCost(spellIndentifier)
     
     if costTable then
         for _, spellPower in ipairs(costTable) do
             if spellPower.type == powerType then
-                return spellPower.cost
+                return spellPower.cost, spellPower.minCost
             end
         end
     end
 end
 
--- Checks cast efficiency against gcd
+--- checks cast efficiency against gcd, value is a damage modifier
 local lastStationary = 0
 function wan.CheckCastEfficiency(spellID, spellCastTime, canMoveCast)
     local valueModifier = 1
@@ -177,6 +190,7 @@ function wan.CheckCastEfficiency(spellID, spellCastTime, canMoveCast)
         return valueModifier
     end
 
+    --- checks player speed for the Movement Detection feature
     if wan.Options.DetectMovement.Toggle and wan.PlayerState.Combat then
         local movingCast = canMoveCast or false
         local playerSpeed = GetUnitSpeed("player") or 0
@@ -199,7 +213,8 @@ function wan.CheckCastEfficiency(spellID, spellCastTime, canMoveCast)
     return valueModifier
 end
 
--- Reduce damage for "beyond x target abilities"
+--- checks damage reduction when an ability has a soft cap
+--- return value is a replacement for raw unit count
 function wan.AdjustSoftCapUnitOverflow(capStart, numTargets)
     local maxTargets = math.min(numTargets, 20)
     if numTargets > capStart then
@@ -209,7 +224,9 @@ function wan.AdjustSoftCapUnitOverflow(capStart, numTargets)
     return numTargets
 end
 
--- Reduce damage for "beyond x target abilities"
+--- checks damage reduction when an ability has a soft cap
+--- return value is used as a damage modifier when looping over each unit
+--- also, blizzard loves this math when it comes to AoE situations for damage and proc chance values
 function wan.SoftCapOverflow(capStart, numTargets)
     local maxTargets = math.min(numTargets, 20)
     if numTargets > capStart  then
@@ -219,7 +236,7 @@ function wan.SoftCapOverflow(capStart, numTargets)
     return 1
 end
 
----- checks if any valid unit is targeting the player
+--- checks if any valid unit is targeting the player
 function wan.IsTanking()
     local isTanking = UnitDetailedThreatSituation("player", wan.TargetUnitID) or false
     if isTanking then return true end
@@ -234,6 +251,7 @@ function wan.IsTanking()
     return false
 end
 
+--- checks if given unit is tanking any of the nameplate unit
 function wan.IsUnitTanking(unitToken)
 
     for nameplateUnitToken, _ in pairs(wan.NameplateUnitID) do
@@ -246,6 +264,7 @@ function wan.IsUnitTanking(unitToken)
     return false
 end
 
+--- checks if given unit is casting or channeling a spell
 function wan.UnitIsCasting(unitToken, spellIndentifier)
     local unit = unitToken or "player"
     local castName, _, _, _, _, _, _, _, castSpellID = UnitCastingInfo(unit)
@@ -261,4 +280,11 @@ function wan.UnitIsCasting(unitToken, spellIndentifier)
     end
 
     return false
+end
+
+--- checks the amount of absorb the given unit has
+function wan.CheckUnitAbsorb(unitToken)
+    local totalAbsorbs = unitToken and UnitGetTotalAbsorbs(unitToken) or 0
+
+    return totalAbsorbs
 end

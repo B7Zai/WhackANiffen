@@ -154,7 +154,7 @@ local function AddonLoad(self, event, addonName)
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             local nRapidFireValues = wan.GetSpellDescriptionNumbers(wan.spellData.RapidFire.id, { 1, 2, 3 })
-            nRapidFireArrows = nRapidFireValues[1] + (wan.traitData.AmmoConservation.known and nAmmoConservation)
+            nRapidFireArrows = nRapidFireValues[1] + (wan.traitData.AmmoConservation.known and nAmmoConservation or 0)
             nRapidFireCastTime = nRapidFireValues[2] * 1000
             nRapidFireDmgPerArrow = nRapidFireValues[3] / nRapidFireValues[1]
             nRapidFireDmg = nRapidFireDmgPerArrow * nRapidFireArrows

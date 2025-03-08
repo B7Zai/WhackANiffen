@@ -10,8 +10,9 @@ local nCallOfTheWild, nCallOfTheWildMaxRange = 0, 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player["buff_" .. wan.spellData.CalloftheWild.basename]
-     or not wan.IsSpellUsable(wan.spellData.CalloftheWild.id)
+    if not wan.PlayerState.Status or not wan.PlayerState.Combat
+        or wan.CheckUnitBuff(nil, wan.spellData.CalloftheWild.formattedName)
+        or not wan.IsSpellUsable(wan.spellData.CalloftheWild.id)
     then
         wan.UpdateAbilityData(wan.spellData.CalloftheWild.basename)
         return

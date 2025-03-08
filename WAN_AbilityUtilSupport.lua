@@ -1,5 +1,16 @@
 local _, wan = ...
 
+wan.LossOfControlData = {
+    Blind = "STUN",
+    Sap = "STUN",
+    Stun = "STUN_MECHANIC",
+    Horrify = "FEAR",
+    Fear = "FEAR_MECHANIC",
+    Incapacitate = "CONFUSE",
+    Silence = "SILENCE",
+    Root = "ROOT"
+}
+
 function wan.UpdateMechanicData(abilityName, value, icon, name, desaturation)
     if value == 0 then wan.MechanicData[abilityName] = nil return end
     wan.MechanicData[abilityName] = {
@@ -50,17 +61,20 @@ function wan.UpdateSupportData(unitToken, abilityName, value, icon, name, desatu
     }
 end
 
+--- returns aura data on a given unit
 function wan.CheckUnitBuff(unitToken, formattedBuffName, buffID)
     if not formattedBuffName then return nil end
-    
+
     local unit = unitToken or "player"
     local checkBuff = wan.auraData[unit] and wan.auraData[unit]["buff_" .. formattedBuffName]
 
     if checkBuff then
+        --- check for spellID when multiple buffs run under the same name
         if buffID and checkBuff.spellId ~= buffID then
             return nil
         end
 
+        --- cleans any stale aura data that wasnt updated or cought by the addon
         local currentTime = GetTime()
         local checkExpiration = checkBuff.expirationTime - currentTime
         if checkBuff.duration > 0 and checkExpiration <= 0 then checkBuff = nil end
@@ -69,7 +83,9 @@ function wan.CheckUnitBuff(unitToken, formattedBuffName, buffID)
     return checkBuff
 end
 
--- Counts the number of group members in range
+--- returns an arbitrary damage modifier based on the amount of nearby group members
+--- count the number of group members in range
+--- returns all nearby group member's unit token and GUID in an array
 function wan.ValidGroupMembers()
     if not wan.PlayerState.InGroup then return 1, 1, {} end
 
@@ -91,7 +107,9 @@ function wan.ValidGroupMembers()
     return nDamageScaler, nGroupMembersInRange, inRangeUnits
 end
 
--- Counts the number of group members in spell range
+--- returns an arbitrary damage modifier based on the number of group members in spell range
+--- count the number of group members in spell range
+--- returns all group member's unit token and GUID that are in spell range in an array
 function wan.ValidGroupMembersInSpellRange(spellIndentifier, maxRange)
     if not IsInGroup() then return 1, 1, {} end
     local spellID = spellIndentifier or 61304
@@ -113,6 +131,8 @@ function wan.ValidGroupMembersInSpellRange(spellIndentifier, maxRange)
     return nDamageScaler, nGroupMembersInRange, inRangeUnits
 end
 
+--- checks the overall healing value of hots from the player present on a given unit
+--- counts the number of hots from the player on a given unit
 function wan.GetUnitHotValues(unitToken)
     if not unitToken or not wan.HotValue[unitToken] or not wan.auraData[unitToken] then return 0, 0 end
     local totalHotValues = 0
@@ -131,25 +151,35 @@ function wan.GetUnitHotValues(unitToken)
     return totalHotValues, countHots
 end
 
+--- check heal absorb value of a given unit
+function wan.GetUnitHealAbsorb(unitToken)
+    local totalHealAbsorbs = unitToken and UnitGetTotalHealAbsorbs(unitToken) or 0
+
+    return totalHealAbsorbs
+end
+
+--- returns an effective healing value of an ability based on health, healing absorb and present hot values
 function wan.UnitAbilityHealValue(unitToken, abilityValue, unitPercentHealth)
     if not unitToken or not abilityValue or abilityValue == 0 or not unitPercentHealth or unitPercentHealth == 0 then return 0 end
     local value = 0
     local unitHotValues = wan.GetUnitHotValues(unitToken)
     local maxHealth = wan.UnitState.MaxHealth[unitToken]
-    local abilityPercentageValue = (abilityValue / maxHealth) or 0
-    local hotPercentageValue = (unitHotValues / maxHealth) or 0
+    local cAbilityPercentageValue = (abilityValue / maxHealth) or 0
+    local cHotPercentageValue = (unitHotValues / maxHealth) or 0
+    local cHealthAbsorbPercentageValue = wan.GetUnitHealAbsorb(unitToken) / maxHealth
+    local cUnitPercentHealth = math.max((unitPercentHealth - cHealthAbsorbPercentageValue), 0)
     local thresholdValue = 0.5
 
-    if thresholdValue > unitPercentHealth and (unitPercentHealth + abilityPercentageValue) < 1 then
+    if thresholdValue > cUnitPercentHealth and (cUnitPercentHealth + cAbilityPercentageValue) < 1 then
         value = math.floor(abilityValue)
         return value
     end
 
-    if abilityPercentageValue < hotPercentageValue then
+    if cAbilityPercentageValue < cHotPercentageValue then
         return value
     end
 
-    if (unitPercentHealth + abilityPercentageValue + hotPercentageValue) < 1 then
+    if (cUnitPercentHealth + cAbilityPercentageValue + cHotPercentageValue) < 1 then
         value = math.floor(abilityValue)
         return value
     end
@@ -226,13 +256,12 @@ end
 -- Counts units that have a specific debuff
 function wan.CheckClassBuff(buffName)
     local currentTime = GetTime()
-    local aura = wan.auraData.player["buff_" .. buffName]
+    local aura = wan.CheckUnitBuff(nil, buffName)
     local remainingDuration = aura and (aura.expirationTime - currentTime)
 
-    if wan.PlayerState.IsInGroup then
+    if wan.PlayerState.InGroup then
         local nGroupUnits = GetNumGroupMembers()
         local _, nGroupMembersInRange, idValidGroupMember = wan.ValidGroupMembers()
-        local countBuffed = 0
         local nDisconnected = 0
 
         for groupUnitID, _ in pairs(wan.GroupUnitID) do
@@ -246,12 +275,11 @@ function wan.CheckClassBuff(buffName)
 
         if nGroupSize == nGroupMembersInRange then
             for groupUnitToken, _ in pairs(idValidGroupMember) do
-                local buffed = wan.auraData[groupUnitToken]["buff_" .. buffName]
-                if buffed then
-                    countBuffed = countBuffed + 1
+                local hasClassBuff = wan.CheckUnitBuff(groupUnitToken, buffName)
+                if not hasClassBuff then
+                    return true
                 end
             end
-            return (nGroupUnits > 0 and nGroupMembersInRange > countBuffed)
         end
     end
     
@@ -259,17 +287,15 @@ function wan.CheckClassBuff(buffName)
 end
 
 -- Counts units that have a specific debuff
-function wan.CheckSelfBuff(buffName, expirationThreshold)
-    local expirationTime = expirationThreshold or 360
+function wan.CheckSelfBuff(buffName)
     local currentTime = GetTime()
-    local aura = wan.auraData.player["buff_" .. buffName]
+    local aura = wan.CheckUnitBuff(nil, buffName)
     local remainingDuration = aura and (aura.expirationTime - currentTime)
 
-    if aura and remainingDuration > expirationTime then return true end
-
-    return false
+    if not aura or remainingDuration < 360 then return true end
 end
 
+--- check ability description for dispel types, returns an array
 function wan.CheckDispelType(spellIdentifier)
     local spellDesc = C_Spell.GetSpellDescription(spellIdentifier)
     local playerDispelTypes = {}
@@ -278,7 +304,7 @@ function wan.CheckDispelType(spellIdentifier)
         return playerDispelTypes
     end
 
-    local dispelTypes = { "Curse", "Disease", "Magic", "Poison", "Enrage" }
+    local dispelTypes = { "Curse", "Disease", "Magic", "Poison", "Enrage", "Stun", "Fear", "Blind", "Sap", "Incapacitate" }
 
     for _, dispelType in pairs(dispelTypes) do
         if string.find(spellDesc, dispelType) then
@@ -320,6 +346,28 @@ function wan.GetDispelValue(unitToken, dispelTypes)
     return dispelValue
 end
 
+--- checks if the player can remove a loss of control effect from itself
+function wan.CheckPlayerLossOfControl(dispelTypes)
+    for i = 1, 10 do
+        local checkLossOfControlData = C_LossOfControl.GetActiveLossOfControlData(i)
+
+        if not checkLossOfControlData then
+            return false
+        end
+
+        local checkLosType = checkLossOfControlData and checkLossOfControlData.locType
+        local checkLosExpirationTime = checkLossOfControlData and checkLossOfControlData.timeRemaining
+        for dispelType, _ in pairs(dispelTypes) do
+            if wan.LossOfControlData[dispelType] == checkLosType and (not checkLosExpirationTime or checkLosExpirationTime > 2) then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+--- check if the player's pet is summoned or dead
 function wan.IsPetUsable()
     return IsPetActive() or UnitIsDead("pet")
 end

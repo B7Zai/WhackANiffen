@@ -11,7 +11,7 @@ local nRiteofSanctification = 0
 
 local function CheckAbilityValue()
     if not wan.PlayerState.Status or wan.PlayerState.Combat
-        or wan.CheckSelfBuff(wan.spellData.RiteofSanctification.basename)
+        or not wan.CheckSelfBuff(wan.spellData.RiteofSanctification.basename)
         or not wan.IsSpellUsable(wan.spellData.RiteofSanctification.id)
     then
         wan.UpdateMechanicData(wan.spellData.RiteofSanctification.basename)

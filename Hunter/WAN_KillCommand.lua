@@ -11,7 +11,7 @@ local nExplosiveShotDmg, nExplosiveShotSoftCap = 0, 0
 -- Init trait data
 local nSolitaryCompanion = 0
 local nGoForTheThroat = 0
-local nKillCleave, nKillCleaveAoECap = 0, 0
+local nKillCleave, nKillCleaveSoftCap = 0, 0
 local nQuickShotProcChance, nQuickShotDmg, nArcaneShotDmg = 0, 0, 0
 local nSerpentineRhythm = 0
 local nBloodseeker = 0
@@ -90,14 +90,19 @@ local function CheckAbilityValue()
 
     -- kill cleave trait layer
     local cKillCleaveInstantDmgAoE = 0
-    if wan.traitData.KillCleave.known and wan.auraData.player.buff_BeastCleave then
-        local cKillCleaveUnitOverflow = wan.SoftCapOverflow(nKillCleaveAoECap, countValidUnit)
+    if wan.traitData.KillCleave.known then
+        local checkBeastCleaveBuff = wan.CheckUnitBuff(nil, wan.traitData.BeastCleave.traitkey)
 
-        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-            if nameplateGUID ~= targetGUID then
-                local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+        if checkBeastCleaveBuff then
+            local cKillCleaveUnitOverflow = wan.SoftCapOverflow(nKillCleaveSoftCap, countValidUnit)
 
-                cKillCleaveInstantDmgAoE = cKillCleaveInstantDmgAoE + (nKillCommandDmg * nKillCleave * checkUnitPhysicalDR *  cKillCleaveUnitOverflow)
+            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+                if nameplateGUID ~= targetGUID then
+                    local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+
+                    cKillCleaveInstantDmgAoE = cKillCleaveInstantDmgAoE + (nKillCommandDmg * nKillCleave * checkUnitPhysicalDR * cKillCleaveUnitOverflow)
+                end
             end
         end
     end
@@ -161,18 +166,25 @@ local function CheckAbilityValue()
                 end
             end
 
-            local countShowerofBlood = 0
-            for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-                
-                if nameplateGUID ~= targetGUID then
-                    local checkBloodshedDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.traitData.Bloodshed.traitkey)
+            if wan.traitData.ShowerofBlood.known then
+                local countShowerofBlood = 0
 
-                    if checkBloodshedDebuff then
-                        cBloodshedAoE = cBloodshedAoE + nBloodshed
-                        countShowerofBlood = countShowerofBlood + 1
+                for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
 
-                        if countShowerofBlood >= nShowerOfBloodUnitCap then break end
+                    if nameplateGUID ~= targetGUID then
+                        local checkBloodshedDebuff = wan.CheckUnitDebuff(nameplateUnitToken,
+                            wan.traitData.Bloodshed.traitkey)
+
+                        if checkBloodshedDebuff then
+                            countShowerofBlood = countShowerofBlood + 1
+
+                            if countShowerofBlood >= nShowerOfBloodUnitCap then break end
+                        end
                     end
+                end
+
+                if countShowerofBlood then
+                    cBloodshedAoE = cBloodshedAoE + ((nBloodshed * countShowerofBlood) / countValidUnit)
                 end
             end
         end
@@ -391,9 +403,9 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nExposedFlank = nExposedFlankValues[1] * 0.01
         nExposedFlankUnitCap = nExposedFlankValues[2]
 
-        local nKillCleaveValues = wan.GetTraitDescriptionNumbers(wan.traitData.BeastCleave.entryid, { 1, 2 })
+        local nKillCleaveValues = wan.GetTraitDescriptionNumbers(wan.traitData.KillCleave.entryid, { 1, 2 })
         nKillCleave = nKillCleaveValues[1] * 0.01
-        nKillCleaveAoECap = nKillCleaveValues[2]
+        nKillCleaveSoftCap = nKillCleaveValues[2]
 
         nBestialWrath = wan.GetTraitDescriptionNumbers(wan.traitData.BestialWrath.entryid, { 2 }) * 0.01
 

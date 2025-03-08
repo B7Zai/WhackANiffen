@@ -52,7 +52,7 @@ local function GetTraitData(dataArray)
                                 entryid = entryID,
                                 known = isActive,
                                 rank = nodeInfo.currentRank,
-                                traitkey = keyName
+                                traitkey = keyName,
                             }
 
                         end
@@ -61,7 +61,6 @@ local function GetTraitData(dataArray)
             end
         end
     end
-    wan.CustomEvents("TRAIT_DATA_READY")
 end
 
 local traitFrame = CreateFrame("Frame")
@@ -71,12 +70,17 @@ wan.RegisterBlizzardEvents(traitFrame,
 )
 
 traitFrame:SetScript("OnEvent", function(self, event, ...)
+
     if event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_ENTERING_WORLD" then
-        wan.WipeTable(wan.AbilityData)
-        wan.WipeTable(wan.MechanicData)
-        wan.WipeTable(wan.HealingData)
-        wan.WipeTable(wan.SupportData)
-        wan.WipeTable(wan.traitData)
-        GetTraitData(wan.traitData)
+
+        C_Timer.After(2, function()
+            wan.WipeTable(wan.AbilityData)
+            wan.WipeTable(wan.MechanicData)
+            wan.WipeTable(wan.HealingData)
+            wan.WipeTable(wan.SupportData)
+            wan.WipeTable(wan.traitData)
+            GetTraitData(wan.traitData)
+            wan.CustomEvents("TRAIT_DATA_READY")
+        end)
     end
 end)

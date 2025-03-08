@@ -8,6 +8,7 @@ wan.GroupUnitID = {}
 -- Init player status arrays
 wan.PlayerState = {}
 wan.PlayerState.Class = UnitClassBase("player") or "UNKNOWN"
+wan.PlayerState.BaseCooldown = C_Spell.GetSpellCooldown(61304) or 1
 wan.PlayerState.Combat = false
 wan.PlayerState.GUID = UnitGUID("player")
 wan.PlayerState.InGroup = false
@@ -81,7 +82,8 @@ local function OnEvent(self, event, ...)
     end
 
     -- adds and removes various data for target
-    if event == "PLAYER_SOFT_ENEMY_CHANGED" then
+    if event == "PLAYER_SOFT_ENEMY_CHANGED" or event == "PLAYER_TARGET_CHANGED" then
+        wan.TargetUnitID = UnitExists("softenemy") and "softenemy" or "target"
         local unitToken = wan.TargetUnitID
         local unitGUID = UnitGUID(unitToken)
         local health = UnitHealth(unitToken) or 0
@@ -308,6 +310,7 @@ local function OnEvent(self, event, ...)
 
     -- checks if the player is mounted
     if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
+        wan.PlayerState.BaseCooldown = C_Spell.GetSpellCooldown(61304) or 1
         wan.PlayerState.Mounted = IsMounted() or wan.PlayerState.Class == "DRUID" and GetShapeshiftForm() == 3
         wan.PlayerState.Status = wan.PlayerState.IsDead or not wan.PlayerState.Mounted or wan.PlayerState.InVehicle
 
@@ -338,6 +341,31 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         wan.PlayerState.SpecializationName = name
         wan.PlayerState.Role = role
         wan.PlayerState.InHealerMode = role == "HEALER" or wan.Options.HealerMode.Toggle
+    end
+
+    if event == "ZENMODE_FRAME_TOGGLE" then
+
+        if wan.Options.ZenMode.Toggle == true then
+
+            C_CVar.SetCVar("floatingCombatTextCombatDamage", 0)
+            C_CVar.SetCVar("floatingCombatTextCombatLogPeriodicSpells", 0)
+            C_CVar.SetCVar("floatingCombatTextPetMeleeDamage", 0)
+            C_CVar.SetCVar("floatingCombatTextPetSpellDamage", 0)
+            C_CVar.SetCVar("floatingCombatTextCombatHealing", 0)
+
+        elseif wan.Options.ZenMode.Toggle == false then
+            local checkDefaultFloatingDamage = tonumber(C_CVar.GetCVarDefault("floatingCombatTextCombatDamage"))
+            local checkDefaultFloatingDot = tonumber(C_CVar.GetCVarDefault("floatingCombatTextCombatLogPeriodicSpells"))
+            local checkDefaultFloatingPetDamage = tonumber(C_CVar.GetCVarDefault("floatingCombatTextPetMeleeDamage"))
+            local checkDefaultFloatingPetSpellDamage = tonumber(C_CVar.GetCVarDefault("floatingCombatTextPetSpellDamage"))
+            local checkDefaultFloatingHeal = tonumber(C_CVar.GetCVarDefault("floatingCombatTextCombatHealing"))
+
+            C_CVar.SetCVar("floatingCombatTextCombatDamage", checkDefaultFloatingDamage)
+            C_CVar.SetCVar("floatingCombatTextCombatLogPeriodicSpells", checkDefaultFloatingDot)
+            C_CVar.SetCVar("floatingCombatTextPetMeleeDamage", checkDefaultFloatingPetDamage)
+            C_CVar.SetCVar("floatingCombatTextPetSpellDamage", checkDefaultFloatingPetSpellDamage)
+            C_CVar.SetCVar("floatingCombatTextCombatHealing", checkDefaultFloatingHeal)
+        end
     end
 end)
 

@@ -92,10 +92,10 @@ function wan.AssignUnitState(frameCallback, isLevelScaling)
     local unitToken = frameCallback and frameCallback.unit
     local unitGUID = unitToken and UnitGUID(unitToken)
     if unitGUID and unitToken then
-        local isAI = UnitInPartyIsAI(unitToken) or false
         local maxHealth = UnitHealthMax(unitToken) or 0
         local unitLevel = UnitLevel(unitToken) or wan.UnitState.Level[wan.PlayerState.GUID]
         local role = UnitGroupRolesAssigned(unitToken) or "DAMAGER"
+        local isAI = UnitInPartyIsAI(unitToken) or false
 
         wan.GroupUnitID[unitToken] = unitGUID
         activeUnits[unitGUID] = unitToken

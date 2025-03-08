@@ -1,6 +1,6 @@
 local _, wan = ...
 
-wan.classificationData = {
+wan.ClassificationData = {
     worldboss = 0.68,
     rareelite = 0.70,
     elite = 0.70,
@@ -79,8 +79,8 @@ end
 function wan.CheckUnitPhysicalDamageReduction(unitToken)
     local unit = unitToken or wan.TargetUnitID
     local classification = wan.UnitState.Classification[unit]
-    if wan.classificationData[classification] then
-        return wan.classificationData[classification]
+    if wan.ClassificationData[classification] then
+        return wan.ClassificationData[classification]
     end
     return 1
 end

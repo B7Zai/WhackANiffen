@@ -11,7 +11,7 @@ local nRiteofAdjuration = 0
 
 local function CheckAbilityValue()
     if not wan.PlayerState.Status or wan.PlayerState.Combat
-        or wan.CheckSelfBuff(wan.spellData.RiteofAdjuration.basename)
+        or not wan.CheckSelfBuff(wan.spellData.RiteofAdjuration.formattedName)
         or not wan.IsSpellUsable(wan.spellData.RiteofAdjuration.id)
     then
         wan.UpdateMechanicData(wan.spellData.RiteofAdjuration.basename)

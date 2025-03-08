@@ -154,7 +154,7 @@ local function AuraUpdate(self, event, unitToken, updateInfo)
             UpdateAuras(unitToken, updateInfo)
         elseif wan.NameplateUnitID[unitToken] then
             UpdateAuras(unitToken, updateInfo)
-        elseif wan.GroupUnitID[unitToken] and unitToken ~= "player" and wan.PlayerState.InHealerMode then
+        elseif wan.GroupUnitID[unitToken] and unitToken ~= "player" then
             UpdateAuras(unitToken, updateInfo)
         end
     end

@@ -43,22 +43,19 @@ local function CheckAbilityValue()
 
     ---- BEAST MASTERY TRAITS ----
 
-    local cThunderingHooves = 1
     local cThunderingHoovesInstandDmg = 0
     local cThunderingHoovesInstandDmgAoE = 0
     if wan.traitData.ThunderingHooves.entryid then
-        cThunderingHooves = cThunderingHooves + nThunderingHooves
-
         local activePets = (wan.IsPetUsable() and 1 or 0) * (wan.traitData.AnimalCompanion.known and 2 or 1)
         local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(targetUnitToken)
-        cThunderingHoovesInstandDmg = cThunderingHoovesInstandDmg + (nStompDmg * checkPhysicalDR * activePets * cThunderingHooves)
+        cThunderingHoovesInstandDmg = cThunderingHoovesInstandDmg + (nStompDmg * checkPhysicalDR * activePets * nThunderingHooves)
 
         for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
 
             if nameplateGUID ~= targetGUID then
                 local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
 
-                cThunderingHoovesInstandDmgAoE = cThunderingHoovesInstandDmgAoE + (nStompDmgAoE * checkUnitPhysicalDR * activePets * cThunderingHooves)
+                cThunderingHoovesInstandDmgAoE = cThunderingHoovesInstandDmgAoE + (nStompDmgAoE * checkUnitPhysicalDR * activePets * nThunderingHooves)
             end
         end
     end

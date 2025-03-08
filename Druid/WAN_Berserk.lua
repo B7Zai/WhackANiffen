@@ -7,15 +7,16 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 local playerUnitToken = "player"
 local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
-local abilityAura = "Berserk"
 local nBerserkMaxRange = 12
 local nBerserkDmg, nBerserkHeal = 0, 0
 
  -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player["buff_" .. abilityAura]
-        or wan.auraData.player.buff_Prowl or not wan.IsSpellUsable(wan.spellData.Berserk.id)
+    if not wan.PlayerState.Status or not wan.PlayerState.Combat
+        or wan.CheckUnitBuff(nil, wan.spellData.Berserk.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.Prowl.formattedName)
+        or not wan.IsSpellUsable(wan.spellData.Berserk.id)
     then
         wan.UpdateAbilityData(wan.spellData.Berserk.basename)
         wan.UpdateMechanicData(wan.spellData.Berserk.basename)
@@ -65,7 +66,6 @@ frameBerserk:SetScript("OnEvent", AddonLoad)
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     if event == "SPELL_DATA_READY" then
         abilityActive = wan.spellData.Berserk.known and wan.spellData.Berserk.id
-        abilityAura = wan.FormatNameForKey(wan.spellData.Berserk.name)
         wan.BlizzardEventHandler(frameBerserk, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
         wan.SetUpdateRate(frameBerserk, CheckAbilityValue, abilityActive)
     end
