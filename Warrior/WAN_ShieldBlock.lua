@@ -14,7 +14,6 @@ local nShieldBlock = 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.ShieldBlock.id)
-        or (wan.PlayerState.Role == "TANK" and wan.spellData.IgnorePain.known and not wan.IsSpellUsable(wan.spellData.IgnorePain.id))
     then
         wan.UpdateMechanicData(wan.spellData.ShieldBlock.basename)
         return
@@ -26,7 +25,7 @@ local function CheckAbilityValue()
     local isTanking = wan.IsTanking()
     local checkShieldBlockBuff = wan.CheckUnitBuff(nil, wan.spellData.ShieldBlock.formattedName)
     local cShieldBlockExpiration = checkShieldBlockBuff and checkShieldBlockBuff.expirationTime - currentTime or 0
-    if isTanking and (not checkShieldBlockBuff or cShieldBlockExpiration < 0.5) then
+    if isTanking and (not checkShieldBlockBuff or cShieldBlockExpiration < 1.2) then
         cShieldBlock = cShieldBlock + nShieldBlock
     end
 

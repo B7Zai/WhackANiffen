@@ -7,7 +7,7 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
 local checkDebuffs = { "Rake", "Thrash", "Rip", "FeralFrenzy", "Tear", "FrenziedAssault" }
-local nSwipeDmg, nSoftCap = 0, 0
+local nSwipeDmg, nSwipeSoftCap = 0, 0
 local nThrashDotDmg, nThrashMaxStacks = 0, 0
 
 -- Init trait data
@@ -37,32 +37,48 @@ local function CheckAbilityValue()
 
     local cSwipeInstantDmg = 0
     local cSwipeDotDmg = 0
+    local cSwipeInstantDmgAoE = 0
+    local cSwipeDotDmgAoE = 0
 
-    local unitOverflow = wan.SoftCapOverflow(nSoftCap, countValidUnit)
+    local targetUnitToken = wan.TargetUnitID
+    local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
+    local nSwipeInstantDmgBaseAoE = 0
+    local cSwipeUnitOverflow = wan.SoftCapOverflow(nSwipeSoftCap, countValidUnit)
     for nameplateUnitToken, _ in pairs (idValidUnit) do
-        local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+        local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
 
-        -- Merciless Claws
-        local cMercilessClaws = 1
-        if wan.traitData.MercilessClaws.known then
-            local checkDebuff = wan.CheckForAnyDebuff(nameplateUnitToken, checkDebuffs)
-            cMercilessClaws = 1 + ((checkDebuff and nMercilessClaws) or 0)
-        end
+        nSwipeInstantDmgBaseAoE = nSwipeInstantDmgBaseAoE + (nSwipeDmg * checkUnitPhysicalDR * cSwipeUnitOverflow)
+    end
 
-        -- Thrashing Claws
-        local cThrashingClaws = 0
-        if wan.traitData.ThrashingClaws.known then
-            local checkDebuff = wan.auraData[nameplateUnitToken]["debuff_" .. wan.spellData.Thrash.basename]
-            if not checkDebuff then
-                local dotPotency = wan.CheckDotPotency(nSwipeDmg, nameplateUnitToken)
-                cThrashingClaws = nThrashDotDmg * dotPotency
+    ---- FERAL TRAITS ----
+
+    local cMercilessClaws = 1
+    if wan.traitData.MercilessClaws.known then
+
+        for nameplateUnitToken, _ in pairs (idValidUnit) do
+            local checkDebuff = wan.CheckUnitAnyDebuff(nameplateUnitToken, checkDebuffs)
+
+            if checkDebuff then
+                cMercilessClaws = cMercilessClaws + (nMercilessClaws / countValidUnit)
             end
         end
+    end
 
-        cSwipeInstantDmg = cSwipeInstantDmg + (nSwipeDmg * checkPhysicalDR * cMercilessClaws * unitOverflow)
-        cSwipeDotDmg = cSwipeDotDmg + cThrashingClaws
-    end 
+    local cThrashingClawsDotDmgAoE = 0
+    if wan.traitData.ThrashingClaws.known then
+
+        for nameplateUnitToken, _ in pairs(idValidUnit) do
+            local checkDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.spellData.Thrash.formattedName)
+
+            if not checkDebuff then
+                local dotPotency = wan.CheckDotPotency(nSwipeDmg, nameplateUnitToken)
+                cThrashingClawsDotDmgAoE = cThrashingClawsDotDmgAoE + (nThrashDotDmg * dotPotency)
+            end
+        end
+    end
+
+    ---- DRUID OF THE CLAW TRAITS ----
 
     -- Strike for the Heart
     if wan.traitData.StrikefortheHeart.known then
@@ -74,10 +90,17 @@ local function CheckAbilityValue()
     local cSwipeInstantCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
     local cSwipeDotCritValue = wan.ValueFromCritical(wan.CritChance)
 
-    cSwipeInstantDmg = cSwipeInstantDmg * cSwipeInstantCritValue
-    cSwipeDotDmg = cSwipeDotDmg * cSwipeDotCritValue
+    cSwipeInstantDmg = cSwipeInstantDmg
 
-    local cSwipeDmg = cSwipeInstantDmg + cSwipeDotDmg
+    cSwipeDotDmg = cSwipeDotDmg
+
+    cSwipeInstantDmgAoE = cSwipeInstantDmgAoE
+        + (nSwipeInstantDmgBaseAoE * cSwipeInstantCritValue * cMercilessClaws)
+
+    cSwipeDotDmgAoE = cSwipeDotDmgAoE
+        + (cThrashingClawsDotDmgAoE * cSwipeDotCritValue)
+
+    local cSwipeDmg = cSwipeInstantDmg + cSwipeDotDmg + cSwipeInstantDmgAoE + cSwipeDotDmgAoE
 
     -- Update ability data
     local abilityValue = math.floor(cSwipeDmg)
@@ -95,11 +118,11 @@ local function AddonLoad(self, event, addonName)
 
         if event == "SPELLS_CHANGED" then
             if not wan.traitData.BrutalSlash.known then
-                nSoftCap = wan.GetSpellDescriptionNumbers(wan.spellData.Swipe.id, { 2 })
+                nSwipeSoftCap = wan.GetSpellDescriptionNumbers(wan.spellData.Swipe.id, { 2 })
             elseif wan.traitData.BrutalSlash.known and wan.traitData.MercilessClaws.known then
-                nSoftCap = wan.GetSpellDescriptionNumbers(wan.spellData.Swipe.id, { 3 })
+                nSwipeSoftCap = wan.GetSpellDescriptionNumbers(wan.spellData.Swipe.id, { 3 })
             elseif wan.traitData.BrutalSlash.known and not wan.traitData.MercilessClaws.known then
-                nSoftCap = wan.GetSpellDescriptionNumbers(wan.spellData.Swipe.id, { 2 })
+                nSwipeSoftCap = wan.GetSpellDescriptionNumbers(wan.spellData.Swipe.id, { 2 })
             end
         end
 
@@ -122,7 +145,7 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "TRAIT_DATA_READY" then
-        nMercilessClaws = wan.GetTraitDescriptionNumbers(wan.traitData.MercilessClaws.entryid, { 2 }) / 100
+        nMercilessClaws = wan.GetTraitDescriptionNumbers(wan.traitData.MercilessClaws.entryid, { 2 }) * 0.01
         nStrikeForTheHeart = wan.GetTraitDescriptionNumbers(wan.traitData.StrikefortheHeart.entryid, { 1 })
     end
 

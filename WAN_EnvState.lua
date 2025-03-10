@@ -91,6 +91,7 @@ local function OnEvent(self, event, ...)
         local unitClassification = UnitClassification(unitToken) or "normal"
         local unitExists = UnitExists(unitToken)
         local unitPlayer = UnitIsPlayer(unitToken)
+        local unitClass = unitPlayer and UnitClassBase(unitToken) or "UNKNOWN"
 
         if not unitExists then
             wan.auraData[unitToken] = nil
@@ -106,7 +107,7 @@ local function OnEvent(self, event, ...)
         wan.UnitState.Health[unitToken] = health
         wan.UnitState.Level[unitToken] = unitLevel
         wan.UnitState.Classification[unitToken] = unitClassification
-        wan.UnitState.Class[unitToken] = unitPlayer and UnitClassBase(unitToken) or false
+        wan.UnitState.Class[unitToken] = unitClass
         
         wan.CustomEvents("TARGET_UNITID_ASSIGNED")
     end

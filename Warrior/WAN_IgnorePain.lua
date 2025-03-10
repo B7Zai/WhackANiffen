@@ -14,6 +14,7 @@ local nIgnorePain = 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.IgnorePain.id)
+        or (not wan.CheckUnitBuff(nil, wan.spellData.ShieldBlock.formattedName) and wan.IsSpellUsable(wan.spellData.ShieldBlock.id))
     then
         wan.UpdateMechanicData(wan.spellData.IgnorePain.basename)
         return

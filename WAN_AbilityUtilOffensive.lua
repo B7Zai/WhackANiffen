@@ -154,6 +154,24 @@ function wan.CheckUnitDebuff(unitToken, formattedDebuffName, debuffID)
     return nil
 end
 
+function wan.CheckUnitAnyDebuff(unitToken, arrayFormattedDebuffNames, debuffID)
+    if not unitToken then return nil end
+
+    for _, formattedDebuffName in pairs(arrayFormattedDebuffNames) do
+        local checkDebuff = wan.auraData[unitToken] and wan.auraData[unitToken]["debuff_" .. formattedDebuffName]
+
+        if not debuffID and checkDebuff then
+            return checkDebuff
+        end
+
+        if debuffID and checkDebuff and checkDebuff.spellID == debuffID then
+            return checkDebuff
+        end
+    end
+
+    return nil
+end
+
 
 -- Checks if unit has any of the debuffs listed
 function wan.CheckForAnyDebuff(unitToken, debuffData)

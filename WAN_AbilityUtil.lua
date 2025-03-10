@@ -122,7 +122,7 @@ function wan.UnitAbilityPercentageToValue(unitToken, percentValue)
     return unitMaxHealth * (percentage / 100)
 end
 
--- Check on player's specialization 
+-- Check player's specialization 
 function wan.GetTraitInfo()
     local currentSpec = GetSpecialization()
     if currentSpec then
@@ -148,12 +148,12 @@ function wan.IsSpellUsable(spellIdentifier)
     local getGCD = gcdMS and gcdMS / 1000 or 0
 
     --- this part is a check for weird cooldown duration only present while an ability is on GCD
-    --- this only happens with only a few abilities like maul, minuscule but annoying non the less
+    --- only happens with only a few abilities like maul, minuscule but annoying non the less
     if getCooldown.duration > getGCD and getCooldown.duration == wan.PlayerState.BaseCooldown.duration then
         getCooldown.duration = getGCD
     end
 
-    return getCooldown.duration <= getGCD
+    return getCooldown.duration <= getGCD, insufficientPower
 end
 
 -- Checks critical chance and critical damage weights for ability values
@@ -287,4 +287,17 @@ function wan.CheckUnitAbsorb(unitToken)
     local totalAbsorbs = unitToken and UnitGetTotalAbsorbs(unitToken) or 0
 
     return totalAbsorbs
+end
+
+--- check how much stacks / charges a spell holds
+function wan.CheckSpellCharges(spellIdentifier)
+    if not spellIdentifier then return 0 end
+
+    local chargeInfo = C_Spell.GetSpellCharges(spellIdentifier)
+
+    if chargeInfo then
+        return chargeInfo.currentCharges, chargeInfo.maxCharges
+    end
+
+    return 0
 end

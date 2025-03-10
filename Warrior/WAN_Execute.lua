@@ -37,9 +37,7 @@ local nGatheringCloudsProcMod = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.Execute.id)
-        or (wan.PlayerState.Role == "TANK" and wan.spellData.IgnorePain.known and not wan.IsSpellUsable(wan.spellData.IgnorePain.id))
-    then
+    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.Execute.id) then
         wan.UpdateAbilityData(wan.spellData.Execute.basename)
         return
     end
@@ -49,6 +47,29 @@ local function CheckAbilityValue()
     if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.Execute.basename)
         return
+    end
+
+    if wan.spellData.ShieldBlock.known and wan.IsTanking()
+        and not wan.CheckUnitBuff(nil, wan.spellData.ShieldBlock.formattedName)
+        and not wan.CheckUnitBuff(nil, wan.spellData.Revenge.formattedName)
+    then
+        local currentCharges = wan.CheckSpellCharges(wan.spellData.ShieldBlock.id)
+        local _, insufficientPower = wan.IsSpellUsable(wan.spellData.ShieldBlock.id)
+        if currentCharges > 0 and insufficientPower then
+            wan.UpdateAbilityData(wan.spellData.Execute.basename)
+            return
+        end
+    end
+
+    if wan.spellData.IgnorePain.known and wan.IsTanking()
+        and not wan.CheckUnitBuff(nil, wan.spellData.IgnorePain.formattedName)
+        and not wan.CheckUnitBuff(nil, wan.spellData.Revenge.formattedName)
+    then
+        local _, insufficientPower = wan.IsSpellUsable(wan.spellData.IgnorePain.id)
+        if insufficientPower then
+            wan.UpdateAbilityData(wan.spellData.Execute.basename)
+            return
+        end
     end
 
     -- Base values

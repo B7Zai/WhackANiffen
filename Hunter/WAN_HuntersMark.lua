@@ -16,18 +16,18 @@ local function CheckAbilityValue()
         return
     end
 
+    local targetUnitToken = wan.TargetUnitID
+    local targetGUID = wan.UnitState.GUID[targetUnitToken]
+    local formattedDebuffName = wan.spellData.HuntersMark.formattedName
+
     -- Check for valid unit
     local isValidUnit, _, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.HuntersMark.id)
-    if not isValidUnit then
+    if not targetGUID or not isValidUnit then
         wan.UpdateMechanicData(wan.spellData.HuntersMark.basename)
         return
     end
 
-    local targetUnitToken = wan.TargetUnitID
-    local targetGUID = wan.UnitState.GUID[targetUnitToken]
-
-    local formattedDebuffName = wan.spellData.HuntersMark.basename
-    local checkHuntersMarkDebuff = wan.CheckUnitDebuff(targetUnitToken, formattedDebuffName)
+    local checkHuntersMarkDebuff = wan.CheckUnitDebuff(nil, formattedDebuffName)
     if checkHuntersMarkDebuff then
         wan.UpdateMechanicData(wan.spellData.HuntersMark.basename)
         return
@@ -42,12 +42,9 @@ local function CheckAbilityValue()
     end
 
     local checkClass = wan.UnitState.Class[targetUnitToken]
-    local checkClassification = UnitIsBossMob(targetUnitToken)
-    local checkHuntersMark = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.spellData.HuntersMark.basename]
-    local enablerHuntersMark = (not wan.PlayerState.Combat and checkClassification) or checkClass == "ROGUE" or checkClass == "DRUID"
-
-    if checkHuntersMark or not enablerHuntersMark then
-        wan.UpdateAbilityData(wan.spellData.HuntersMark.basename)
+    local checkClassification = UnitIsBossMob(targetUnitToken) or false
+    if (wan.PlayerState.Combat or not checkClassification) or checkClass == "ROGUE" or checkClass == "DRUID"then
+        wan.UpdateMechanicData(wan.spellData.HuntersMark.basename)
         return
     end
 
@@ -65,9 +62,11 @@ local function AddonLoad(self, event, addonName)
     -- Early Exit
     if addonName ~= "WhackANiffen" then return end
 
+    -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
-        if abilityActive and event == "PLAYER_SOFT_ENEMY_CHANGED" then
-            CheckAbilityValue()
+        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
+            local nHuntersMarkValue = wan.GetSpellDescriptionNumbers(wan.spellData.HuntersMark.id, { 2 })
+            nHuntersMark = wan.AbilityPercentageToValue(nHuntersMarkValue)
         end
     end)
 end
@@ -78,13 +77,11 @@ frameHuntersMark:SetScript("OnEvent", AddonLoad)
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     if event == "SPELL_DATA_READY" then
         abilityActive = wan.spellData.HuntersMark.known and wan.spellData.HuntersMark.id
-        wan.BlizzardEventHandler(frameHuntersMark, abilityActive, "PLAYER_SOFT_ENEMY_CHANGED")
+        wan.BlizzardEventHandler(frameHuntersMark, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
+        wan.SetUpdateRate(frameHuntersMark, CheckAbilityValue, abilityActive)
     end
 
-    if event == "TRAIT_DATA_READY" then
-        local nHuntersMarkValue = wan.GetSpellDescriptionNumbers(wan.spellData.HuntersMark.id, { 2 })
-        nHuntersMark = wan.AbilityPercentageToValue(nHuntersMarkValue)
-    end
+    if event == "TRAIT_DATA_READY" then end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
         wan.SetUpdateRate(frameHuntersMark, CheckAbilityValue, abilityActive)

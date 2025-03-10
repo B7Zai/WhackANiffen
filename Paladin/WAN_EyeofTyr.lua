@@ -18,7 +18,8 @@ local nWrathfulDescent = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.EyeofTyr.id)
+    if not wan.PlayerState.Status or not wan.PlayerState.Combat
+        or not wan.IsSpellUsable(wan.spellData.EyeofTyr.id)
     then
         wan.UpdateAbilityData(wan.spellData.EyeofTyr.basename)
         return

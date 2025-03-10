@@ -13,7 +13,6 @@ local nBitterImmunity = 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or wan.CheckUnitBuff(nil, wan.traitData.SecondWind.traitkey)
         or not wan.IsSpellUsable(wan.spellData.BitterImmunity.id)
     then
         wan.UpdateMechanicData(wan.spellData.BitterImmunity.basename)
@@ -53,14 +52,6 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "TRAIT_DATA_READY" then end
-
-    if event == "HEALERMODE_FRAME_TOGGLE" then
-        if wan.PlayerState.InHealerMode then
-            wan.UpdateMechanicData(wan.spellData.BitterImmunity.basename)
-        else
-            wan.UpdateSupportData(nil, wan.spellData.BitterImmunity.basename)
-        end
-    end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
         wan.SetUpdateRate(frameBitterImmunity, CheckAbilityValue, abilityActive)

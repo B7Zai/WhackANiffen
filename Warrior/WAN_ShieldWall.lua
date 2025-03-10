@@ -13,7 +13,6 @@ local nShieldWall = 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or wan.CheckUnitBuff(nil, wan.traitData.SecondWind.traitkey)
         or not wan.IsSpellUsable(wan.spellData.ShieldWall.id)
     then
         wan.UpdateMechanicData(wan.spellData.ShieldWall.basename)
@@ -36,7 +35,7 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            nShieldWall = wan.DefensiveCooldownToValue(wan.spellData.ShieldWall.id)
+            nShieldWall = wan.DefensiveCooldownToValue(wan.spellData.ShieldWall.id, 180000)
         end
     end)
 end

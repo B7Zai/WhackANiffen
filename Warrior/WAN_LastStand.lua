@@ -13,7 +13,6 @@ local nLastStand = 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or wan.CheckUnitBuff(nil, wan.traitData.SecondWind.traitkey)
         or not wan.IsSpellUsable(wan.spellData.LastStand.id)
     then
         wan.UpdateMechanicData(wan.spellData.LastStand.basename)
