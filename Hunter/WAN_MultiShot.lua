@@ -16,7 +16,8 @@ local nUnerringVision = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.MultiShot.id)
+    if not wan.PlayerState.Status
+    or (wan.spellData.ArcaneShot.known and not wan.IsSpellUsable(wan.spellData.ArcaneShot.id) or not wan.IsSpellUsable(wan.spellData.MultiShot.id))
     then
         wan.UpdateAbilityData(wan.spellData.MultiShot.basename)
         return

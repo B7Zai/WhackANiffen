@@ -22,10 +22,10 @@ local function CheckAbilityValue()
         return
     end
 
-    local maxRange = wan.spellData.Rip.maxRange or 5
+    local maxRangeRip = wan.spellData.PrimalWrath.known and wan.spellData.PrimalWrath.maxRange or 5
 
     -- Check for valid unit
-    local isValidUnit = wan.ValidUnitBoolCounter(nil, maxRange)
+    local isValidUnit = wan.ValidUnitBoolCounter(nil, maxRangeRip)
     if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.Rip.basename)
         return
@@ -69,15 +69,16 @@ local function CheckAbilityValue()
     end
 
     ---- RESTORATION TRAITS ----
-    
+
     local cMasterShapeshifter = 1
     if wan.traitData.MasterShapeshifter.known and currentCombo == nMasterShapeshifterCombo then
         cMasterShapeshifter = cMasterShapeshifter + nMasterShapeshifter
     end
 
+
     -- Crit layer
     local cRipCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
-    
+
     cRipInstantDmg = cRipInstantDmg
 
     cRipDotDmg = cRipDotDmg
@@ -88,8 +89,7 @@ local function CheckAbilityValue()
 
     cRipDotDmgAoE = cRipDotDmgAoE
 
-
-    local cRipDmg = (cRipDotDmg + cTearDotDmg) * cMasterShapeshifter * cRipCritValue
+    local cRipDmg = cRipInstantDmg + cRipDotDmg + cRipInstantDmgAoE + cRipDotDmgAoE
 
     -- Update ability data
     local abilityValue = math.floor(cRipDmg)

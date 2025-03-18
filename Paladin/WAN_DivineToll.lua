@@ -4,6 +4,7 @@ local _, wan = ...
 if wan.PlayerState.Class ~= "PALADIN" then return end
 
 -- Init data
+local playerUnitToken = "player"
 local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
 local nDivineTollDmg, nDivineTollHeal = 0, 0
@@ -12,7 +13,7 @@ local nDivineTollDmg, nDivineTollHeal = 0, 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.PlayerState.Combat
-     or not wan.IsSpellUsable(wan.spellData.DivineToll.id)
+        or not wan.IsSpellUsable(wan.spellData.DivineToll.id)
     then
         wan.UpdateAbilityData(wan.spellData.DivineToll.basename)
         wan.UpdateMechanicData(wan.spellData.DivineToll.basename)
@@ -27,7 +28,7 @@ local function CheckAbilityValue()
         for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
             if idValidGroupUnit[groupUnitToken] then
-                local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
+                local currentPercentHealth = wan.CheckUnitPercentHealth(groupUnitGUID)
                 local cDivineToll = nDivineTollHeal 
 
                 local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cDivineToll, currentPercentHealth)
@@ -39,7 +40,6 @@ local function CheckAbilityValue()
         wan.UpdateMechanicData(wan.spellData.DivineToll.basename, groupAbilityValue, wan.spellData.DivineToll.icon, wan.spellData.DivineToll.name)
     else
         -- Offensive value
-        local playerUnitToken = "player"
         local isValidUnit, _, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.DivineToll.id)
         local cDivineTollDmg = nDivineTollDmg
         local cdPotency = wan.CheckOffensiveCooldownPotency(cDivineTollDmg, isValidUnit, idValidUnit)
@@ -49,13 +49,14 @@ local function CheckAbilityValue()
         wan.UpdateAbilityData(wan.spellData.DivineToll.basename, damageValue, wan.spellData.DivineToll.icon, wan.spellData.DivineToll.name)
 
         -- Defensive value
-        local currentPercentHealth = UnitPercentHealthFromGUID(playerGUID) or 1
+        local currentPercentHealth = wan.CheckUnitPercentHealth(playerGUID)
         local cDivineTollHeal = wan.UnitAbilityHealValue(playerUnitToken, nDivineTollHeal, currentPercentHealth)
 
         -- Update ability data
         local healValue = cDivineTollHeal
         wan.UpdateMechanicData(wan.spellData.DivineToll.basename, healValue, wan.spellData.DivineToll.icon, wan.spellData.DivineToll.name)
     end
+
 end
 
 local frameDivineToll = CreateFrame("Frame")

@@ -7,13 +7,13 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 local playerUnitToken = "player"
 local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
-local nIncarnationTreeofLife = 0
+local nNaturesSwiftness = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.IncarnationTreeofLife.id) then
-        wan.UpdateMechanicData(wan.spellData.IncarnationTreeofLife.basename)
+    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.NaturesSwiftness.id) then
+        wan.UpdateMechanicData(wan.spellData.NaturesSwiftness.basename)
         return
     end
 
@@ -26,23 +26,23 @@ local function CheckAbilityValue()
 
             if idValidGroupUnit[groupUnitToken] then
                 local currentPercentHealth = wan.CheckUnitPercentHealth(groupUnitGUID)
-                local cIncarnationTreeofLife = nIncarnationTreeofLife 
+                local cNaturesSwiftness = nNaturesSwiftness 
 
-                local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cIncarnationTreeofLife, currentPercentHealth)
+                local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cNaturesSwiftness, currentPercentHealth)
                 groupAbilityValue = groupAbilityValue + abilityValue
             end
         end
 
-        groupAbilityValue = groupAbilityValue >= nIncarnationTreeofLife and groupAbilityValue or 0
-        wan.UpdateMechanicData(wan.spellData.IncarnationTreeofLife.basename, groupAbilityValue, wan.spellData.IncarnationTreeofLife.icon, wan.spellData.IncarnationTreeofLife.name)
+        groupAbilityValue = groupAbilityValue >= nNaturesSwiftness and groupAbilityValue or 0
+        wan.UpdateMechanicData(wan.spellData.NaturesSwiftness.basename, groupAbilityValue, wan.spellData.NaturesSwiftness.icon, wan.spellData.NaturesSwiftness.name)
     else
         -- Base defensive value
         local currentPercentHealth = wan.CheckUnitPercentHealth(playerGUID)
-        local cIncarnationTreeofLife = nIncarnationTreeofLife
+        local cNaturesSwiftness = nNaturesSwiftness
 
         -- Update ability data
-        local abilityValue = wan.UnitAbilityHealValue(playerUnitToken, cIncarnationTreeofLife, currentPercentHealth)
-        wan.UpdateMechanicData(wan.spellData.IncarnationTreeofLife.basename, abilityValue, wan.spellData.IncarnationTreeofLife.icon, wan.spellData.IncarnationTreeofLife.name)
+        local abilityValue = wan.UnitAbilityHealValue(playerUnitToken, cNaturesSwiftness, currentPercentHealth)
+        wan.UpdateMechanicData(wan.spellData.NaturesSwiftness.basename, abilityValue, wan.spellData.NaturesSwiftness.icon, wan.spellData.NaturesSwiftness.name)
     end
 end
 
@@ -55,7 +55,7 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" then
-            nIncarnationTreeofLife = wan.DefensiveCooldownToValue(wan.spellData.IncarnationTreeofLife.id)
+            nNaturesSwiftness = wan.DefensiveCooldownToValue(wan.spellData.NaturesSwiftness.id)
         end
     end)
 end
@@ -66,7 +66,7 @@ frameTreeofLife:SetScript("OnEvent", AddonLoad)
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "SPELL_DATA_READY" then
-        abilityActive = wan.spellData.IncarnationTreeofLife.known and wan.spellData.IncarnationTreeofLife.id
+        abilityActive = wan.spellData.NaturesSwiftness.known and wan.spellData.NaturesSwiftness.id
         wan.SetUpdateRate(frameTreeofLife, CheckAbilityValue, abilityActive)
         wan.BlizzardEventHandler(frameTreeofLife, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
     end

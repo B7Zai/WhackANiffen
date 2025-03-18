@@ -103,6 +103,7 @@ end
 
 ---- Check unit remaining health in percetage, actual value is between 0 to 1
 function wan.CheckUnitPercentHealth(unitGUID)
+    
     local checkUnitPercentHealth = unitGUID and UnitPercentHealthFromGUID(unitGUID) or 1
     return checkUnitPercentHealth
 end
@@ -139,7 +140,7 @@ function wan.IsSpellUsable(spellIdentifier)
 
     if cooldownMS > gcdMS then
         local _, _, _, _, _, _, _, _, spellId = UnitCastingInfo("player")
-        if spellId == spellIdentifier then 
+        if spellId == spellIdentifier then
             return false
         end
     end

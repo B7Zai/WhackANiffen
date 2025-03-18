@@ -21,7 +21,7 @@ local function CheckAbilityValue()
     -- Check for valid unit
     local isValidUnit = wan.ValidUnitBoolCounter(wan.spellData.VictoryRush.id)
     if not isValidUnit then
-        wan.UpdateAbilityData(wan.spellData.VictoryRush.basename)
+        wan.UpdateMechanicData(wan.spellData.VictoryRush.basename)
         return
     end
 

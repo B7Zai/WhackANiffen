@@ -60,6 +60,7 @@ Druid\WAN_Maul.lua
 Druid\WAN_Moonfire.lua
 Druid\WAN_MoonkinForm.lua
 Druid\WAN_MoonMoon.lua
+Druid\WAN_NaturesSwiftness.lua
 Druid\WAN_Nourish.lua
 Druid\WAN_Overgrowth.lua
 Druid\WAN_PrimalWrath.lua
@@ -189,6 +190,7 @@ Paladin\WAN_BlessingofSacrifice.lua
 Paladin\WAN_BlessingofSummer.lua
 Paladin\WAN_CleanseToxins.lua
 Paladin\WAN_Consecration.lua
+Paladin\WAN_Crusade.lua
 Paladin\WAN_CrusaderStrike.lua
 Paladin\WAN_DivineHammer.lua
 Paladin\WAN_DivineProtection.lua
