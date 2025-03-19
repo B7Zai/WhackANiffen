@@ -274,7 +274,7 @@ function wan.UnitIsCasting(unitToken, spellIndentifier)
         return true
     end
 
-    local channelName, _, _, _, _, _, _, channelSpellID = UnitChannelInfo(unitToken)
+    local channelName, _, _, _, _, _, _, channelSpellID = UnitChannelInfo(unit)
 
     if spellIndentifier == channelName or spellIndentifier == channelSpellID then
         return true

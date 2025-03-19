@@ -48,7 +48,7 @@ local function GetSpellData(spellDataArray)
 
                         if formattedSubName and spellDataArray[keyName] then
                             spellDataArray[formattedSubName..keyName] = {
-                                name = formattedSubName.." "..spellInfo.name,
+                                name = spellBookItemInfo.subName.." "..spellInfo.name,
                                 icon = spellInfo.iconID,
                                 originalIconID = spellInfo.originalIconID,
                                 castTime = spellInfo.castTime,

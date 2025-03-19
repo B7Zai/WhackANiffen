@@ -18,9 +18,8 @@ local nLunarStormDuration, nLunarStormDmg, nLunarStormTickRate, nLunarStorm = 0,
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status
-        or not wan.IsSpellUsable(wan.spellData.RapidFire.id)
-        or wan.UnitIsCasting("player", wan.spellData.AimedShot.name)
+    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.RapidFire.id)
+        or wan.UnitIsCasting("player", wan.spellData.AimedShot.id)
     then
         wan.UpdateAbilityData(wan.spellData.RapidFire.basename)
         return

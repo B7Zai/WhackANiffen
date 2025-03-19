@@ -22,7 +22,7 @@ local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status
         or (wan.spellData.ArcaneBlast.known and wan.IsSpellUsable(wan.spellData.ArcaneBlast.id))
-        or wan.UnitIsCasting("player", wan.spellData.GlacialSpike.name)
+        or wan.UnitIsCasting("player", wan.spellData.GlacialSpike.id)
         or not wan.IsSpellUsable(wan.spellData.GlacialSpike.id)
     then
         wan.UpdateAbilityData(wan.spellData.GlacialSpike.basename)

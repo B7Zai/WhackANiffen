@@ -70,6 +70,8 @@ end
 
 -- Helper function to format strings used for keys
 function wan.FormatNameForKey(string)
+    if not string or string:match("^%s*$") then return nil end
+
     string = string:gsub("|c%x%x%x%x%x%x%x%x", "")     -- Remove color prefix
     string = string:gsub("|r", "")                     -- Remove color reset
     string = string:gsub("|[nt]", "")                  -- Remove escape sequences

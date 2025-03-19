@@ -18,7 +18,9 @@ local nMercilessClaws = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.Shred.id)
+    if not wan.PlayerState.Status 
+        or (wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName) and not wan.IsSpellUsable(wan.spellData.Shred.id))
+        or (wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName) and not wan.IsSpellUsable(wan.spellData.Swipe.id))
     then
         wan.UpdateAbilityData(wan.spellData.Swipe.basename)
         return

@@ -23,10 +23,9 @@ local nUnerringVision = 0
 -- Ability value calculation
 local function CheckAbilityValue()
 
-    if not wan.PlayerState.Status 
-        or not wan.IsSpellUsable(wan.spellData.AimedShot.id)
-        or wan.UnitIsCasting("player", wan.spellData.AimedShot.name)
-        or (wan.traitData.NoScope.known and wan.UnitIsCasting("player", wan.spellData.RapidFire.name))
+    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.AimedShot.id)
+        or wan.UnitIsCasting("player", wan.spellData.AimedShot.id)
+        or (wan.traitData.NoScope.known and wan.UnitIsCasting("player", wan.spellData.RapidFire.id))
     then
         wan.UpdateAbilityData(wan.spellData.AimedShot.basename)
         return
