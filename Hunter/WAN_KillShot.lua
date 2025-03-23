@@ -18,6 +18,7 @@ local nRazonFragments, nRazorFragmentsUnitCap, nRazorFragmentsAoE = 0, 0, 0
 local nUnerringVision = 0
 local nSicEmUnitCap = 0
 local nBorntoKill = 0
+local nWitheringFire, nWitheringFireHitCap = 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -56,8 +57,9 @@ local function CheckAbilityValue()
     local cHuntersPreyInstantDmgAoE = 0
     local cHuntersPreyDotDmgAoE = 0
     if wan.traitData.HuntersPrey.known then
-        local activePets = (wan.IsPetUsable() and 1 or 0) * (wan.traitData.AnimalCompanion.known and 2 or 1)
-        cHuntersPrey = cHuntersPrey + (nHuntersPrey * activePets)
+
+        local cHuntersPreyUnitCap = (wan.IsPetUsable() and 1 or 0) * (wan.traitData.AnimalCompanion.known and 2 or 1)
+        cHuntersPrey = cHuntersPrey + (nHuntersPrey * cHuntersPreyUnitCap)
 
         local countHuntersPreyUnit = 0
         local bBlackArrow = wan.traitData.BlackArrow.known 
@@ -81,7 +83,7 @@ local function CheckAbilityValue()
 
                 countHuntersPreyUnit = countHuntersPreyUnit + 1
 
-                if countHuntersPreyUnit > activePets then break end
+                if countHuntersPreyUnit > cHuntersPreyUnitCap then break end
             end
         end
     end
@@ -196,6 +198,14 @@ local function CheckAbilityValue()
         cBansheesMark = cBansheesMark + (nAMurderOfCrows * nBansheesMarkProcChance)
     end
 
+    local cWitheringFireInstantDmg = 0
+    if wan.traitData.WitheringFire.known then
+        local checkWitheringFireBuff = wan.CheckUnitBuff(nil, wan.traitData.WitheringFire.traitkey)
+        if checkWitheringFireBuff then
+            cWitheringFireInstantDmg = cWitheringFireInstantDmg + (nKillShotInstantDmg * nWitheringFire * nWitheringFireHitCap)
+        end
+    end
+
     local checkPhysicalDR = not wan.traitData.BlackArrow.known and wan.CheckUnitPhysicalDamageReduction() or 1
     local cKillShotCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
     local cKillShitCritValueBase = wan.ValueFromCritical(wan.CritChance, critChanceModBase, critDamageModBase)
@@ -203,6 +213,7 @@ local function CheckAbilityValue()
     cKillShotInstantDmg = cKillShotInstantDmg
         + (nKillShotInstantDmg * cHuntersPrey * checkPhysicalDR * cKillShotCritValue * cRazorFragments * cBorntoKill)
         + (cNoMercy * cKillShitCritValueBase)
+        + (cWitheringFireInstantDmg * cKillShotCritValue * cRazorFragments)
 
     cKillShotDotDmg = cKillShotDotDmg
         + (cBlackArrowDotDmg * cKillShitCritValueBase * cRazorFragments)
@@ -272,6 +283,10 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nBorntoKill = wan.GetTraitDescriptionNumbers(wan.traitData.BorntoKill.entryid, { 3 }) * 0.01
 
         nUnerringVision = wan.GetTraitDescriptionNumbers(wan.traitData.UnerringVision.entryid, { 2 })
+
+        local nWitheringFireValues = wan.GetTraitDescriptionNumbers(wan.traitData.WitheringFire.entryid, { 2, 3 })
+        nWitheringFireHitCap = nWitheringFireValues[1]
+        nWitheringFire = nWitheringFireValues[2] * 0.01
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

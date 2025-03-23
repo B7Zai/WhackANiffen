@@ -75,7 +75,7 @@ frameAvengingWrath:SetScript("OnEvent", AddonLoad)
 
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     if event == "SPELL_DATA_READY" then
-        abilityActive = wan.spellData.AvengingWrath.known and wan.spellData.AvengingWrath.id
+        abilityActive = not wan.spellData.AvengingWrath.isPassive and wan.spellData.AvengingWrath.known and wan.spellData.AvengingWrath.id
         wan.BlizzardEventHandler(frameAvengingWrath, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
         wan.SetUpdateRate(frameAvengingWrath, CheckAbilityValue, abilityActive)
     end

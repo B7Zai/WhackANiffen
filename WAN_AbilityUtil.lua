@@ -136,8 +136,8 @@ end
 function wan.IsSpellUsable(spellIdentifier)
     local isUsable, insufficientPower = C_Spell.IsSpellUsable(spellIdentifier)
     if not isUsable then return isUsable, insufficientPower end
-    local cooldownMS, gcdMS = GetSpellBaseCooldown(spellIdentifier)
 
+    local cooldownMS, gcdMS = GetSpellBaseCooldown(spellIdentifier)
     if cooldownMS > gcdMS then
         local _, _, _, _, _, _, _, _, spellId = UnitCastingInfo("player")
         if spellId == spellIdentifier then

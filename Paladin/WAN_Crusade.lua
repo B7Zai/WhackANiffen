@@ -12,7 +12,7 @@ local nCrusadeDmg, nCrusadeHeal, nCrusadeMaxRange = 0, 0, 15
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.PlayerState.Combat
-     or not wan.IsSpellUsable(wan.spellData.Crusade.id)
+        or not wan.IsSpellUsable(wan.spellData.Crusade.id)
     then
         wan.UpdateAbilityData(wan.spellData.Crusade.basename)
         wan.UpdateMechanicData(wan.spellData.Crusade.basename)
@@ -75,7 +75,7 @@ frameCrusade:SetScript("OnEvent", AddonLoad)
 
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     if event == "SPELL_DATA_READY" then
-        abilityActive = wan.spellData.Crusade.known and wan.spellData.Crusade.id
+        abilityActive = not wan.spellData.Crusade.isPassive and wan.spellData.Crusade.known and wan.spellData.Crusade.id
         wan.BlizzardEventHandler(frameCrusade, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
         wan.SetUpdateRate(frameCrusade, CheckAbilityValue, abilityActive)
     end
