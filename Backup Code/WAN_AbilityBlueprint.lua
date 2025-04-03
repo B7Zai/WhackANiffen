@@ -34,7 +34,7 @@ local function CheckAbilityValue()
     local critChanceModBase = 0
     local critDamageModBase = 0
 
-    local cInstantDmg = nDmg
+    local cInstantDmg = 0
     local cDotDmg = 0
     local cInstantDmgAoE = 0
     local cDotDmgAoE = 0
@@ -42,12 +42,14 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
+    local cDotDmgBase = 0
     local checkDebuff = wan.CheckUnitDebuff(targetUnitToken, wan.spellData.AbilityName.basename)
     if not checkDebuff then
         local dotPotency = wan.CheckDotPotency()
-        cDotDmg = cDotDmg + (nDotDmg * dotPotency)
+        cDotDmgBase = cDotDmgBase + (nDotDmg * dotPotency)
     end
 
+    local cInstantDmgAoEBase = 0
     for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
         local countCappedAbility = 0
 
@@ -58,7 +60,7 @@ local function CheckAbilityValue()
                 local dotUnitPotency = wan.CheckDotPotency(nDmg, nameplateUnitToken)
                 local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction()
 
-                cInstantDmgAoE = cInstantDmgAoE + (nDmg * checkPhysicalDR * dotUnitPotency)
+                cInstantDmgAoEBase = cInstantDmgAoEBase + (nDmg * checkPhysicalDR * dotUnitPotency)
                 countCappedAbility = countCappedAbility + 1
 
                 -- if countCappedAbility >= nBlessedChampionUnitCap then break end
@@ -106,7 +108,7 @@ frameAbilityName:SetScript("OnEvent", AddonLoad)
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "SPELL_DATA_READY" then
-        abilityActive = wan.spellData.AbilityName.known and wan.spellData.AbilityName.id
+        abilityActive = not wan.spellData.AbilityName.isPassive and wan.spellData.AbilityName.known and wan.spellData.AbilityName.id
         wan.BlizzardEventHandler(frameAbilityName, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
         wan.SetUpdateRate(frameAbilityName, CheckAbilityValue, abilityActive)
     end

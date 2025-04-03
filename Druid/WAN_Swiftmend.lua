@@ -50,6 +50,10 @@ local function CheckAbilityValue()
 
     local currentTime = GetTime()
 
+    local sWildGrwothBuff, nWildGrwothID = wan.spellData.WildGrowth.formattedName, wan.spellData.WildGrowth.id
+    local sRegrowth, nRegrowthID = wan.spellData.Regrowth.formattedName, wan.spellData.Regrowth.id
+    local sRejuvenation, nRejuvenationID = wan.spellData.Rejuvenation.formattedName, wan.spellData.Rejuvenation.id
+
     -- Update ability data
     if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
         local _, _, idValidGroupUnit = wan.ValidGroupMembers()
@@ -57,9 +61,10 @@ local function CheckAbilityValue()
         for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
             if idValidGroupUnit[groupUnitToken] and
-             (wan.auraData[groupUnitToken].buff_WildGrowth and wan.auraData[groupUnitToken].buff_WildGrowth.spellId == wan.spellData.WildGrowth.id
-                    or wan.auraData[groupUnitToken].buff_Regrowth and wan.auraData[groupUnitToken].buff_Regrowth == wan.spellData.Regrowth.id
-                    or wan.auraData[groupUnitToken].buff_Rejuvenation and wan.auraData[groupUnitToken].buff_Rejuvenation == wan.spellData.Rejuvenation.id) then
+                (wan.CheckUnitBuff(groupUnitToken, sWildGrwothBuff, nWildGrwothID)
+                    or wan.CheckUnitBuff(groupUnitToken, sRegrowth, nRegrowthID)
+                    or wan.CheckUnitBuff(groupUnitToken, sRejuvenation, nRejuvenationID))
+            then
 
                 local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
                 local cSwifmendInstantHeal = nSwifmendInstantHeal + cDreamSurge

@@ -14,6 +14,7 @@ local nGoForTheThroat = 0
 local nKillCleave, nKillCleaveSoftCap = 0, 0
 local nQuickShotProcChance, nQuickShotDmg, nArcaneShotDmg = 0, 0, 0
 local nSerpentineRhythm = 0
+local nTrainingExpert = 0
 local nBloodseeker = 0
 local nAMurderOfCrows, nAMurderOfCrowsStacks, nAMurderofCrownsStacksCap = 0, 0, 0
 local nBestialWrath = 0
@@ -105,6 +106,11 @@ local function CheckAbilityValue()
                 end
             end
         end
+    end
+
+    local cTrainingExpert = 1
+    if wan.traitData.TrainingExpert.known then
+        cTrainingExpert = cTrainingExpert + nTrainingExpert
     end
 
     -- a murder of crows trait layer
@@ -315,7 +321,7 @@ local function CheckAbilityValue()
             local checkBlackArrowDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.traitData.BlackArrow.traitkey)
 
             if checkBlackArrowDebuff then
-                cPhantomPain = cPhantomPain + (nKillCommandDmg * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cKillerInstinct * cBloodshed * nPhantomPain)
+                cPhantomPain = cPhantomPain + (nKillCommandDmg * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cTrainingExpert * cKillerInstinct * cBloodshed * nPhantomPain)
             end
         end
     end
@@ -325,7 +331,7 @@ local function CheckAbilityValue()
     local cKillCommandBaseCritValue = wan.ValueFromCritical(wan.CritChance, critChanceModBase, critDamageModBase)
 
     cKillCommandInstantDmg = cKillCommandInstantDmg
-        + (nKillCommandDmg * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cBestialWrath * cKillerInstinct * cBloodshed * cHowlOfThePackLeaderWyvern * cPackMentality * cExposedFlank * checkPhysicalDR * cKillCommandCritValue)
+        + (nKillCommandDmg * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cTrainingExpert * cBestialWrath * cKillerInstinct * cBloodshed * cHowlOfThePackLeaderWyvern * cPackMentality * cExposedFlank * checkPhysicalDR * cKillCommandCritValue)
         + (cQuickShotInstantDmg * cKillCommandBaseCritValue)
         + (cHowlOfThePackLeaderBoarInstantDmg * cKillCommandBaseCritValue)
 
@@ -333,7 +339,7 @@ local function CheckAbilityValue()
         + ((cAMurderOfCrows + cBloodseeker) * cKillCommandBaseCritValue)
 
     cKillCommandInstantDmgAoE = cKillCommandInstantDmgAoE
-        + (cKillCleaveInstantDmgAoE * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cBestialWrath * cKillerInstinct * cBloodshedAoE * cHowlOfThePackLeaderWyvern * cPackMentality * cKillCommandCritValue)
+        + (cKillCleaveInstantDmgAoE * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cTrainingExpert * cBestialWrath * cKillerInstinct * cBloodshedAoE * cHowlOfThePackLeaderWyvern * cPackMentality * cKillCommandCritValue)
         + (cExposedFlankInstantDmgAoE * cExposedFlank * cKillCommandCritValue)
         + (cQuickShotInstantDmgAoE * cKillCommandBaseCritValue)
         + (cHowlOfThePackLeaderBoarInstantDmgAoE * cKillCommandBaseCritValue)
@@ -394,6 +400,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nGoForTheThroat = wan.GetTraitDescriptionNumbers(wan.traitData.GofortheThroat.entryid, { 1 }) * 0.01
 
         nSerpentineRhythm = wan.GetTraitDescriptionNumbers(wan.traitData.SerpentineRhythm.entryid, { 1 }) * 0.01
+
+        nTrainingExpert = wan.GetTraitDescriptionNumbers(wan.traitData.TrainingExpert.entryid, { 1 }) * 0.01
 
         local nQuickShotValues = wan.GetTraitDescriptionNumbers(wan.traitData.QuickShot.entryid, { 1, 2 })
         nQuickShotProcChance = nQuickShotValues[1] * 0.01

@@ -19,7 +19,7 @@ local function CheckAbilityValue()
         return
     end
 
-    local currentPercentHealth = UnitPercentHealthFromGUID(playerGUID) or 1
+    local currentPercentHealth = wan.CheckUnitPercentHealth(playerGUID)
     local cShieldWall = nShieldWall
 
     local abilityValue = wan.UnitAbilityHealValue(playerUnitToken, cShieldWall, currentPercentHealth)

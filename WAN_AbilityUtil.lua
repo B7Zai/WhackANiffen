@@ -237,6 +237,17 @@ function wan.SoftCapOverflow(capStart, numTargets)
     return 1
 end
 
+--- math for traits that have dimishing returns and have no ceiling
+function wan.UncappedDamageOverflow(instanceNumber, Damage)
+    local value = 0
+
+    for x = 1, instanceNumber do
+        value = value + math.sqrt(2 / x)
+    end
+
+    return value * Damage
+end
+
 --- checks if any valid unit is targeting the player
 function wan.IsTanking()
     local isTanking = UnitDetailedThreatSituation("player", wan.TargetUnitID) or false
@@ -292,7 +303,7 @@ end
 
 --- check how much stacks / charges a spell holds
 function wan.CheckSpellCharges(spellIdentifier)
-    if not spellIdentifier then return 0 end
+    if not spellIdentifier then return 0, 0 end
 
     local chargeInfo = C_Spell.GetSpellCharges(spellIdentifier)
 
@@ -300,5 +311,17 @@ function wan.CheckSpellCharges(spellIdentifier)
         return chargeInfo.currentCharges, chargeInfo.maxCharges
     end
 
-    return 0
+    return 0, 0
+end
+
+function wan.CheckUnitMaxPower(unit, nPowerType)
+    local powerMax = UnitPowerMax(unit, nPowerType)
+
+    return powerMax
+end
+
+function wan.CheckUnitPower(unit, nPowerType)
+    local currentPower = UnitPower(unit, nPowerType)
+
+    return currentPower
 end

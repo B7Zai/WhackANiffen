@@ -17,6 +17,8 @@ local nLightoftheTitans = 0
 local nEternalFlameHotHeal, nEternalFlame = 0, 0
 local nDawnlightHotHeal = 0
 local nHandoftheProtector = 0
+local bDawnlight, sDawnlightBuff  = false, "Dawnlight"
+local bEternalFlame, sEternalFlameBuff = false, "EternalFlame"
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -70,13 +72,7 @@ local function CheckAbilityValue()
 
     ---- HERALD OF THE SUN TRAITS ----
 
-    local bDawnlight = wan.traitData.Dawnlight.known
-    local sDawnlightFormattedBuffName = wan.traitData.Dawnlight.traitkey
-
-    local bEternalFlame = wan.traitData.EternalFlame.known
-    local sEternalFlameFormattedBuffName = wan.traitData.EternalFlame.traitkey
-
-    local hotKeys = { sDawnlightFormattedBuffName, sEternalFlameFormattedBuffName, sLightoftheTitansFormattedBuffName }
+    local hotKeys = { sDawnlightBuff, sEternalFlameBuff, sLightoftheTitansFormattedBuffName }
     local cWordofGloryCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
     local cWordofGloryCritValueBase = wan.ValueFromCritical(wan.CritChance, critChanceModBase, critDamageModBase)
     local currentTime = GetTime()
@@ -92,7 +88,7 @@ local function CheckAbilityValue()
                 local cWordofGloryInstantHeal = 0
                 local cWordofGloryHotHeal = 0
 
-                local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
+                local currentPercentHealth = wan.CheckUnitPercentHealth(groupUnitGUID)
                 local hotPotency = wan.HotPotency(groupUnitToken, currentPercentHealth, nWordofGloryHeal)
                 local levelScale = wan.UnitState.LevelScale[groupUnitToken] or 1
                 wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
@@ -110,11 +106,20 @@ local function CheckAbilityValue()
 
                 ---- PROTECTION TRAITS ----
 
+                local cProtection = 1
+                if wan.spellData.MasteryDivineBulwark.known then
+                    if groupUnitGUID ~= playerGUID then
+                        cProtection = cProtection + 1
+                    else
+                        cProtection = cProtection + 3
+                    end
+                end
+
                 local cLightoftheTitans = 0
                 if bLightoftheTitans then
                     cLightoftheTitans = cLightoftheTitans + (nWordofGloryHeal * nLightoftheTitans)
 
-                    wan.HotValue[groupUnitToken][sLightoftheTitansFormattedBuffName] = cLightoftheTitans * cWordofGloryCritValue * hotPotency * levelScale
+                    wan.HotValue[groupUnitToken][sLightoftheTitansFormattedBuffName] = cLightoftheTitans * cProtection * cWordofGloryCritValue * hotPotency * levelScale
                 end
 
                 local cHandoftheProtector = 1
@@ -128,7 +133,7 @@ local function CheckAbilityValue()
                 if bDawnlight then
                     cDawnlightHotHeal = cDawnlightHotHeal + nDawnlightHotHeal
 
-                    wan.HotValue[groupUnitToken][sDawnlightFormattedBuffName] = cDawnlightHotHeal * cWordofGloryCritValueBase * hotPotency * levelScale
+                    wan.HotValue[groupUnitToken][sDawnlightBuff] = cDawnlightHotHeal * cWordofGloryCritValueBase * hotPotency * levelScale
                 end
 
                 local cEternalFlame = 1
@@ -140,15 +145,15 @@ local function CheckAbilityValue()
                         cEternalFlame = cEternalFlame + nEternalFlame
                     end
 
-                    wan.HotValue[groupUnitToken][sEternalFlameFormattedBuffName] = cEternalFlameHotHeal * cEternalFlame * cWordofGloryCritValue * hotPotency * levelScale
+                    wan.HotValue[groupUnitToken][sEternalFlameBuff] = cEternalFlameHotHeal * cEternalFlame * cWordofGloryCritValue * hotPotency * levelScale
                 end
 
                 cWordofGloryInstantHeal = cWordofGloryInstantHeal
-                    + (nWordofGloryHeal * cHealingHands * cHandoftheProtector * cMasteryLightbringer * cEternalFlame * cWordofGloryCritValue * levelScale)
+                    + (nWordofGloryHeal * cHealingHands * cHandoftheProtector * cMasteryLightbringer * cEternalFlame * cWordofGloryCritValue * levelScale * cProtection)
                     + (cRecompense * cHealingHands * cMasteryLightbringer * cEternalFlame * cWordofGloryCritValue * levelScale)
 
                 cWordofGloryHotHeal = cWordofGloryHotHeal
-                    + (cLightoftheTitans * cHandoftheProtector * hotPotency * cWordofGloryCritValue * levelScale)
+                    + (cLightoftheTitans * cHandoftheProtector * hotPotency * cWordofGloryCritValue * levelScale * cProtection)
                     + (cDawnlightHotHeal * hotPotency * cWordofGloryCritValueBase * levelScale)
                     + (cEternalFlameHotHeal * hotPotency * cEternalFlame * cWordofGloryCritValue * levelScale)
 
@@ -178,7 +183,7 @@ local function CheckAbilityValue()
         local cWordofGloryInstantHeal = 0
         local cWordofGloryHotHeal = 0
 
-        local currentPercentHealth = UnitPercentHealthFromGUID(playerGUID) or 1
+        local currentPercentHealth = wan.CheckUnitPercentHealth(playerGUID)
         local hotPotency = wan.HotPotency(playerUnitToken, currentPercentHealth, nWordofGloryHeal)
         wan.HotValue[playerUnitToken] = wan.HotValue[playerUnitToken] or {}
 
@@ -191,11 +196,16 @@ local function CheckAbilityValue()
 
         ---- PROTECTION TRAITS ----
 
+        local cProtection = 1
+        if wan.spellData.MasteryDivineBulwark.known then
+            cProtection = cProtection + 3
+        end
+
         local cLightoftheTitans = 0
         if bLightoftheTitans then
             cLightoftheTitans = cLightoftheTitans + (nWordofGloryHeal * nLightoftheTitans)
 
-            wan.HotValue[playerUnitToken][sLightoftheTitansFormattedBuffName] = cLightoftheTitans * cWordofGloryCritValue * hotPotency
+            wan.HotValue[playerUnitToken][sLightoftheTitansFormattedBuffName] = cLightoftheTitans * cWordofGloryCritValue * hotPotency * cProtection
         end
 
         ---- HERALD OF THE SUN TRAITS ----
@@ -204,7 +214,7 @@ local function CheckAbilityValue()
         if bDawnlight then
             cDawnlightHotHeal = cDawnlightHotHeal + nDawnlightHotHeal
 
-            wan.HotValue[playerUnitToken][sDawnlightFormattedBuffName] = cDawnlightHotHeal * cWordofGloryCritValueBase * hotPotency
+            wan.HotValue[playerUnitToken][sDawnlightBuff] = cDawnlightHotHeal * cWordofGloryCritValueBase * hotPotency
         end
 
         local cEternalFlame = 1
@@ -213,15 +223,15 @@ local function CheckAbilityValue()
             cEternalFlameHotHeal = cEternalFlameHotHeal + nEternalFlameHotHeal
             cEternalFlame = cEternalFlame + nEternalFlame
 
-            wan.HotValue[playerUnitToken][sEternalFlameFormattedBuffName] = cEternalFlameHotHeal * cEternalFlame * cWordofGloryCritValue * hotPotency
+            wan.HotValue[playerUnitToken][sEternalFlameBuff] = cEternalFlameHotHeal * cEternalFlame * cWordofGloryCritValue * hotPotency
         end
 
         cWordofGloryInstantHeal = cWordofGloryInstantHeal
-            + (nWordofGloryHeal * cMasteryLightbringer * cEternalFlame * cWordofGloryCritValue)
+            + (nWordofGloryHeal * cMasteryLightbringer * cEternalFlame * cWordofGloryCritValue * cProtection)
             + (cRecompense * cMasteryLightbringer * cEternalFlame * cWordofGloryCritValue)
 
         cWordofGloryHotHeal = cWordofGloryHotHeal
-            + (cLightoftheTitans * hotPotency * cWordofGloryCritValue)
+            + (cLightoftheTitans * hotPotency * cWordofGloryCritValue * cProtection)
             + (cDawnlightHotHeal * cWordofGloryCritValueBase)
             + (cEternalFlameHotHeal * cEternalFlame * cWordofGloryCritValue)
 
@@ -286,6 +296,12 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nEternalFlame = nEternalFlameValues[2] * 0.01
 
         nHandoftheProtector = wan.GetTraitDescriptionNumbers(wan.traitData.HandoftheProtector.entryid, { 1 }) * 0.01
+
+        bDawnlight = wan.traitData.Dawnlight.known
+        sDawnlightBuff = wan.traitData.Dawnlight.traitkey
+        
+        bEternalFlame = wan.traitData.EternalFlame.known
+        sEternalFlameBuff = wan.traitData.EternalFlame.traitkey
     end
 
     if event == "HEALERMODE_FRAME_TOGGLE" then

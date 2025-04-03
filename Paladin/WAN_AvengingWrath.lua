@@ -27,7 +27,7 @@ local function CheckAbilityValue()
         for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
             if idValidGroupUnit[groupUnitToken] then
-                local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
+                local currentPercentHealth = wan.CheckUnitPercentHealth(groupUnitGUID)
                 local cAvengingWrath = nAvengingWrathHeal 
 
                 local abilityValue = wan.UnitAbilityHealValue(groupUnitToken, cAvengingWrath, currentPercentHealth)
@@ -49,7 +49,7 @@ local function CheckAbilityValue()
         wan.UpdateAbilityData(wan.spellData.AvengingWrath.basename, damageValue, wan.spellData.AvengingWrath.icon, wan.spellData.AvengingWrath.name)
 
         -- Defensive value
-        local currentPercentHealth = UnitPercentHealthFromGUID(playerGUID) or 1
+        local currentPercentHealth = wan.CheckUnitPercentHealth(playerGUID)
         local cAvengingWrathHeal = wan.UnitAbilityHealValue(playerUnitToken, nAvengingWrathHeal, currentPercentHealth)
 
         -- Update ability data

@@ -22,7 +22,7 @@ end
 
 -- Checks for a valid unit
 function wan.ValidUnitInRange(spellIdentifier, maxRange)
-    if not UnitExists(wan.TargetUnitID) or not UnitCanAttack("player", wan.TargetUnitID) then
+    if not UnitExists(wan.TargetUnitID) or not UnitCanAttack("player", wan.TargetUnitID) or UnitIsDead(wan.TargetUnitID) then
         return false
     end
 
@@ -39,7 +39,7 @@ end
 
 -- Checks for valid units
 function wan.ValidUnitInRangeAoE(unit, spellIdentifier, maxRange)
-    if not UnitExists(unit) or not UnitCanAttack("player", unit) then
+    if not UnitExists(unit) or not UnitCanAttack("player", unit) or UnitIsDead(unit) then
         return false
     end
 

@@ -31,7 +31,7 @@ local function CheckAbilityValue()
     local roleValue = {}
 
     for groupUnitToken, _ in pairs(wan.GroupUnitID) do
-        if idValidGroupUnit[groupUnitToken] then
+        if idValidGroupUnit[groupUnitToken] and idValidGroupUnit[groupUnitToken] ~= playerGUID then
             if wan.UnitState.Role[groupUnitToken] == "TANK" then
                 roleValue[groupUnitToken] = nSymbioticRelationship * 2
             elseif wan.UnitState.Role[groupUnitToken] == "HEALER" then

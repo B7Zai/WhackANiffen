@@ -2,7 +2,7 @@
 ## Title: Whack-A-Niffen
 ## Notes: Not much yet.
 ## Author: 7Banzai
-## Version: 0.2.0
+## Version: 0.7.0
 ## SavedVariables: WhackANiffenDB
 ## SavedVariablesPerCharacter:
 ## X-Curse-Project-ID: 1143530
@@ -20,7 +20,7 @@ WAN_TraitData.lua
 WAN_AbilityUtil.lua
 WAN_AbilityUtilOffensive.lua
 WAN_AbilityUtilSupport.lua
-WAN_AbilityData.lua
+WAN_SpellData.lua
 
 # Display
 WAN_FrameUtil.lua
@@ -30,6 +30,34 @@ WAN_HealingFrame.lua
 WAN_HealingFrameRaid.lua
 WAN_SupportFrame.lua
 WAN_SupportFrameRaid.lua
+
+# Demon Hunter
+Demon Hunter\WAN_BladeDance.lua
+Demon Hunter\WAN_BulkExtraction.lua
+Demon Hunter\WAN_ChaosStrike.lua
+Demon Hunter\WAN_ConsumeMagic.lua
+Demon Hunter\WAN_Darkness.lua
+Demon Hunter\WAN_DemonsBite.lua
+Demon Hunter\WAN_DemonSpikes.lua
+Demon Hunter\WAN_EssenceBreak.lua
+Demon Hunter\WAN_EyeBeam.lua
+Demon Hunter\WAN_FelBarrage.lua
+Demon Hunter\WAN_Felblade.lua
+Demon Hunter\WAN_FelDevastation.lua
+Demon Hunter\WAN_FelRush.lua
+Demon Hunter\WAN_FieryBrand.lua
+Demon Hunter\WAN_GlaiveTempest.lua
+Demon Hunter\WAN_ImmolationAura.lua
+Demon Hunter\WAN_Metamorphosis.lua
+Demon Hunter\WAN_SigilofFlame.lua
+Demon Hunter\WAN_SigilofSpite.lua
+Demon Hunter\WAN_SoulBarrier.lua
+Demon Hunter\WAN_SoulCarver.lua
+Demon Hunter\WAN_SoulCleave.lua
+Demon Hunter\WAN_SpiritBomb.lua
+Demon Hunter\WAN_TheHunt.lua
+Demon Hunter\WAN_ThrowGlaive.lua
+Demon Hunter\WAN_VengefulRetreat.lua
 
 # Druid
 Druid\WAN_AdaptiveSwarm.lua

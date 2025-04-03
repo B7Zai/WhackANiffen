@@ -73,7 +73,7 @@ traitFrame:SetScript("OnEvent", function(self, event, ...)
 
     if event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_ENTERING_WORLD" then
 
-        C_Timer.After(2, function()
+        C_Timer.After(1, function()
             wan.WipeTable(wan.AbilityData)
             wan.WipeTable(wan.MechanicData)
             wan.WipeTable(wan.HealingData)

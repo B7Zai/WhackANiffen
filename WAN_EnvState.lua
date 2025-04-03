@@ -297,7 +297,7 @@ local function OnEvent(self, event, ...)
     end
 
     -- checks if the player is dead or not
-    if event == "PLAYER_ALIVE" or event == "PLAYER_DEAD" or event == "PLAYER_ENTERING_WORLD" then
+    if event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" or event == "PLAYER_DEAD" or event == "PLAYER_ENTERING_WORLD" then
         wan.PlayerState.IsDead = UnitIsDeadOrGhost("player")
         wan.PlayerState.Status = wan.PlayerState.IsDead or not wan.PlayerState.Mounted or wan.PlayerState.InVehicle
     end
@@ -374,6 +374,7 @@ local stateFrame = CreateFrame("Frame")
 wan.RegisterBlizzardEvents(stateFrame,
     "PLAYER_ALIVE",
     "PLAYER_DEAD",
+    "PLAYER_UNGHOST",
     "PLAYER_ENTERING_WORLD",
     "PLAYER_LOGOUT",
     "PLAYER_REGEN_DISABLED",
