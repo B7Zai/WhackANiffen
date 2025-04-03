@@ -33,6 +33,7 @@ WAN_SupportFrameRaid.lua
 
 # Demon Hunter
 Demon Hunter\WAN_BladeDance.lua
+Demon Hunter\WAN_Blur.lua
 Demon Hunter\WAN_BulkExtraction.lua
 Demon Hunter\WAN_ChaosStrike.lua
 Demon Hunter\WAN_ConsumeMagic.lua

@@ -59,7 +59,7 @@ local function CheckAbilityValue()
     local cImmolationAuraDotDmgBaseAoE = 0
     local cImmolationAuraInstantDmgBaseAoE = 0
     for nameplateUnitToken, _ in pairs(idValidUnit) do
-        local checkDotPotency = wan.CheckDotPotency(nil, nameplateUnitToken)
+        local checkDotPotency = wan.CheckDotPotency(nImmolationAuraInstantDmg, nameplateUnitToken)
 
         cImmolationAuraDotDmgBaseAoE = cImmolationAuraDotDmgBaseAoE + (nImmolationAuraDotDmg * checkDotPotency)
         cImmolationAuraInstantDmgBaseAoE = cImmolationAuraInstantDmgBaseAoE + nImmolationAuraInstantDmg
