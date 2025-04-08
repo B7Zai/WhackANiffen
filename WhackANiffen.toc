@@ -2,7 +2,7 @@
 ## Title: Whack-A-Niffen
 ## Notes: Not much yet.
 ## Author: 7Banzai
-## Version: 0.7.0
+## Version: 0.7.2
 ## SavedVariables: WhackANiffenDB
 ## SavedVariablesPerCharacter:
 ## X-Curse-Project-ID: 1143530

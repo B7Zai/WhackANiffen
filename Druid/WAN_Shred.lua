@@ -7,6 +7,8 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 local abilityActive = false
 local checkDebuffs = {"Rake", "Thrash", "Rip", "FeralFrenzy", "Tear", "FrenziedAssault"}
 local nShredDmg, nThrashDotDmg = 0, 0
+local nShredMaxRange = 0
+local sCatForm = "CatForm"
 
 -- Init trait data
 local nPouncingStrikes = 0
@@ -16,15 +18,16 @@ local nStrikeForTheHeart = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
+    if not wan.PlayerState.Status
         or not wan.IsSpellUsable(wan.spellData.Shred.id)
+        or not wan.CheckUnitBuff(nil, sCatForm)
     then
         wan.UpdateAbilityData(wan.spellData.Shred.basename)
         return
     end
 
     -- Check for valid unit
-    local isValidUnit = wan.ValidUnitBoolCounter(nil, wan.spellData.Swipe.maxRange)
+    local isValidUnit = wan.ValidUnitBoolCounter(nil, nShredMaxRange)
     if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.Shred.basename)
         return
@@ -102,6 +105,7 @@ local function AddonLoad(self, event, addonName)
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nShredDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Shred.id, { 1 })
+
             nThrashDotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Thrash.id, { 2 })
         end
     end)
@@ -116,6 +120,10 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         abilityActive = wan.spellData.Shred.known and wan.spellData.Shred.id
         wan.BlizzardEventHandler(frameShred, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
         wan.SetUpdateRate(frameShred, CheckAbilityValue, abilityActive)
+
+        nShredMaxRange = not wan.spellData.Swipe.known and 8 or wan.spellData.Swipe.maxRange
+
+        sCatForm = wan.spellData.CatForm.formattedName
     end
 
     if event == "TRAIT_DATA_READY" then

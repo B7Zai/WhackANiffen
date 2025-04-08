@@ -18,9 +18,12 @@ local nStrategicInfusion = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
-    or wan.auraData.player.buff_BearForm or wan.auraData.player.buff_MoonkinForm
-    or not wan.PlayerState.InGroup or not wan.PlayerState.InHealerMode
+    if not wan.PlayerState.Status
+        or not wan.PlayerState.InGroup
+        or not wan.PlayerState.InHealerMode
+        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.MoonkinForm.formattedName)
         or not wan.IsSpellUsable(wan.spellData.WildGrowth.id)
     then
         wan.UpdateMechanicData(wan.spellData.WildGrowth.basename)

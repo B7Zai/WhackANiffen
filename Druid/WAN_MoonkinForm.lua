@@ -14,9 +14,11 @@ local nMoonkinForm, nMoonkinFormMaxRange = 0, 70
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player.buff_MoonkinForm
-        or (wan.auraData.player.buff_CatForm and not wan.PlayerState.Combat)
-        or specName ~= currentSpecName or not wan.IsSpellUsable(wan.spellData.MoonkinForm.id)
+    if not wan.PlayerState.Status
+        or specName ~= currentSpecName
+        or wan.CheckUnitBuff(nil, wan.spellData.MoonkinForm.formattedName)
+        or (wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName) and not wan.PlayerState.Combat)
+        or not wan.IsSpellUsable(wan.spellData.MoonkinForm.id)
     then
         wan.UpdateMechanicData(wan.spellData.MoonkinForm.basename)
         return

@@ -18,7 +18,9 @@ local nPowerOfGoldrinn, nPowerOfGoldrinnProcChance = 0, 0.33
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm or wan.auraData.player.buff_BearForm
+    if not wan.PlayerState.Status
+        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
         or (wan.spellData.Starfall.known and not wan.IsSpellUsable(wan.spellData.Starfall.id) or not wan.IsSpellUsable(wan.spellData.Starsurge.id))
     then
         wan.UpdateAbilityData(wan.spellData.Starsurge.basename)

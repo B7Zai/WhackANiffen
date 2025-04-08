@@ -27,8 +27,8 @@ local function CheckAbilityValue()
     end
 
     -- Check for valid unit
-    local _, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, wan.spellData.Swipe.maxRange)
-    if countValidUnit == 0 then
+    local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, wan.spellData.Swipe.maxRange)
+    if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.Swipe.basename)
         return
     end

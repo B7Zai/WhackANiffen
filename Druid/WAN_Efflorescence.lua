@@ -15,10 +15,14 @@ local nSpringBlossoms = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
-    or wan.auraData.player.buff_BearForm or wan.auraData.player.buff_MoonkinForm
-    or not wan.PlayerState.InGroup or not wan.PlayerState.Combat
-    or wan.auraData.player.buff_Efflorescence or not wan.IsSpellUsable(wan.spellData.Efflorescence.id)
+    if not wan.PlayerState.Status 
+        or not wan.PlayerState.InGroup
+        or not wan.PlayerState.Combat
+        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.MoonkinForm.formattedName)
+        or wan.auraData.player.buff_Efflorescence
+        or not wan.IsSpellUsable(wan.spellData.Efflorescence.id)
     then
         wan.UpdateHealingData(nil, wan.spellData.Efflorescence.basename)
         return

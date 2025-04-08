@@ -23,8 +23,8 @@ local nDreamSurge = 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or wan.auraData.player.buff_Prowl
-        or (wan.auraData.player.buff_CatForm and not wan.auraData.player.buff_PredatorySwiftness)
-        or (wan.auraData.player.buff_BearForm and not wan.auraData.player.buff_DreamofCenarius)
+        or (wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName) and not wan.auraData.player.buff_PredatorySwiftness)
+        or (wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName) and not wan.auraData.player.buff_DreamofCenarius)
         or not wan.IsSpellUsable(wan.spellData.Regrowth.id)
     then
         wan.UpdateMechanicData(wan.spellData.Regrowth.basename)

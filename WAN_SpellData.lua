@@ -38,16 +38,17 @@ local function GetSpellData(spellDataArray)
                 if spellType == Enum.SpellBookItemType.Spell and not isOffSpec then
                     local baseSpellID = FindBaseSpellByID(spellID)
                     local overriddenSpellID = C_Spell.GetOverrideSpell(spellID)
-                    local baseSpellName = C_Spell.GetSpellName(baseSpellID)
+                    local baseSpellName = C_Spell.GetSpellName(baseSpellID) -- original spell name
                     local spellInfo = C_Spell.GetSpellInfo(overriddenSpellID)
                     local keyName = wan.FormatNameForKey(baseSpellName)
-                    local formattedSpellName = wan.FormatNameForKey(spellInfo.name)
-                    local formattedSubName = wan.FormatNameForKey(spellBookItemInfo.subName)
+                    local formattedSpellName = wan.FormatNameForKey(spellInfo.name) -- current spell name
+                    local formattedSubSpellName = wan.FormatNameForKey(spellBookItemInfo.subName)
 
                     if spellInfo then
+                        local existingEntry = formattedSubSpellName and rawget(spellDataArray, keyName)
 
-                        if formattedSubName and spellDataArray[keyName] then
-                            spellDataArray[formattedSubName..keyName] = {
+                        if formattedSubSpellName and existingEntry and overriddenSpellID ~= existingEntry.id then
+                            spellDataArray[formattedSubSpellName..keyName] = {
                                 name = spellBookItemInfo.subName.." "..spellInfo.name,
                                 icon = spellInfo.iconID,
                                 originalIconID = spellInfo.originalIconID,
@@ -56,7 +57,7 @@ local function GetSpellData(spellDataArray)
                                 maxRange = spellInfo.maxRange,
                                 id = overriddenSpellID,
                                 basename = keyName,
-                                formattedName = formattedSubName..formattedSpellName,
+                                formattedName = formattedSubSpellName..formattedSpellName,
                                 isPassive = isPassive,
                                 known = true
                             }
@@ -128,7 +129,6 @@ local function GetSpellData(spellDataArray)
             end
         end
     end
-    wan.CustomEvents("SPELL_DATA_READY")
 end
 
 local frameAbilityData = CreateFrame("Frame")
@@ -141,5 +141,6 @@ wan.RegisterBlizzardEvents(frameAbilityData,
 frameAbilityData:SetScript("OnEvent", function(self, event, ...)
     if event == "SPELLS_CHANGED" or (event == "UNIT_AURA" and ... == "player") or event == "PLAYER_ENTERING_WORLD" then
         GetSpellData(wan.spellData)
+        wan.CustomEvents("SPELL_DATA_READY")
     end
 end)

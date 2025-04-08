@@ -11,7 +11,8 @@ local nProwl, nProwlMaxRange = 0, 60
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
+    if not wan.PlayerState.Status
+        or not wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
         or not wan.IsSpellUsable(wan.spellData.Prowl.id)
     then
         wan.UpdateMechanicData(wan.spellData.Prowl.basename)

@@ -11,8 +11,10 @@ local rageMax = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.auraData.player.buff_BearForm
-        or not wan.IsTanking() or not wan.IsSpellUsable(wan.spellData.BristlingFur.id)
+    if not wan.PlayerState.Status 
+        or not wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
+        or not wan.IsTanking()
+        or not wan.IsSpellUsable(wan.spellData.BristlingFur.id)
     then
         wan.UpdateMechanicData(wan.spellData.BristlingFur.basename)
         return

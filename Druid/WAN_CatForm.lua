@@ -12,8 +12,10 @@ local nCatForm, nCatFormMaxRange = 0, 20
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
-        or specName ~= currentSpecName or not wan.IsSpellUsable(wan.spellData.CatForm.id)
+    if not wan.PlayerState.Status
+        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
+        or specName ~= currentSpecName
+        or not wan.IsSpellUsable(wan.spellData.CatForm.id)
     then
         wan.UpdateMechanicData(wan.spellData.CatForm.basename)
         return

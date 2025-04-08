@@ -15,7 +15,8 @@ local nMasterShapeshifter, nMasterShapeshifterCombo = 0, 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm 
+    if not wan.PlayerState.Status 
+        or not wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName) 
         or wan.auraData.player.buff_Prowl or not wan.IsSpellUsable(wan.spellData.Rip.id)
     then
         wan.UpdateAbilityData(wan.spellData.Rip.basename)

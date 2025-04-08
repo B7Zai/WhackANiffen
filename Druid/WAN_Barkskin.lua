@@ -16,7 +16,8 @@ local nBarkskin = 0
 local function CheckAbilityValue()
 
     if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or wan.auraData.player.buff_Barkskin or not wan.IsSpellUsable(wan.spellData.Barkskin.id)
+        or wan.auraData.player.buff_Barkskin
+        or not wan.IsSpellUsable(wan.spellData.Barkskin.id)
     then
         wan.UpdateMechanicData(wan.spellData.Barkskin.basename)
         return

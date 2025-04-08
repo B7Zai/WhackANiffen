@@ -20,8 +20,8 @@ local nCosmicRapidity = 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or wan.auraData.player.buff_Prowl
-        or (wan.auraData.player.buff_CatForm and not wan.traitData.LunarInspiration.known)
-        or (wan.auraData.player.buff_BearForm and wan.PlayerState.Role ~= "TANK")
+        or (wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName) and not wan.traitData.LunarInspiration.known)
+        or (wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName) and wan.PlayerState.Role ~= "TANK")
         or not wan.IsSpellUsable(wan.spellData.Moonfire.id)
     then
         wan.UpdateAbilityData(wan.spellData.Moonfire.basename)

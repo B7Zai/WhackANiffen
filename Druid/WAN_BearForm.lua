@@ -13,8 +13,10 @@ local nBearForm, nBearFormMaxRange = 0, 20
 -- Ability value calculation
 local function CheckAbilityValue()
 
-    if not wan.PlayerState.Status or wan.auraData.player.buff_BearForm
-        or wan.auraData.player.buff_Prowl or specName ~= currentSpecName
+    if not wan.PlayerState.Status 
+        or specName ~= currentSpecName
+        or wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.Prowl.formattedName)
         or not wan.IsSpellUsable(wan.spellData.BearForm.id)
     then
         wan.UpdateMechanicData(wan.spellData.BearForm.basename)

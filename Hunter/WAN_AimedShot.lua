@@ -8,6 +8,8 @@ local abilityActive = false
 local nAimedShotDmg = 0
 
 -- Init trait datat
+local bPreciseShots, sPreciseShots = false, "PreciseShots"
+local sTrueShot = "TrueShot"
 local nEyesintheSky = 0
 local nPenetratingShots = 0
 local nTrickShots, nTrickShotsUnitCap = 0, 0
@@ -271,6 +273,10 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "TRAIT_DATA_READY" then
+
+        bPreciseShots = wan.traitData.PreciseShots.known
+        sPreciseShots = wan.traitData.PreciseShots.traitkey
+
         nEyesintheSky = wan.GetSpellDescriptionNumbers(wan.spellData.EyesintheSky.id, { 4 }) * 0.01
 
         nPenetratingShots = wan.GetTraitDescriptionNumbers(wan.traitData.PenetratingShots.entryid, { 1 }) * 0.01
@@ -280,6 +286,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nTrickShotsUnitCap = nTrickShotsValues[1]
 
         nAspectoftheHydra = wan.GetTraitDescriptionNumbers(wan.traitData.AspectoftheHydra.entryid, { 1 }) * 0.01
+
+        sTrueShot = wan.traitData.TrueShot.traitkey
 
         nPrecisionDetonation = wan.GetTraitDescriptionNumbers(wan.traitData.PrecisionDetonation.entryid, { 1 }) * 0.01
 

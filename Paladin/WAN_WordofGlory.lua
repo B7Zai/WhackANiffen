@@ -198,7 +198,7 @@ local function CheckAbilityValue()
 
         local cProtection = 1
         if wan.spellData.MasteryDivineBulwark.known then
-            cProtection = cProtection + 3
+            cProtection = 3
         end
 
         local cLightoftheTitans = 0

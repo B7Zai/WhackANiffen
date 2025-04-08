@@ -12,8 +12,10 @@ local nRageOfTheSleeper = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.auraData.player.buff_BearForm
-        or not wan.PlayerState.Combat or wan.auraData.player.buff_RageoftheSleeper
+    if not wan.PlayerState.Status
+    or not wan.PlayerState.Combat
+        or not wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
+        or wan.auraData.player.buff_RageoftheSleeper
         or not wan.IsSpellUsable(wan.spellData.RageoftheSleeper.id)
     then
         wan.UpdateMechanicData(wan.spellData.RageoftheSleeper.basename)

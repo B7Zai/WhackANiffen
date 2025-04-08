@@ -20,8 +20,10 @@ local nMasterShapeshifter, nMasterShapeshifterCombo = 0, 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
-        or wan.auraData.player.buff_Prowl or not wan.IsSpellUsable(wan.spellData.FerociousBite.id)
+    if not wan.PlayerState.Status 
+        or not wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
+        or wan.auraData.player.buff_Prowl
+        or not wan.IsSpellUsable(wan.spellData.FerociousBite.id)
     then
         wan.UpdateAbilityData(wan.spellData.FerociousBite.basename)
         return

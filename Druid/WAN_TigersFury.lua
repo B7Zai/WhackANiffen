@@ -13,8 +13,9 @@ local currentEnergy, energyMax, energyPercentage = 0, 0, 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
-        or not wan.PlayerState.Combat or not wan.IsSpellUsable(wan.spellData.TigersFury.id)
+    if not wan.PlayerState.Status or not wan.PlayerState.Combat
+        or not wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
+        or not wan.IsSpellUsable(wan.spellData.TigersFury.id)
     then
         wan.UpdateMechanicData(wan.spellData.TigersFury.basename)
         return

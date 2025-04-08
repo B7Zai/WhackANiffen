@@ -18,8 +18,9 @@ local nAstronomicalImpact = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
-    or wan.auraData.player.buff_BearForm
+    if not wan.PlayerState.Status 
+        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
         or not wan.IsSpellUsable(wan.spellData.StellarFlare.id)
     then
         wan.UpdateAbilityData(wan.spellData.StellarFlare.basename)

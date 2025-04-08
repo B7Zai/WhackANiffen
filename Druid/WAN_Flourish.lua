@@ -12,9 +12,12 @@ local nFlourish = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
-        or wan.auraData.player.buff_BearForm or wan.auraData.player.buff_MoonkinForm
-        or not wan.PlayerState.Combat or not wan.IsSpellUsable(wan.spellData.Flourish.id)
+    if not wan.PlayerState.Status
+        or not wan.PlayerState.Combat
+        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.MoonkinForm.formattedName)
+        or not wan.IsSpellUsable(wan.spellData.Flourish.id)
     then
         wan.UpdateMechanicData(wan.spellData.Flourish.basename)
         wan.UpdateSupportData(nil, wan.spellData.Flourish.basename)

@@ -12,8 +12,10 @@ local nTranquility = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
-        or wan.auraData.player.buff_BearForm or wan.auraData.player.buff_MoonkinForm
+    if not wan.PlayerState.Status 
+        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.MoonkinForm.formattedName)
         or not wan.PlayerState.Combat or not wan.IsSpellUsable(wan.spellData.Tranquility.id)
     then
         wan.UpdateMechanicData(wan.spellData.Tranquility.basename)

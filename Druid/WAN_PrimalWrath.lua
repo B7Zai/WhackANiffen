@@ -16,8 +16,10 @@ local nRipAndTear = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.auraData.player.buff_CatForm
-        or comboPercentage < 80 or wan.auraData.player.buff_Prowl
+    if not wan.PlayerState.Status
+        or comboPercentage < 80
+        or not wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
+        or wan.auraData.player.buff_Prowl
         or not wan.IsSpellUsable(wan.spellData.PrimalWrath.id)
     then
         wan.UpdateAbilityData(wan.spellData.PrimalWrath.basename)

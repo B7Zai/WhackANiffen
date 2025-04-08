@@ -16,7 +16,8 @@ local nMasterShapeshifter = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.auraData.player.buff_BearForm
+    if not wan.PlayerState.Status 
+        or not wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
         or not wan.IsSpellUsable(wan.spellData.Ironfur.id)
     then
         wan.UpdateAbilityData(wan.spellData.Ironfur.basename)

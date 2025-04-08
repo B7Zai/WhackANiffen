@@ -10,8 +10,10 @@ local nForceOfNature = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player.buff_CatForm
-        or wan.auraData.player.buff_BearForm or not wan.IsSpellUsable(wan.spellData.ForceofNature.id)
+    if not wan.PlayerState.Status 
+        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
+        or wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
+        or not wan.IsSpellUsable(wan.spellData.ForceofNature.id)
     then
         wan.UpdateMechanicData(wan.spellData.ForceofNature.basename)
         return
