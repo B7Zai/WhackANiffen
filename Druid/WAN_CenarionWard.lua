@@ -11,7 +11,7 @@ local nMasteryHarmony = 0
 
 -- Init trait data
 local nHarmoniousBlooming = 2
-local nStrategicInfusion = 0
+local bStrategicInfusion, sStrategicInfusion, nStrategicInfusion = false, "StrategicInfusion", 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -31,25 +31,25 @@ local function CheckAbilityValue()
     local critChanceModHot = 0
     local critChanceModInstant = 0
 
-    -- check stategic infusion trait layer
-    if wan.traitData.StrategicInfusion.known and wan.auraData.player.buff_StrategicInfusion then
-        local cStrategicInfusion = nStrategicInfusion
-        critChanceModHot = critChanceModHot + cStrategicInfusion
+    if bStrategicInfusion then
+        local checkStrategicInfusion = wan.CheckUnitBuff(nil, sStrategicInfusion)
+
+        if checkStrategicInfusion then
+            local cStrategicInfusion = nStrategicInfusion
+            critChanceModHot = critChanceModHot + cStrategicInfusion
+        end
     end
 
-    -- add crit layer
     local critHotValue = wan.ValueFromCritical(wan.CritChance, critChanceModHot)
     local critInstantValue = wan.ValueFromCritical(wan.CritChance)
 
-    -- Update ability data
     if wan.PlayerState.InGroup and wan.PlayerState.InHealerMode then
         local _, _, idValidGroupUnit = wan.ValidGroupMembers()
 
-        -- run check over all group units in range
         for groupUnitToken, groupUnitGUID in pairs(wan.GroupUnitID) do
 
             if idValidGroupUnit[groupUnitToken] and not wan.auraData[groupUnitToken].buff_CenarionWard then
-                local currentPercentHealth = UnitPercentHealthFromGUID(groupUnitGUID) or 1
+                local currentPercentHealth = wan.CheckUnitPercentHealth(groupUnitGUID)
                 local cCenarionWardInstantHeal = 0
 
                 cCenarionWardInstantHeal = cCenarionWardInstantHeal * critInstantValue
@@ -62,7 +62,6 @@ local function CheckAbilityValue()
                 wan.HotValue[groupUnitToken] = wan.HotValue[groupUnitToken] or {}
                 wan.HotValue[groupUnitToken][wan.traitData.CenarionWard.traitkey] = cCenarionWardHotHeal
 
-                -- add mastery layer
                 if wan.spellData.MasteryHarmony.known then
                     local _, countHots = wan.GetUnitHotValues(groupUnitToken)
 
@@ -96,7 +95,7 @@ local function CheckAbilityValue()
     else
         if not wan.auraData.player.buff_CenarionWard then
             local unitToken = "player"
-            local currentPercentHealth = UnitPercentHealthFromGUID(playerGUID) or 1
+            local currentPercentHealth = wan.CheckUnitPercentHealth(playerGUID)
 
             local cCenarionWardInstantHeal = 0
 
@@ -175,6 +174,9 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "TRAIT_DATA_READY" then
         nHarmoniousBlooming = wan.GetTraitDescriptionNumbers(wan.traitData.HarmoniousBlooming.entryid, { 1 }) - 1
+
+        bStrategicInfusion = wan.traitData.StrategicInfusion.known
+        sStrategicInfusion = wan.traitData.StrategicInfusion.traitkey
         nStrategicInfusion = wan.GetTraitDescriptionNumbers(wan.traitData.StrategicInfusion.entryid, { 3 })
     end
 

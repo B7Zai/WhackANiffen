@@ -10,6 +10,7 @@ wan.PlayerState = {}
 wan.PlayerState.Class = UnitClassBase("player") or "UNKNOWN"
 wan.PlayerState.BaseCooldown = C_Spell.GetSpellCooldown(61304) or 1
 wan.PlayerState.Combat = false
+wan.PlayerState.Faction = UnitFactionGroup("player")
 wan.PlayerState.GUID = UnitGUID("player")
 wan.PlayerState.InGroup = false
 wan.PlayerState.InHealerMode = false
@@ -45,6 +46,7 @@ local function OnEvent(self, event, ...)
 
         wan.PlayerState.GUID = wan.PlayerState.GUID or UnitGUID(playerUnitToken)
         wan.PlayerState.Resting = IsResting()
+        wan.PlayerState.Faction = UnitFactionGroup("player")
 
         wan.UnitState.Health[playerUnitToken] = UnitHealth(playerUnitToken)
         wan.UnitState.Level[playerUnitToken] = UnitLevel(playerUnitToken)

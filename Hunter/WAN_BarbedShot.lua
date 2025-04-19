@@ -16,7 +16,8 @@ local nPoisonedBarbsProcChance, nPoisonedBarbsDmg, nPoisonedBarbsSoftCap, nSerpe
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.BarbedShot.id)
+    if not wan.PlayerState.Status 
+        or not wan.IsSpellUsable(wan.spellData.BarbedShot.id)
     then
         wan.UpdateAbilityData(wan.spellData.BarbedShot.basename)
         wan.UpdateMechanicData(wan.spellData.BarbedShot.basename)
@@ -109,7 +110,7 @@ local function CheckAbilityValue()
 
     local mechanicPrio = false
     if wan.traitData.ThrilloftheHunt.known then
-        local checkThrillOfTheHuntBuff = wan.CheckUnitDebuff(nil, wan.traitData.ThrilloftheHunt.traitkey)
+        local checkThrillOfTheHuntBuff = wan.CheckUnitBuff(nil, wan.traitData.ThrilloftheHunt.traitkey)
         if not checkThrillOfTheHuntBuff then
             mechanicPrio = true
         else

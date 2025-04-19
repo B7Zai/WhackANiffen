@@ -3,27 +3,25 @@ local _, wan = ...
 -- Exit early if player class doesn't match
 if wan.PlayerState.Class ~= "DRUID" then return end
 
--- Init frame 
-local frameBarkskin = CreateFrame("Frame")
-
 -- Local data
 local playerUnitToken = "player"
 local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
-local nBarkskin = 0
+local nBarkskin, sBarkskin = 0, "Barkskin"
 
 -- Ability value calculation
 local function CheckAbilityValue()
 
-    if not wan.PlayerState.Status or not wan.PlayerState.Combat
-        or wan.auraData.player.buff_Barkskin
+    if not wan.PlayerState.Status 
+        or not wan.PlayerState.Combat
+        or wan.CheckUnitBuff(nil, sBarkskin)
         or not wan.IsSpellUsable(wan.spellData.Barkskin.id)
     then
         wan.UpdateMechanicData(wan.spellData.Barkskin.basename)
         return
     end
 
-    local currentPercentHealth = UnitPercentHealthFromGUID(playerGUID) or 1
+    local currentPercentHealth = wan.CheckUnitPercentHealth(playerGUID)
     local cBarkskin = nBarkskin
 
     local abilityValue = wan.UnitAbilityHealValue(playerUnitToken, cBarkskin, currentPercentHealth)
@@ -41,6 +39,8 @@ local function AddonLoad(self, event, addonName)
         end
     end)
 end
+
+local frameBarkskin = CreateFrame("Frame")
 frameBarkskin:RegisterEvent("ADDON_LOADED")
 frameBarkskin:SetScript("OnEvent", AddonLoad)
 
@@ -50,6 +50,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         abilityActive = wan.spellData.Barkskin.known and wan.spellData.Barkskin.id
         wan.BlizzardEventHandler(frameBarkskin, abilityActive, "SPELLS_CHANGED", "UNIT_AURA")
         wan.SetUpdateRate(frameBarkskin, CheckAbilityValue, abilityActive)
+
+        sBarkskin = wan.spellData.Barkskin.formattedName
     end
 
     if event == "TRAIT_DATA_READY" then end

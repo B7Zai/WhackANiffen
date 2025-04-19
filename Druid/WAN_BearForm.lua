@@ -51,12 +51,15 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         wan.BlizzardEventHandler(frameBearForm, abilityActive)
         wan.SetUpdateRate(frameBearForm, CheckAbilityValue, abilityActive)
 
-    elseif event == "TRAIT_DATA_READY" then
         nBearForm = wan.AbilityPercentageToValue(10)
+    end
+
+    if event == "TRAIT_DATA_READY" then
         local _, traitInfoName = wan.GetTraitInfo()
         currentSpecName = traitInfoName
+    end
 
-    elseif event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
+    if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
         wan.SetUpdateRate(frameBearForm, CheckAbilityValue, abilityActive)
     end
 end)

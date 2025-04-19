@@ -6,72 +6,88 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 -- Init spell data
 local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
-local nStarsurgeDmg = 0
-local nMasteryAstralInvocationArcane = 0
-local nMasteryAstralInvocationNature = 0
-local nMasteryAstralInvocationAstral = 0
+local aStarsurge, nStarsurgeDmg = {}, 0
+local aStarfall = {}
+local aMasteryAstralInvocation, nMasteryAstralInvocationArcane, nMasteryAstralInvocationNature = {}, 0, 0
+local sMoonfire, sSunfire = "Moonfire", "Sunfire"
+local sCatForm, sBearForm = "CatForm", "BearForm"
 
 -- Init trait data
-local nAstronomicalImpact = 0
-local nPowerOfGoldrinn, nPowerOfGoldrinnProcChance = 0, 0.33
+local aAstronomicalImpact, nAstronomicalImpact = {}, 0
+local aPowerofGoldrinn, nPowerofGoldrinn, nPowerOfGoldrinnProcChance = {}, 0, 0.33
 
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status
-        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
-        or wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
-        or (wan.spellData.Starfall.known and not wan.IsSpellUsable(wan.spellData.Starfall.id) or not wan.IsSpellUsable(wan.spellData.Starsurge.id))
+        or wan.CheckUnitBuff(nil, sCatForm)
+        or wan.CheckUnitBuff(nil, sBearForm)
+        or (aStarfall.known and not wan.IsSpellUsable(aStarfall.id) or not wan.IsSpellUsable(aStarsurge.id))
     then
-        wan.UpdateAbilityData(wan.spellData.Starsurge.basename)
+        wan.UpdateAbilityData(aStarsurge.basename)
         return
     end
 
     -- Check for valid unit
-    local isValidUnit  = wan.ValidUnitBoolCounter(wan.spellData.Starsurge.id)
+    local isValidUnit  = wan.ValidUnitBoolCounter(aStarsurge.id)
     if not isValidUnit then
-        wan.UpdateAbilityData(wan.spellData.Starsurge.basename)
+        wan.UpdateAbilityData(aStarsurge.basename)
         return
     end
 
     -- Base values
     local critChanceMod = 0
     local critDamageMod = 0
+    local critChanceModBase = 0
+    local critDamageModBase = 0
+
+    local cStarsurgeInstantDmg = 0
+    local cStarsurgeDotDmg = 0
+    local cStarsurgeInstantDmgAoE = 0
+    local cStarsurgeDotDmgAoE = 0
 
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    -- check mastery layer
-    local cMasteryAstralInvocationAstral = 1
-    if wan.spellData.MasteryAstralInvocation.known then
-        local cMasteryAstralInvocationNatureValue = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.spellData.Sunfire.basename] and nMasteryAstralInvocationNature or 0
-        local cMasteryAstralInvocationArcaneValue = wan.auraData[targetUnitToken] and wan.auraData[targetUnitToken]["debuff_" .. wan.spellData.Moonfire.basename] and nMasteryAstralInvocationArcane or 0
-        local cMasteryAstralInvocationAstralValue = cMasteryAstralInvocationNatureValue + cMasteryAstralInvocationArcaneValue
-        cMasteryAstralInvocationAstral = 1 + cMasteryAstralInvocationAstralValue
-    end
-    
-    local cStarsurgeDmg = nStarsurgeDmg
+    ---- BALANCE TRAITS ----
 
-    -- Astronomical Impact
-    if wan.traitData.AstronomicalImpact.known then
+    local cMasteryAstralInvocation = 1
+    if aMasteryAstralInvocation.known then
+        local checkSunfireDebuff = wan.CheckUnitDebuff(nil, sSunfire)
+        local checkMoonfireDebuff = wan.CheckUnitDebuff(nil, sMoonfire)
+
+        local cMasteryAstralInvocationArcaneValue = checkMoonfireDebuff and nMasteryAstralInvocationArcane or 0
+        local cMasteryAstralInvocationNatureValue = checkSunfireDebuff and nMasteryAstralInvocationNature or 0
+
+        cMasteryAstralInvocation = cMasteryAstralInvocation + cMasteryAstralInvocationNatureValue + cMasteryAstralInvocationArcaneValue
+    end
+
+    if aAstronomicalImpact.known then
         critDamageMod = critDamageMod + nAstronomicalImpact
     end
 
-    -- Power of Goldrinn
-    if wan.traitData.PowerofGoldrinn.known then
-        local cPowerOfGoldrinn = nPowerOfGoldrinn * nPowerOfGoldrinnProcChance
-        cStarsurgeDmg = cStarsurgeDmg + cPowerOfGoldrinn
+    local cPowerofGoldrinn = 0
+    if aPowerofGoldrinn.known then
+        cPowerofGoldrinn = cPowerofGoldrinn + (nPowerofGoldrinn * nPowerOfGoldrinnProcChance)
     end
 
-    cStarsurgeDmg = cStarsurgeDmg * cMasteryAstralInvocationAstral
+    local cStarsurgeCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
-    -- Crit layer
-    cStarsurgeDmg = cStarsurgeDmg * wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+    cStarsurgeInstantDmg = cStarsurgeInstantDmg
+        + (nStarsurgeDmg * cStarsurgeCritValue * cMasteryAstralInvocation)
+
+    cStarsurgeDotDmg = cStarsurgeDotDmg
+
+    cStarsurgeInstantDmgAoE = cStarsurgeInstantDmgAoE
+        + (cPowerofGoldrinn * cStarsurgeCritValue * cMasteryAstralInvocation)
+
+    cStarsurgeDotDmgAoE = cStarsurgeDotDmgAoE
+
+    local cStarsurgeDmg = cStarsurgeInstantDmg + cStarsurgeDotDmg + cStarsurgeInstantDmgAoE + cStarsurgeDotDmgAoE
 
     -- Update ability data
     local abilityValue = math.floor(cStarsurgeDmg)
-    
-    wan.UpdateAbilityData(wan.spellData.Starsurge.basename, abilityValue, wan.spellData.Starsurge.icon, wan.spellData.Starsurge.name)
+    wan.UpdateAbilityData(aStarsurge.basename, abilityValue, aStarsurge.icon, aStarsurge.name)
 end
 
 -- Init frame 
@@ -83,11 +99,11 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED"then
-            nStarsurgeDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Starsurge.id, { 1 })
+            nStarsurgeDmg = wan.GetSpellDescriptionNumbers(aStarsurge.id, { 1 })
 
-            nPowerOfGoldrinn = wan.GetTraitDescriptionNumbers(wan.traitData.PowerofGoldrinn.entryid, { 1 })
+            nPowerofGoldrinn = wan.GetTraitDescriptionNumbers(aPowerofGoldrinn.entryid, { 1 }, aPowerofGoldrinn.rank)
 
-            local nMasteryAstralInvocationValues = wan.GetSpellDescriptionNumbers(wan.spellData.MasteryAstralInvocation.id, { 2, 4 })
+            local nMasteryAstralInvocationValues = wan.GetSpellDescriptionNumbers(aMasteryAstralInvocation.id, { 2, 4 })
             nMasteryAstralInvocationArcane = nMasteryAstralInvocationValues[1] * 0.01
             nMasteryAstralInvocationNature = nMasteryAstralInvocationValues[2] * 0.01
         end
@@ -100,13 +116,27 @@ frameStarsurge:SetScript("OnEvent", AddonLoad)
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "SPELL_DATA_READY" then
-        abilityActive = wan.spellData.Starsurge.known and wan.spellData.Starsurge.id
+        aStarsurge = wan.spellData.Starsurge
+
+        abilityActive = aStarsurge.known and aStarsurge.id
         wan.BlizzardEventHandler(frameStarsurge, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
         wan.SetUpdateRate(frameStarsurge, CheckAbilityValue, abilityActive)
+
+        sCatForm = wan.spellData.CatForm.formattedName
+        sBearForm = wan.spellData.BearForm.formattedName
+
+        aMasteryAstralInvocation = wan.spellData.MasteryAstralInvocation
+        sMoonfire = wan.spellData.Moonfire.formattedName
+        sSunfire = wan.spellData.Sunfire.formattedName
+
+        aStarfall = wan.spellData.Starfall
     end
 
     if event == "TRAIT_DATA_READY" then
-        nAstronomicalImpact = wan.GetTraitDescriptionNumbers(wan.traitData.AstronomicalImpact.entryid, { 1 })
+        aAstronomicalImpact = wan.traitData.AstronomicalImpact
+        nAstronomicalImpact = wan.GetTraitDescriptionNumbers(aAstronomicalImpact.entryid, { 1 }, aAstronomicalImpact.rank)
+
+        aPowerofGoldrinn = wan.traitData.PowerofGoldrinn
      end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

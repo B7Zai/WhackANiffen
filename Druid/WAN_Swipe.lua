@@ -8,19 +8,23 @@ local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
 local checkDebuffs = { "Rake", "Thrash", "Rip", "FeralFrenzy", "Tear", "FrenziedAssault" }
 local nSwipeDmg, nSwipeSoftCap = 0, 0
-local nThrashDotDmg, nThrashMaxStacks = 0, 0
+local sCatForm, sBearForm = "CatForm", "BearForm"
+local sProwl = "Prowl"
 
 -- Init trait data
-local nStrikeForTheHeart = 0
-local nMercilessClaws = 0
-
+local bMercilessClaws, nMercilessClaws= false, 0
+local bThrashingClaws, nThrashingClaws, sThrashDebuff, nThrashDotDmg  = false, 0, "Thrash", 0
+local bBloodtalons, sBloodtalons, nBloodtalonsTimer, runBloodtalons = false, "Bloodtalons", 0, true
+local bStrikefortheHeart, nStrikefortheHeart = false, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
-    -- Early exits
+    local _, insufficientPowerShred = wan.IsSpellUsable(wan.spellData.Shred.id)
+    local isUsableSwipe, _ = wan.IsSpellUsable(wan.spellData.Swipe.id)
+
     if not wan.PlayerState.Status 
-        or (wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName) and not wan.IsSpellUsable(wan.spellData.Shred.id))
-        or (wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName) and not wan.IsSpellUsable(wan.spellData.Swipe.id))
+        or (wan.CheckUnitBuff(nil, sCatForm) and (not isUsableSwipe or insufficientPowerShred))
+        or (wan.CheckUnitBuff(nil, sBearForm) and not isUsableSwipe)
     then
         wan.UpdateAbilityData(wan.spellData.Swipe.basename)
         return
@@ -33,9 +37,10 @@ local function CheckAbilityValue()
         return
     end
 
-    -- Base values
     local critChanceMod = 0
     local critDamageMod = 0
+    local critChanceModBase = 0
+    local critDamageModBase = 0
 
     local cSwipeInstantDmg = 0
     local cSwipeDotDmg = 0
@@ -56,36 +61,47 @@ local function CheckAbilityValue()
     ---- FERAL TRAITS ----
 
     local cMercilessClaws = 1
-    if wan.traitData.MercilessClaws.known then
+    if bMercilessClaws then
 
         for nameplateUnitToken, _ in pairs (idValidUnit) do
-            local checkDebuff = wan.CheckUnitAnyDebuff(nameplateUnitToken, checkDebuffs)
+            local checkUnitAnyDebuff = wan.CheckUnitAnyDebuff(nameplateUnitToken, checkDebuffs)
 
-            if checkDebuff then
+            if checkUnitAnyDebuff then
                 cMercilessClaws = cMercilessClaws + (nMercilessClaws / countValidUnit)
             end
         end
     end
 
     local cThrashingClawsDotDmgAoE = 0
-    if wan.traitData.ThrashingClaws.known then
+    if bThrashingClaws then
 
         for nameplateUnitToken, _ in pairs(idValidUnit) do
-            local checkDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.spellData.Thrash.formattedName)
+            local checkDebuff = wan.CheckUnitDebuff(nameplateUnitToken, sThrashDebuff)
 
             if not checkDebuff then
-                local dotPotency = wan.CheckDotPotency(nSwipeDmg, nameplateUnitToken)
-                cThrashingClawsDotDmgAoE = cThrashingClawsDotDmgAoE + (nThrashDotDmg * dotPotency)
+                local checkUnitDotPotency = wan.CheckDotPotency(nSwipeDmg, nameplateUnitToken)
+                cThrashingClawsDotDmgAoE = cThrashingClawsDotDmgAoE + (nThrashDotDmg * checkUnitDotPotency)
             end
+        end
+    end
+
+    if bBloodtalons then
+        if not wan.IsTimerRunning then
+            runBloodtalons = true
+        end
+
+        local checkBloodtalonsBuff = wan.CheckUnitBuff(nil, sBloodtalons)
+        if not checkBloodtalonsBuff and not runBloodtalons then
+            wan.UpdateAbilityData(wan.spellData.Swipe.basename)
+            return
         end
     end
 
     ---- DRUID OF THE CLAW TRAITS ----
 
-    -- Strike for the Heart
-    if wan.traitData.StrikefortheHeart.known then
-        critChanceMod = critChanceMod + nStrikeForTheHeart
-        critDamageMod = critDamageMod + nStrikeForTheHeart
+    if bStrikefortheHeart then
+        critChanceMod = critChanceMod + nStrikefortheHeart
+        critDamageMod = critDamageMod + nStrikefortheHeart
     end
 
     -- Crit layer
@@ -116,7 +132,7 @@ local function AddonLoad(self, event, addonName)
     if addonName ~= "WhackANiffen" then return end
 
     -- Data update on events
-    self:SetScript("OnEvent", function(self, event, ...)
+    self:SetScript("OnEvent", function(self, event, unit, _, spellID)
 
         if event == "SPELLS_CHANGED" then
             if not wan.traitData.BrutalSlash.known then
@@ -128,9 +144,20 @@ local function AddonLoad(self, event, addonName)
             end
         end
 
-        if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
+        if (event == "UNIT_AURA" and unit == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
             nSwipeDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Swipe.id, { 1 })
+            
             nThrashDotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Thrash.id, { 2 })
+        end
+
+        if event == "UNIT_SPELLCAST_SUCCEEDED" and unit == "player"  and bBloodtalons then
+            if spellID == wan.spellData.Swipe.id then
+                wan.SetTimer(nBloodtalonsTimer)
+
+                if wan.IsTimerRunning then
+                    runBloodtalons = false
+                end
+            end
         end
     end)
 end
@@ -142,13 +169,28 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "SPELL_DATA_READY" then
         abilityActive = wan.spellData.Swipe.known and wan.spellData.Swipe.id
-        wan.BlizzardEventHandler(frameSwipe, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
+        wan.BlizzardEventHandler(frameSwipe, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED", "UNIT_SPELLCAST_SUCCEEDED")
         wan.SetUpdateRate(frameSwipe, CheckAbilityValue, abilityActive)
+
+        sCatForm = wan.spellData.CatForm.formattedName
+        sBearForm = wan.spellData.BearForm.formattedName
+        sProwl = wan.spellData.Prowl.formattedName
     end
 
     if event == "TRAIT_DATA_READY" then
+
+        bMercilessClaws = wan.traitData.MercilessClaws.known
         nMercilessClaws = wan.GetTraitDescriptionNumbers(wan.traitData.MercilessClaws.entryid, { 2 }) * 0.01
-        nStrikeForTheHeart = wan.GetTraitDescriptionNumbers(wan.traitData.StrikefortheHeart.entryid, { 1 })
+
+        bThrashingClaws = wan.traitData.ThrashingClaws.known
+        sThrashDebuff = wan.spellData.Thrash.formattedName
+
+        bBloodtalons = wan.traitData.Bloodtalons.known
+        sBloodtalons = wan.traitData.Bloodtalons.traitkey
+        nBloodtalonsTimer = wan.GetTraitDescriptionNumbers(wan.traitData.Bloodtalons.entryid, { 2 })
+
+        bStrikefortheHeart = wan.traitData.StrikefortheHeart.known
+        nStrikefortheHeart = wan.GetTraitDescriptionNumbers(wan.traitData.StrikefortheHeart.entryid, { 1 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

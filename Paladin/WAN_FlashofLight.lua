@@ -21,7 +21,8 @@ local nTyrsDeliverance = 0
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.IsSpellUsable(wan.spellData.FlashofLight.id)
+    if not wan.PlayerState.Status 
+        or not wan.IsSpellUsable(wan.spellData.FlashofLight.id)
     then
         wan.UpdateMechanicData(wan.spellData.FlashofLight.basename)
         wan.UpdateHealingData(nil, wan.spellData.FlashofLight.basename)

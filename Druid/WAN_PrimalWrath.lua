@@ -7,19 +7,23 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 local playerGUID = wan.PlayerState.GUID
 local playerUnitToken = "player"
 local abilityActive = false
-local nPrimalWrathInstantDmg, nRipDotDmg, nRipDotDuration, nRipDotDps = 0, 0, 0, 0
-local currentCombo, comboPercentage, comboCorrection, comboMax = 0, 0, 0, 0
+local nPrimalWrathInstantDmg, nRipDotDmg, sRipDebuff = 0, 0, "Rip"
+local currentCombo, comboPercentage, comboCorrection, comboMax, comboThreshold = 0, 0, 0, 0, 0.8
+local sCatForm = "CatForm"
+local sProwl = "Prowl"
 
 -- Init trait data
-local nRipAndTear = 0
+local bCoiledtoSpring = false
+local bBloodtalons, sBloodtalons = false, "Bloodtalons"
+local bRipandTear, nRipandTear, sTearDebuff = false, 0, "Tear"
 
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status
-        or comboPercentage < 80
-        or not wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
-        or wan.auraData.player.buff_Prowl
+        or comboPercentage < comboThreshold
+        or not wan.CheckUnitBuff(nil, sCatForm)
+        or wan.CheckUnitBuff(nil, sProwl)
         or not wan.IsSpellUsable(wan.spellData.PrimalWrath.id)
     then
         wan.UpdateAbilityData(wan.spellData.PrimalWrath.basename)
@@ -27,8 +31,8 @@ local function CheckAbilityValue()
     end
 
     -- Check for valid unit
-    local _, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, wan.spellData.PrimalWrath.maxRange)
-    if countValidUnit == 0 then
+    local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(nil, wan.spellData.PrimalWrath.maxRange)
+    if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.PrimalWrath.basename)
         return
     end
@@ -45,32 +49,40 @@ local function CheckAbilityValue()
 
     local cPrimalWrathInstantDmgBaseAoE = 0
     local cPrimalWrathDotDmgBaseAoE = 0
-    local formattedDebuffName = wan.spellData.Rip.formattedName
     for nameplateUnitToken, _ in pairs(idValidUnit) do
         local checkPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
         cPrimalWrathInstantDmgBaseAoE = cPrimalWrathInstantDmgBaseAoE + (nPrimalWrathInstantDmg * comboCorrection * checkPhysicalDR)
 
-        local checkRipDebuff = wan.CheckUnitDebuff(nameplateUnitToken, formattedDebuffName)
+        local checkRipDebuff = wan.CheckUnitDebuff(nameplateUnitToken, sRipDebuff)
         if not checkRipDebuff then
-            local dotPotency = wan.CheckDotPotency(nPrimalWrathInstantDmg, nameplateUnitToken)
+            local checkUnitDotPotency = wan.CheckDotPotency(nPrimalWrathInstantDmg, nameplateUnitToken)
             local cRipDotDmg = nRipDotDmg * comboCorrection
-            cPrimalWrathDotDmgBaseAoE =  cPrimalWrathDotDmgBaseAoE + (cRipDotDmg * dotPotency)
+
+            cPrimalWrathDotDmgBaseAoE =  cPrimalWrathDotDmgBaseAoE + (cRipDotDmg * checkUnitDotPotency)
         end
     end
 
     ---- FERAL TRAITS ----
 
     local cTearDotDmgAoE = 0
-    if wan.traitData.RipandTear.known then
-        local formattedTearDebuffName = "Tear"
-        local cTearDotDmg = nRipDotDmg * comboCorrection * nRipAndTear
+    if bRipandTear then
+        local cTearDotDmg = nRipDotDmg * comboCorrection * nRipandTear
         for nameplateUnitToken, _ in pairs(idValidUnit) do
-    
-            local checkTearDebuff = wan.CheckUnitDebuff(nameplateUnitToken, formattedTearDebuffName)
+
+            local checkTearDebuff = wan.CheckUnitDebuff(nameplateUnitToken, sTearDebuff)
             if not checkTearDebuff then
-                local dotPotency = wan.CheckDotPotency(nPrimalWrathInstantDmg, nameplateUnitToken)
-                cTearDotDmgAoE =  cTearDotDmgAoE + (cTearDotDmg * dotPotency)
+                local checkUnitDotPotency = wan.CheckDotPotency(nPrimalWrathInstantDmg, nameplateUnitToken)
+
+                cTearDotDmgAoE =  cTearDotDmgAoE + (cTearDotDmg * checkUnitDotPotency)
             end
+        end
+    end
+
+    if bBloodtalons then
+        local checkBloodtalonsBuff = wan.CheckUnitBuff(nil, sBloodtalons)
+        if not checkBloodtalonsBuff then
+            wan.UpdateAbilityData(wan.spellData.PrimalWrath.basename)
+            return
         end
     end
 
@@ -103,24 +115,25 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if event == "SPELLS_CHANGED" then
-            comboMax = UnitPowerMax("player", 4) or 5
-            currentCombo = UnitPower("player", 4) or 0
-            comboPercentage = (currentCombo / comboMax) * 100
+            comboMax = wan.CheckUnitMaxPower("player", 4) or 5
+            currentCombo = wan.CheckUnitPower("player", 4) or 0
+            comboPercentage = currentCombo / comboMax
             comboCorrection = currentCombo + 1
         end
 
         if event == "UNIT_POWER_UPDATE" then
             local unitID, powerType = ...
             if unitID == "player" and powerType == "COMBO_POINTS" then
-                currentCombo = UnitPower("player", 4) or 0
-                comboPercentage = (currentCombo / comboMax) * 100
+                currentCombo = wan.CheckUnitPower("player", 4) or 0
+                comboPercentage = currentCombo / comboMax
                 comboCorrection = currentCombo + 1
             end
         end
 
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            nPrimalWrathInstantDmg = wan.GetSpellDescriptionNumbers(wan.spellData.PrimalWrath.id, { 3 }) / 2
-            nRipDotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Rip.id, { 2 }) / 4
+            nPrimalWrathInstantDmg = wan.GetSpellDescriptionNumbers(wan.spellData.PrimalWrath.id, { 3 }) * 0.5
+            
+            nRipDotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.Rip.id, { 2 }) * 0.25
         end
     end)
 end
@@ -134,10 +147,22 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         abilityActive = wan.spellData.PrimalWrath.known and wan.spellData.PrimalWrath.id
         wan.BlizzardEventHandler(framePrimalWrath, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "UNIT_POWER_UPDATE", "PLAYER_EQUIPMENT_CHANGED")
         wan.SetUpdateRate(framePrimalWrath, CheckAbilityValue, abilityActive)
+
+        sRipDebuff = wan.spellData.Rip.formattedName
+        sCatForm = wan.spellData.CatForm.formattedName
+        sProwl = wan.spellData.Prowl.formattedName
     end
 
     if event == "TRAIT_DATA_READY" then
-        nRipAndTear = wan.GetTraitDescriptionNumbers(wan.traitData.RipandTear.entryid, { 1 }) * 0.01
+
+        bCoiledtoSpring = wan.traitData.CoiledtoSpring.known
+        comboThreshold = bCoiledtoSpring and 1 or 0.8
+
+        bBloodtalons = wan.traitData.Bloodtalons.known
+        sBloodtalons = wan.traitData.Bloodtalons.traitkey
+
+        bRipandTear = wan.traitData.RipandTear.known
+        nRipandTear = wan.GetTraitDescriptionNumbers(wan.traitData.RipandTear.entryid, { 1 }, wan.traitData.RipandTear.rank) * 0.01
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

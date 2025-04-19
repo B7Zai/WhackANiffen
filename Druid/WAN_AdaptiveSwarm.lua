@@ -13,13 +13,15 @@ local nAdaptiveSwarmDotDmg = 0
 local nAdaptiveSwarmSpreadChance = 0
 
 -- Init trait data
+local sProwl = "Prowl"
 local nUnbridledSwarm = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
 
     -- Early exits
-    if not wan.PlayerState.Status or wan.auraData.player.buff_Prowl
+    if not wan.PlayerState.Status
+        or wan.CheckUnitBuff(nil, sProwl)
         or not wan.IsSpellUsable(wan.spellData.AdaptiveSwarm.id)
     then
         wan.UpdateAbilityData(wan.spellData.AdaptiveSwarm.basename)
@@ -71,6 +73,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         abilityActive = wan.spellData.AdaptiveSwarm.known and wan.spellData.AdaptiveSwarm.id
         wan.BlizzardEventHandler(frameAdaptiveSwarm, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
         wan.SetUpdateRate(frameAdaptiveSwarm, CheckAbilityValue, abilityActive)
+
+        sProwl = wan.spellData.Prowl.formattedName
     end
 
     if event == "TRAIT_DATA_READY" then

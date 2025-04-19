@@ -2,7 +2,7 @@
 ## Title: Whack-A-Niffen
 ## Notes: Not much yet.
 ## Author: 7Banzai
-## Version: 0.7.2
+## Version: 0.7.3
 ## SavedVariables: WhackANiffenDB
 ## SavedVariablesPerCharacter:
 ## X-Curse-Project-ID: 1143530
@@ -13,23 +13,22 @@ libs\LibRangeCheck-3.0\LibRangeCheck-3.0\LibRangeCheck-3.0.lua
 
 # Core
 WAN_Settings.lua
+WAN_Util_API.lua
+WAN_Util_Addon.lua
 WAN_Util.lua
 WAN_EnvState.lua
 WAN_AuraData.lua
 WAN_TraitData.lua
-WAN_AbilityUtil.lua
-WAN_AbilityUtilOffensive.lua
-WAN_AbilityUtilSupport.lua
 WAN_SpellData.lua
 
 # Display
-WAN_FrameUtil.lua
+WAN_Util_Frame.lua
 WAN_DamageFrame.lua
 WAN_MechanicFrame.lua
 WAN_HealingFrame.lua
-WAN_HealingFrameRaid.lua
+WAN_HealingFrame_Raid.lua
 WAN_SupportFrame.lua
-WAN_SupportFrameRaid.lua
+WAN_SupportFrame_Raid.lua
 
 # Demon Hunter
 Demon Hunter\WAN_BladeDance.lua
@@ -139,9 +138,7 @@ Hunter\WAN_Exhilaration.lua
 Hunter\WAN_ExplosiveShot.lua
 Hunter\WAN_FlankingStrike.lua
 Hunter\WAN_FuryoftheEagle.lua
-Hunter\WAN_HighExplosiveTrap.lua
 Hunter\WAN_HuntersMark.lua
-Hunter\WAN_ImplosiveTrap.lua
 Hunter\WAN_KillCommand.lua
 Hunter\WAN_KillShot.lua
 Hunter\WAN_MendPet.lua

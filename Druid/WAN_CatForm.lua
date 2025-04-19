@@ -13,8 +13,8 @@ local nCatForm, nCatFormMaxRange = 0, 20
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status
-        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
         or specName ~= currentSpecName
+        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
         or not wan.IsSpellUsable(wan.spellData.CatForm.id)
     then
         wan.UpdateMechanicData(wan.spellData.CatForm.basename)

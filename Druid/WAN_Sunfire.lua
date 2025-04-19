@@ -7,28 +7,31 @@ if wan.PlayerState.Class ~= "DRUID" then return end
 local playerUnitToken = "player"
 local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
-local nSunfireInstantDmg, nSunfireDotDmg, nSunfireDotDuration, nSunfireDotTickRate = 0, 0, 0, 2
+local aSunfireData = {}
+local nSunfireInstantDmg, nSunfireDotDmg, nSunfireDotDuration, nSunfireDotTickRate, nSunfireDotTickRateMod, nSunfireDotTickNumber = 0, 0, 0, 2, 0, 0
+local sCatForm, sBearForm = "CatForm", "BearForm"
 
 -- Init trait data
-local nShootingStarsDmg, nShootingStarsProcChance = 0, 0.1
-local nCosmicRapidity = 0
+local aShootingStars, nShootingStarsDmg, nShootingStarsProcChance = {}, 0, 0.1
+local aSunseekerMushroom, nSunseekerMushroomProcChance, nSunseekerMushroomDmg, nSunseekerMushroomDotDmg = {}, 0.05, 0, 0
+local aCosmicRapidity, nCosmicRapidity = {}, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status 
-        or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
-        or wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
-        or not wan.IsSpellUsable(wan.spellData.Sunfire.id)
+        or wan.CheckUnitBuff(nil, sCatForm)
+        or wan.CheckUnitBuff(nil, sBearForm)
+        or not wan.IsSpellUsable(aSunfireData.id)
     then
-        wan.UpdateAbilityData(wan.spellData.Sunfire.basename)
+        wan.UpdateAbilityData(aSunfireData.basename)
         return
     end
 
     -- Check for valid unit
-    local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.Sunfire.id)
+    local isValidUnit, countValidUnit, idValidUnit = wan.ValidUnitBoolCounter(aSunfireData.id)
     if not isValidUnit then
-        wan.UpdateAbilityData(wan.spellData.Sunfire.basename)
+        wan.UpdateAbilityData(aSunfireData.basename)
         return
     end
 
@@ -47,28 +50,48 @@ local function CheckAbilityValue()
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[wan.TargetUnitID]
 
-    -- Shooting Stars
-    local cShootingStarsDmg = 0
-    if wan.traitData.ShootingStars.known then
-        local cosmicRapidityMod = wan.traitData.CosmicRapidity.rank > 0 and nCosmicRapidity or 0
-        local nSunfireDotTickModifier = (wan.Haste + cosmicRapidityMod) * 0.01
-        local nSunfireDotTickRateMod = nSunfireDotTickRate / (1 + nSunfireDotTickModifier)
-        local nSunfireDotTickNumber = nSunfireDotDuration / nSunfireDotTickRateMod
-        cShootingStarsDmg = nSunfireDotTickNumber * nShootingStarsProcChance * nShootingStarsDmg
-    end
-
     local cSunfireDotDmgBaseAoE = 0
     for nameplateUnitToken, _ in pairs(idValidUnit) do
-        local checkSunfireDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.spellData.Sunfire.formattedName)
+        local checkSunfireDebuff = wan.CheckUnitDebuff(nameplateUnitToken, aSunfireData.formattedName)
         if not checkSunfireDebuff then
-            local dotPotency = wan.CheckDotPotency(nil, nameplateUnitToken)
+            local checkDotPotency = wan.CheckDotPotency(nil, nameplateUnitToken)
 
-            cSunfireDotDmgBaseAoE = cSunfireDotDmgBaseAoE + ((nSunfireDotDmg + cShootingStarsDmg) * dotPotency)
+            cSunfireDotDmgBaseAoE = cSunfireDotDmgBaseAoE + (nSunfireDotDmg * checkDotPotency)
+        end
+    end
+
+    ---- BALANCE TRAITS ----
+
+    local cShootingStarsDotDmgAoE = 0
+    if aShootingStars.known then
+        for nameplateUnitToken, _ in pairs(idValidUnit) do
+            local checkSunfireDebuff = wan.CheckUnitDebuff(nameplateUnitToken, aSunfireData.formattedName)
+
+            if not checkSunfireDebuff then
+                local checkUnitDotPotency = wan.CheckDotPotency()
+                
+                cShootingStarsDotDmgAoE = cShootingStarsDotDmgAoE + (nSunfireDotTickNumber * nShootingStarsProcChance * nShootingStarsDmg * checkUnitDotPotency)
+            end
+        end
+    end
+
+    local cSunseekerMushroomInstantDmgAoE = 0
+    local cSunseekerMushroomDotDmgAoE = 0
+    if aSunseekerMushroom.known then
+        for nameplateUnitToken, _ in pairs(idValidUnit) do
+            local checkSunfireDebuff = wan.CheckUnitDebuff(nameplateUnitToken, aSunfireData.formattedName)
+
+            if not checkSunfireDebuff then
+                local checkUnitDotPotency = wan.CheckDotPotency()
+
+                cSunseekerMushroomInstantDmgAoE = cSunseekerMushroomInstantDmgAoE + (nSunfireDotTickNumber * nSunseekerMushroomProcChance * nSunseekerMushroomDmg)
+                cSunseekerMushroomDotDmgAoE = cSunseekerMushroomDotDmgAoE + (nSunfireDotTickNumber * nSunseekerMushroomProcChance * nSunseekerMushroomDotDmg * checkUnitDotPotency)
+            end
         end
     end
 
     -- Crit layer
-    local cSunfireCritValue =  wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
+    local cSunfireCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
     cSunfireInstantDmg = cSunfireInstantDmg
         + (nSunfireInstantDmg * cSunfireCritValue)
@@ -76,15 +99,18 @@ local function CheckAbilityValue()
     cSunfireDotDmg = cSunfireDotDmg
 
     cSunfireInstantDmgAoE = cSunfireInstantDmgAoE
+        + (cSunseekerMushroomInstantDmgAoE)
 
     cSunfireDotDmgAoE = cSunfireDotDmgAoE
         + (cSunfireDotDmgBaseAoE * cSunfireCritValue)
+        + (cShootingStarsDotDmgAoE * cSunfireCritValue)
+        + (cSunseekerMushroomDotDmgAoE * cSunfireCritValue)
 
     local cSunfireDmg = cSunfireInstantDmg + cSunfireDotDmg + cSunfireInstantDmgAoE + cSunfireDotDmgAoE
 
     -- Update ability data
     local abilityValue = math.floor(cSunfireDmg)
-    wan.UpdateAbilityData(wan.spellData.Sunfire.basename, abilityValue, wan.spellData.Sunfire.icon, wan.spellData.Sunfire.name)
+    wan.UpdateAbilityData(aSunfireData.basename, abilityValue, aSunfireData.icon, aSunfireData.name)
 end
 
 -- Init frame 
@@ -96,12 +122,18 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            local sunfireValues = wan.GetSpellDescriptionNumbers(wan.spellData.Sunfire.id, { 1, 2, 3 })
+            local sunfireValues = wan.GetSpellDescriptionNumbers(aSunfireData.id, { 1, 2, 3 })
             nSunfireInstantDmg = sunfireValues[1]
             nSunfireDotDmg = sunfireValues[2]
             nSunfireDotDuration = sunfireValues[3]
 
-            nShootingStarsDmg = wan.GetTraitDescriptionNumbers(wan.traitData.ShootingStars.entryid, { 1 })
+            nShootingStarsDmg = wan.GetTraitDescriptionNumbers(aShootingStars.entryid, { 1 })
+            nSunfireDotTickRateMod = nSunfireDotTickRate / (1 + (wan.Haste + nCosmicRapidity) * 0.01)
+            nSunfireDotTickNumber = nSunfireDotDuration / nSunfireDotTickRateMod
+
+            local aSunseekerMushroomValues = wan.GetTraitDescriptionNumbers(aSunseekerMushroom.entryid, { 2, 3 }, aSunseekerMushroom.rank)
+            nSunseekerMushroomDmg = aSunseekerMushroomValues[1]
+            nSunseekerMushroomDotDmg = aSunseekerMushroomValues[2]
         end
     end)
 end
@@ -112,13 +144,24 @@ frameSunfire:SetScript("OnEvent", AddonLoad)
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "SPELL_DATA_READY" then
-        abilityActive = wan.spellData.Sunfire.known and wan.spellData.Sunfire.id
+        aSunfireData = wan.spellData.Sunfire
+
+        abilityActive = aSunfireData.known and aSunfireData.id
         wan.BlizzardEventHandler(frameSunfire, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
         wan.SetUpdateRate(frameSunfire, CheckAbilityValue, abilityActive)
+
+        sBearForm = wan.spellData.BearForm.formattedName
     end
 
-    if event == "TRAIT_DATA_READY" then 
-        nCosmicRapidity = wan.GetTraitDescriptionNumbers(wan.traitData.CosmicRapidity.entryid, {1}, wan.traitData.CosmicRapidity.rank)
+    if event == "TRAIT_DATA_READY" then
+        aShootingStars = wan.traitData.ShootingStars
+
+        aSunseekerMushroom = wan.traitData.SunseekerMushroom
+
+        aCosmicRapidity = wan.traitData.CosmicRapidity
+        local nCosmicRapidityValue = wan.GetTraitDescriptionNumbers(aCosmicRapidity.entryid, {1}, aCosmicRapidity.rank)
+        nCosmicRapidity = aCosmicRapidity.rank > 0 and nCosmicRapidityValue or 0
+
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

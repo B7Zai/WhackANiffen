@@ -13,7 +13,8 @@ local nBerserkDmg, nBerserkHeal = 0, 0
  -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
-    if not wan.PlayerState.Status or not wan.PlayerState.Combat
+    if not wan.PlayerState.Status 
+        or not wan.PlayerState.Combat
         or wan.CheckUnitBuff(nil, wan.spellData.Berserk.formattedName)
         or wan.CheckUnitBuff(nil, wan.spellData.Prowl.formattedName)
         or not wan.IsSpellUsable(wan.spellData.Berserk.id)
@@ -31,7 +32,7 @@ local function CheckAbilityValue()
     local cdPotency = wan.CheckOffensiveCooldownPotency(cBerserkDmg, isValidUnit, idValidUnit)
 
     -- Base defensive value
-    local currentPercentHealth = UnitPercentHealthFromGUID(playerGUID) or 1
+    local currentPercentHealth = wan.CheckUnitPercentHealth(playerGUID)
     local cBerserkHeal = nBerserkHeal
 
     -- Check whether berserk is an offensive or defensive ability
@@ -45,8 +46,7 @@ local function CheckAbilityValue()
     wan.UpdateMechanicData(wan.spellData.Berserk.basename, healValue, wan.spellData.Berserk.icon, wan.spellData.Berserk.name)
 end
 
--- Local frame and event handler
-local frameBerserk = CreateFrame("Frame")
+
 local function AddonLoad(self, event, addonName)
     -- Early Exit
     if addonName ~= "WhackANiffen" then return end
@@ -59,6 +59,8 @@ local function AddonLoad(self, event, addonName)
         end
     end)
 end
+
+local frameBerserk = CreateFrame("Frame")
 frameBerserk:RegisterEvent("ADDON_LOADED")
 frameBerserk:SetScript("OnEvent", AddonLoad)
 

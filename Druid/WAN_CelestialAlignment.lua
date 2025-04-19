@@ -11,6 +11,7 @@ local nCelestialAlignment, nCelestialAlignmentMaxRange = 0, 0
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status 
+        or wan.CheckUnitBuff(nil, wan.spellData.CelestialAlignment.formattedName)
         or wan.CheckUnitBuff(nil, wan.spellData.CatForm.formattedName)
         or wan.CheckUnitBuff(nil, wan.spellData.BearForm.formattedName)
         or not wan.IsSpellUsable(wan.spellData.CelestialAlignment.id)
