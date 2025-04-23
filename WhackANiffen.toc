@@ -1,8 +1,8 @@
-## Interface: 110100
+## Interface: 110105
 ## Title: Whack-A-Niffen
 ## Notes: Not much yet.
 ## Author: 7Banzai
-## Version: 0.7.3
+## Version: 0.7.4
 ## SavedVariables: WhackANiffenDB
 ## SavedVariablesPerCharacter:
 ## X-Curse-Project-ID: 1143530
