@@ -37,8 +37,7 @@ local function GetTraitData(dataArray)
 
                     if entryInfo and entryInfo.definitionID then
                         local definitionInfo = C_Traits.GetDefinitionInfo(entryInfo.definitionID)
-                        local overriddenSpellID = definitionInfo.overriddenSpellID or definitionInfo.spellID
-                        local spellName = overriddenSpellID and C_Spell.GetSpellName(overriddenSpellID)
+                        local spellName = definitionInfo.spellID and C_Spell.GetSpellName(definitionInfo.spellID)
 
                         if spellName then
                             local keyReference = definitionInfo.overrideName or spellName

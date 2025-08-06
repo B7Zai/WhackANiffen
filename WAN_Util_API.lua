@@ -85,7 +85,6 @@ function wan.SetTimer(time)
     end
 end
 
-
 ---- RANGE CHECKING ----
 
 local LibRangeCheck = LibStub("LibRangeCheck-3.0") -- callback for range check library
@@ -191,7 +190,7 @@ function wan.ValidGroupMembers()
     end
 
     local nGroupMembersInRange = count
-    local nDamageScaler = wan.AdjustSoftCapUnitOverflow(2, count)
+    local nDamageScaler = wan.AdjustSoftCapUnitOverflow(3, count)
 
     return nDamageScaler, nGroupMembersInRange, inRangeUnits
 end
@@ -218,7 +217,7 @@ function wan.ValidGroupMembersInSpellRange(spellIndentifier, maxRange)
     end
 
     local nGroupMembersInRange = count
-    local nDamageScaler = wan.AdjustSoftCapUnitOverflow(2, count)
+    local nDamageScaler = wan.AdjustSoftCapUnitOverflow(3, count)
 
     return nDamageScaler, nGroupMembersInRange, inRangeUnits
 end
@@ -562,9 +561,9 @@ end
 
 -- Check player's specialization 
 function wan.GetTraitInfo()
-    local currentSpec = GetSpecialization()
+    local currentSpec = C_SpecializationInfo.GetSpecialization()
     if currentSpec then
-        local id, name, description, icon, role, primaryStat = GetSpecializationInfo(currentSpec)
+        local id, name, description, icon, role, primaryStat = C_SpecializationInfo.GetSpecializationInfo(currentSpec)
         return id, name, description, icon, role, primaryStat
     end
 end

@@ -22,9 +22,9 @@ local function CheckAbilityValue()
     local _, insufficientPowerShred = wan.IsSpellUsable(wan.spellData.Shred.id)
     local isUsableSwipe, _ = wan.IsSpellUsable(wan.spellData.Swipe.id)
 
-    if not wan.PlayerState.Status 
-        or (wan.CheckUnitBuff(nil, sCatForm) and (not isUsableSwipe or insufficientPowerShred))
-        or (wan.CheckUnitBuff(nil, sBearForm) and not isUsableSwipe)
+    if not wan.PlayerState.Status
+        or not isUsableSwipe
+        or (wan.CheckUnitBuff(nil, sCatForm) and insufficientPowerShred)
     then
         wan.UpdateAbilityData(wan.spellData.Swipe.basename)
         return

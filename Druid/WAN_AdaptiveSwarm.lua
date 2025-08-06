@@ -3,9 +3,6 @@ local _, wan = ...
 -- Exit early if player class doesn't match
 if wan.PlayerState.Class ~= "DRUID" then return end
 
--- Init frame 
-local frameAdaptiveSwarm = CreateFrame("Frame")
-
 -- Init data
 local abilityActive = false
 local nAdaptiveSwarmHotHeal = 0
@@ -64,6 +61,9 @@ local function AddonLoad(self, event, addonName)
         end
     end)
 end
+
+-- Init frame 
+local frameAdaptiveSwarm = CreateFrame("Frame")
 frameAdaptiveSwarm:RegisterEvent("ADDON_LOADED")
 frameAdaptiveSwarm:SetScript("OnEvent", AddonLoad)
 

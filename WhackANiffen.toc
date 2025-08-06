@@ -1,8 +1,8 @@
-## Interface: 110105
+## Interface: 110200
 ## Title: Whack-A-Niffen
 ## Notes: Not much yet.
 ## Author: 7Banzai
-## Version: 0.7.4
+## Version: 0.7.6
 ## SavedVariables: WhackANiffenDB
 ## SavedVariablesPerCharacter:
 ## X-Curse-Project-ID: 1143530
@@ -199,6 +199,11 @@ Mage\WAN_ShiftingPower.lua
 Mage\WAN_Spellsteal.lua
 Mage\WAN_Supernova.lua
 Mage\WAN_TouchoftheMagi.lua
+
+# Monk
+#Monk\WAN_BlackoutKick.lua
+#Monk\WAN_RisingSunKick.lua
+#Monk\WAN_TigerPalm.lua
 
 # Paladin
 Paladin\WAN_ArdentDefender.lua

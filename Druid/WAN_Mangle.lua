@@ -123,9 +123,12 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "TRAIT_DATA_READY" then
-        nPrimalFury = wan.GetTraitDescriptionNumbers(wan.traitData.PrimalFury.entryid, { 1 }) / 100
-        nMangle = wan.GetTraitDescriptionNumbers(wan.traitData.Mangle.entryid, { 1 }) / 100
+        nPrimalFury = wan.GetTraitDescriptionNumbers(wan.traitData.PrimalFury.entryid, { 1 }) * 0.01
+
+        nMangle = wan.GetTraitDescriptionNumbers(wan.traitData.Mangle.entryid, { 1 }) * 0.01
+
         nIncarnationAoeCap = wan.GetTraitDescriptionNumbers(wan.traitData.IncarnationGuardianofUrsoc.entryid, { 1 })
+        
         nStrikeForTheHeart = wan.GetTraitDescriptionNumbers(wan.traitData.StrikefortheHeart.entryid, { 1 })
     end
 

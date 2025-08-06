@@ -8,7 +8,7 @@ local abilityActive = false
 local nDmg, nDotDmg = 0, 0
 
 -- Init trait data
-local nTraitWithRanks = 0
+local aTraitWithRanks, nTraitWithRanks = {}, 0
 local nTraitWithUnitCap, nTrait
 
 
@@ -114,8 +114,11 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "TRAIT_DATA_READY" then 
-        nTraitWithRanks = wan.GetTraitDescriptionNumbers(wan.traitData.TraitName.entryid, { 1 }, wan.traitData.TraitName.rank)
 
+        aTraitWithRanks = wan.traitData.TraitName
+        nTraitWithRanks = wan.GetTraitDescriptionNumbers(aTraitWithRanks.entryid, { 1 }, aTraitWithRanks.rank)
+
+        
         local nTraitValues = wan.GetTraitDescriptionNumbers(wan.traitData.TraitName.entryid, { 1, 2 })
         nTraitWithUnitCap = nTraitValues[1]
         nTrait = nTraitValues[2] * 0.01

@@ -3,7 +3,7 @@ local _, wan = ...
 ---- INIT ARRAYS ----
 
 wan.AbilityData = {}    -- used for displaying damage values for player
-wan.MechanicData = {}   -- used for displaying defensive cooldowns, healing for player
+wan.MechanicData = {}   -- used for displaying defensive cooldowns and healing for player
 wan.HealingData = {}    -- used for displaying healing values in a group
 wan.SupportData = {}    -- used for displaying support values in a group
 wan.HotValue = {}       -- used for storing hot values over all valid group units
