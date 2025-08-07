@@ -8,14 +8,11 @@ local abilityActive = false
 local nAimedShotDmg = 0
 
 -- Init trait datat
-local bPreciseShots, sPreciseShots = false, "PreciseShots"
-local sTrueShot = "TrueShot"
 local nEyesintheSky = 0
 local nPenetratingShots = 0
 local nTrickShots, nTrickShotsUnitCap = 0, 0
 local nAspectoftheHydra, nAspectoftheHydraUnitCap = 0, 1
 local nPrecisionDetonation, nExplosiveShotDmg, nExplosiveShotSoftCap = 0, 0, 0
-local nKillerMark = 0
 local nOhnahranWindsUnitCap = 0
 local nPhantomPain = 0
 local nIncendiaryAmmunition = 0
@@ -68,12 +65,9 @@ local function CheckAbilityValue()
     local cEyesintheSky = 1
     if wan.spellData.EyesintheSky.known then
         local checkSpottersMark = wan.CheckUnitDebuff(nil, "SpottersMark")
+
         if checkSpottersMark then
             cEyesintheSky = cEyesintheSky + nEyesintheSky
-
-            if wan.traitData.KillerMark.known then
-                critChanceMod = critChanceMod + nKillerMark
-            end
         end
     end
 
@@ -274,9 +268,6 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "TRAIT_DATA_READY" then
 
-        bPreciseShots = wan.traitData.PreciseShots.known
-        sPreciseShots = wan.traitData.PreciseShots.traitkey
-
         nEyesintheSky = wan.GetSpellDescriptionNumbers(wan.spellData.EyesintheSky.id, { 4 }) * 0.01
 
         nPenetratingShots = wan.GetTraitDescriptionNumbers(wan.traitData.PenetratingShots.entryid, { 1 }) * 0.01
@@ -287,11 +278,7 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
         nAspectoftheHydra = wan.GetTraitDescriptionNumbers(wan.traitData.AspectoftheHydra.entryid, { 1 }) * 0.01
 
-        sTrueShot = wan.traitData.TrueShot.traitkey
-
         nPrecisionDetonation = wan.GetTraitDescriptionNumbers(wan.traitData.PrecisionDetonation.entryid, { 1 }) * 0.01
-
-        nKillerMark = wan.GetTraitDescriptionNumbers(wan.traitData.KillerMark.entryid, { 1 })
 
         nOhnahranWindsUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.OhnahranWinds.entryid, { 2 })
 

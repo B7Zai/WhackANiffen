@@ -4,86 +4,69 @@ local _, wan = ...
 if wan.PlayerState.Class ~= "HUNTER" then return end
 
 -- Init spell data
+local playerUnitToken = "player"
+local playerGUID = wan.PlayerState.GUID
 local abilityActive = false
-local nBloodshedDotDmg, nBloodshedInstantDmg = 0, 0
+local aBloodshedData, nBloodshedDmg = {}, 0
 
 -- Init trait data
-local nShowerofBloodUnitCap = 0
+
 
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits
     if not wan.PlayerState.Status or not wan.IsPetUsable()
-    or not wan.IsSpellUsable(wan.spellData.Bloodshed.id)
+    or not wan.IsSpellUsable(aBloodshedData.id)
     then
-        wan.UpdateAbilityData(wan.spellData.Bloodshed.basename)
+        wan.UpdateAbilityData(aBloodshedData.basename)
         return
     end
 
     -- Check for valid unit
-    local isValidUnit, countValidUnit ,idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.Bloodshed.id)
+    local isValidUnit, countValidUnit ,idValidUnit = wan.ValidUnitBoolCounter(aBloodshedData.id)
     if not isValidUnit then
-        wan.UpdateAbilityData(wan.spellData.Bloodshed.basename)
+        wan.UpdateAbilityData(aBloodshedData.basename)
         return
     end
 
     -- Base values
     local critChanceMod = 0
+    local critChanceModBase = 0
     local critDamageMod = 0
+    local critDamageModBase = 0
 
-    local cBloodshedInstantDmg = nBloodshedInstantDmg
+    local cBloodshedInstantDmg = 0
     local cBloodshedDotDmg = 0
+    local cBloodshedInstantDmgAoE = 0
+    local cBloodshedDotDmgAoE = 0
 
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
 
-    local checkBloodshedDebuff = wan.CheckUnitDebuff(nil, wan.spellData.Bloodshed.formattedName)
+    local cBloodshedDotDmg = 0
+    local checkBloodshedDebuff = wan.CheckUnitDebuff(nil, aBloodshedData.formattedName)
     if not checkBloodshedDebuff then
         local dotPotency = wan.CheckDotPotency()
-        cBloodshedDotDmg = cBloodshedDotDmg + (nBloodshedDotDmg * dotPotency)
+        cBloodshedDotDmg = cBloodshedDotDmg + (nBloodshedDmg * dotPotency)
     end
 
-    local cBloodshedInstantDmgAoE = 0
-    local cBloodshedDotDmgAoE = 0
-    if wan.traitData.ShowerofBlood.known and countValidUnit > 1 then
-        local countShowerOfBlood = 0
-
-        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-
-            if nameplateGUID ~= targetGUID then
-
-                local cShowerOfBlood = 0
-                local checkBloodshedDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.spellData.Bloodshed.formattedName)
-
-                if not checkBloodshedDebuff then
-                    local unitDotPotency = wan.CheckDotPotency()
-                    cShowerOfBlood = cShowerOfBlood + (nBloodshedDotDmg * unitDotPotency)
-                end
-
-                cBloodshedInstantDmgAoE = cBloodshedInstantDmgAoE + nBloodshedInstantDmg
-                cBloodshedDotDmgAoE = cBloodshedDotDmgAoE + cShowerOfBlood
-
-                countShowerOfBlood = countShowerOfBlood + 1
-
-                if countShowerOfBlood >= nShowerofBloodUnitCap then break end
-            end
-        end
-    end
-
-    -- Crit layer
     local cBloodshedCritValue = wan.ValueFromCritical(wan.CritChance, critChanceMod, critDamageMod)
 
     cBloodshedInstantDmg = cBloodshedInstantDmg
-    cBloodshedDotDmg = cBloodshedDotDmg * cBloodshedCritValue
-    cBloodshedInstantDmgAoE = cBloodshedInstantDmgAoE
-    cBloodshedDotDmgAoE = cBloodshedDotDmgAoE * cBloodshedCritValue
 
-    local cBloodshedDmg = cBloodshedInstantDmg + cBloodshedDotDmg + cBloodshedInstantDmgAoE
+    cBloodshedDotDmg = cBloodshedDotDmg
+        + (cBloodshedDotDmg * cBloodshedCritValue)
+
+    cBloodshedInstantDmgAoE = cBloodshedInstantDmgAoE
+
+    cBloodshedDotDmgAoE = cBloodshedDotDmgAoE
+
+    local cBloodshedDmg = cBloodshedInstantDmg + cBloodshedDotDmg + cBloodshedInstantDmgAoE + cBloodshedDotDmgAoE
     local cdPotency = wan.CheckOffensiveCooldownPotency(cBloodshedDmg, isValidUnit, idValidUnit)
 
     -- Update ability data
-    local abilityValue = cdPotency and  math.floor(cBloodshedDmg) or 0
-    wan.UpdateAbilityData(wan.spellData.Bloodshed.basename, abilityValue, wan.spellData.Bloodshed.icon, wan.spellData.Bloodshed.name)
+    local abilityValue = cdPotency and math.floor(cBloodshedDmg) or 0
+    wan.UpdateAbilityData(aBloodshedData.basename, abilityValue, aBloodshedData.icon, aBloodshedData.name)
 end
 
 -- Init frame 
@@ -95,9 +78,7 @@ local function AddonLoad(self, event, addonName)
     -- Data update on events
     self:SetScript("OnEvent", function(self, event, ...)
         if (event == "UNIT_AURA" and ... == "player") or event == "SPELLS_CHANGED" or event == "PLAYER_EQUIPMENT_CHANGED" then
-            local nBloodshedValues = wan.GetSpellDescriptionNumbers(wan.spellData.Bloodshed.id, { 1, 3 })
-            nBloodshedDotDmg = nBloodshedValues[1]
-            nBloodshedInstantDmg = wan.AbilityPercentageToValue(nBloodshedValues[2])
+            nBloodshedDmg = wan.GetSpellDescriptionNumbers(aBloodshedData.id, { 1 })
         end
     end)
 end
@@ -108,14 +89,14 @@ frameBloodshed:SetScript("OnEvent", AddonLoad)
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
     if event == "SPELL_DATA_READY" then
-        abilityActive = wan.spellData.Bloodshed.known and wan.spellData.Bloodshed.id
+        aBloodshedData = wan.spellData.Bloodshed
+
+        abilityActive = aBloodshedData.known and aBloodshedData.id
         wan.BlizzardEventHandler(frameBloodshed, abilityActive, "SPELLS_CHANGED", "UNIT_AURA", "PLAYER_EQUIPMENT_CHANGED")
         wan.SetUpdateRate(frameBloodshed, CheckAbilityValue, abilityActive)
     end
 
-    if event == "TRAIT_DATA_READY" then
-        nShowerofBloodUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.ShowerofBlood.entryid, { 1 })
-    end
+    if event == "TRAIT_DATA_READY" then end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then
         wan.SetUpdateRate(frameBloodshed, CheckAbilityValue, abilityActive)

@@ -9,20 +9,18 @@ local nKillCommandDmg = 0
 local nExplosiveShotDmg, nExplosiveShotSoftCap = 0, 0
 
 -- Init trait data
+local aHarmonize, nHarmonize = {}, 0
 local nSolitaryCompanion = 0
 local nGoForTheThroat = 0
 local nKillCleave, nKillCleaveSoftCap = 0, 0
 local nQuickShotProcChance, nQuickShotDmg, nArcaneShotDmg = 0, 0, 0
 local nSerpentineRhythm = 0
 local nTrainingExpert = 0
-local nBloodseeker = 0
 local nAMurderOfCrows, nAMurderOfCrowsStacks, nAMurderofCrownsStacksCap = 0, 0, 0
 local nBestialWrath = 0
-local nKillerInstinct, nKillerInstinctThreshold = 0, 0
-local nBloodshed = 0
-local nShowerOfBloodUnitCap = 0
-local nVenomousBite = 0
+local aKillerInstinct, nKillerInstinct= {}, 0
 local nHowlofthePackLeaderWyvern, nHowlofthePackLeaderBoarAttacks, nHowlofthePackLeaderBoarInstantDmg, nHowlofthePackLeaderBoarInstantDmgAoE, nHowlofthePackLeaderBoarSoftCap, nHowlofthePackLeaderBearDotDmg, nHowlofthePackLeaderBearUnitCap = 0, 0, 0, 0, 0, 0, 0
+local aBetterTogether, nBetterTogether = {}, 0
 local nPackMentality = 0
 local nLeadFromtheFront = 0
 local nPhantomPain = 0
@@ -60,6 +58,13 @@ local function CheckAbilityValue()
 
     local targetUnitToken = wan.TargetUnitID
     local targetGUID = wan.UnitState.GUID[targetUnitToken]
+
+    ---- HUNTER TRAITS ----
+
+    local cHarmonize = 1
+    if aHarmonize.known then
+        cHarmonize = cHarmonize + nHarmonize
+    end
 
     ---- BEAST MASTERY TRAITS ----
 
@@ -138,14 +143,10 @@ local function CheckAbilityValue()
         end
     end
 
-    -- killec instinct trait layer
+    -- killer instinct trait layer
     local cKillerInstinct = 1
-    if wan.traitData.KillerInstinct.known then
-        local targetPercentHealth = targetGUID and UnitPercentHealthFromGUID(targetGUID) or 1
-
-        if nKillerInstinctThreshold > targetPercentHealth then
-            cKillerInstinct = cKillerInstinct + nKillerInstinct
-        end
+    if aKillerInstinct.known then
+        cKillerInstinct = cKillerInstinct + (nKillerInstinct)
     end
 
     -- piercing fangs trait layer
@@ -153,46 +154,6 @@ local function CheckAbilityValue()
         local checkBestialWrathBuff = wan.CheckUnitBuff(nil, wan.traitData.BestialWrath.traitkey)
         if checkBestialWrathBuff then
             critDamageMod = critDamageMod + nPiercingFangs
-        end
-    end
-
-    -- bloodshed trait layer
-    local cBloodshed = 1
-    local cBloodshedAoE = 1
-    if wan.traitData.Bloodshed.known then
-        if wan.traitData.ShowerofBlood.known then
-            local checkBloodshedDebuff = wan.CheckUnitDebuff(nil, wan.traitData.Bloodshed.traitkey)
-
-            if checkBloodshedDebuff then
-                cBloodshed = cBloodshed + nBloodshed
-
-                -- venomous bite trait layer
-                if wan.traitData.VenomousBite.known then
-                    cBloodshed = cBloodshed + nVenomousBite
-                end
-            end
-
-            if wan.traitData.ShowerofBlood.known then
-                local countShowerofBlood = 0
-
-                for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-
-                    if nameplateGUID ~= targetGUID then
-                        local checkBloodshedDebuff = wan.CheckUnitDebuff(nameplateUnitToken,
-                            wan.traitData.Bloodshed.traitkey)
-
-                        if checkBloodshedDebuff then
-                            countShowerofBlood = countShowerofBlood + 1
-
-                            if countShowerofBlood >= nShowerOfBloodUnitCap then break end
-                        end
-                    end
-                end
-
-                if countShowerofBlood then
-                    cBloodshedAoE = cBloodshedAoE + ((nBloodshed * countShowerofBlood) / countValidUnit)
-                end
-            end
         end
     end
 
@@ -211,15 +172,6 @@ local function CheckAbilityValue()
                 local cExplosiveShotDmg = nExplosiveShotDmg * cExplosiveShotUnitOverflow
                 cQuickShotInstantDmgAoE = cQuickShotInstantDmgAoE + (cExplosiveShotDmg * nSulfurLinedPockets * nQuickShotProcChance)
             end
-        end
-    end
-
-    -- bloodseeker trait layer
-    local cBloodseeker = 0
-    if wan.traitData.Bloodseeker.known then
-        local checkBloodseekerDebuff = wan.CheckUnitDebuff(nil, wan.spellData.KillCommand.formattedName)
-        if not checkBloodseekerDebuff then
-            cBloodseeker = cBloodseeker + nBloodseeker
         end
     end
 
@@ -311,6 +263,11 @@ local function CheckAbilityValue()
         end
     end
 
+    local cBetterTogether = 1
+    if aBetterTogether.known then
+        cBetterTogether = cBetterTogether + nBetterTogether
+    end
+
     ---- DARK RANGER TRAITS ----
 
     -- phantom pain trait layer
@@ -321,7 +278,7 @@ local function CheckAbilityValue()
             local checkBlackArrowDebuff = wan.CheckUnitDebuff(nameplateUnitToken, wan.traitData.BlackArrow.traitkey)
 
             if checkBlackArrowDebuff then
-                cPhantomPain = cPhantomPain + (nKillCommandDmg * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cTrainingExpert * cKillerInstinct * cBloodshed * nPhantomPain)
+                cPhantomPain = cPhantomPain + (nKillCommandDmg * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cTrainingExpert * cKillerInstinct * nPhantomPain)
             end
         end
     end
@@ -331,22 +288,21 @@ local function CheckAbilityValue()
     local cKillCommandBaseCritValue = wan.ValueFromCritical(wan.CritChance, critChanceModBase, critDamageModBase)
 
     cKillCommandInstantDmg = cKillCommandInstantDmg
-        + (nKillCommandDmg * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cTrainingExpert * cBestialWrath * cKillerInstinct * cBloodshed * cHowlOfThePackLeaderWyvern * cPackMentality * cExposedFlank * checkPhysicalDR * cKillCommandCritValue)
+        + (nKillCommandDmg * cHarmonize * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cTrainingExpert * cBestialWrath * cKillerInstinct * cHowlOfThePackLeaderWyvern * cBetterTogether * cPackMentality * cExposedFlank * checkPhysicalDR * cKillCommandCritValue)
         + (cQuickShotInstantDmg * cKillCommandBaseCritValue)
         + (cHowlOfThePackLeaderBoarInstantDmg * cKillCommandBaseCritValue)
 
     cKillCommandDotDmg = cKillCommandDotDmg
-        + ((cAMurderOfCrows + cBloodseeker) * cKillCommandBaseCritValue)
+        + (cAMurderOfCrows * cKillCommandBaseCritValue)
 
     cKillCommandInstantDmgAoE = cKillCommandInstantDmgAoE
-        + (cKillCleaveInstantDmgAoE * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cTrainingExpert * cBestialWrath * cKillerInstinct * cBloodshedAoE * cHowlOfThePackLeaderWyvern * cPackMentality * cKillCommandCritValue)
+        + (cKillCleaveInstantDmgAoE * cHarmonize * cAnimalCompanion * cSolitaryCompanion * cSerpentineRhythm * cTrainingExpert * cBestialWrath * cKillerInstinct * cHowlOfThePackLeaderWyvern * cBetterTogether * cPackMentality * cKillCommandCritValue)
         + (cExposedFlankInstantDmgAoE * cExposedFlank * cKillCommandCritValue)
         + (cQuickShotInstantDmgAoE * cKillCommandBaseCritValue)
         + (cHowlOfThePackLeaderBoarInstantDmgAoE * cKillCommandBaseCritValue)
         + cPhantomPain
 
     cKillCommandDotDmgAoE = cKillCommandDotDmgAoE
-        + (cBloodseeker * countExposedFlank * cKillCommandBaseCritValue)
         + (cHowlOfThePackLeaderBearDotDmgAoE * cKillCommandBaseCritValue)
 
     local cKillCommandDmg = cKillCommandInstantDmg + cKillCommandDotDmg + cKillCommandInstantDmgAoE + cKillCommandDotDmgAoE
@@ -374,8 +330,6 @@ local function AddonLoad(self, event, addonName)
 
             nArcaneShotDmg = wan.GetSpellDescriptionNumbers(wan.spellData.ArcaneShot.id, { 1 })
 
-            nBloodseeker = wan.GetTraitDescriptionNumbers(wan.traitData.Bloodseeker.entryid, { 1 })
-
             local nExplosiveShotValues = wan.GetTraitDescriptionNumbers(wan.traitData.ExplosiveShot.entryid, { 2, 4 })
             nExplosiveShotDmg = nExplosiveShotValues[1]
             nExplosiveShotSoftCap = nExplosiveShotValues[2]
@@ -395,6 +349,10 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     end
 
     if event == "TRAIT_DATA_READY" then
+
+        aHarmonize = wan.traitData.Harmonize
+        nHarmonize = wan.GetTraitDescriptionNumbers(aHarmonize.entryid, { 1 }) * 0.01
+
         nSolitaryCompanion = wan.GetTraitDescriptionNumbers(wan.traitData.SolitaryCompanion.entryid, { 1 }) * 0.01
 
         nGoForTheThroat = wan.GetTraitDescriptionNumbers(wan.traitData.GofortheThroat.entryid, { 1 }) * 0.01
@@ -417,9 +375,8 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
         nBestialWrath = wan.GetTraitDescriptionNumbers(wan.traitData.BestialWrath.entryid, { 2 }) * 0.01
 
-        local nKillerInstinctValues = wan.GetTraitDescriptionNumbers(wan.traitData.KillerInstinct.entryid, { 1, 2 }, wan.traitData.KillerInstinct.rank)
-        nKillerInstinct = nKillerInstinctValues[1] * 0.01
-        nKillerInstinctThreshold = nKillerInstinctValues[2] * 0.01
+        aKillerInstinct = wan.traitData.KillerInstinct
+        nKillerInstinct = wan.GetTraitDescriptionNumbers(aKillerInstinct.entryid, { 1 }, aKillerInstinct.rank) * 0.01
 
         local nHowlofthePackLeaderValues = wan.GetTraitDescriptionNumbers(wan.traitData.HowlofthePackLeader.entryid, { 4, 8, 9, 10, 11, 14, 16 })
         nHowlofthePackLeaderWyvern = nHowlofthePackLeaderValues[1] * 0.001
@@ -430,17 +387,14 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nHowlofthePackLeaderBearDotDmg = nHowlofthePackLeaderValues[6]
         nHowlofthePackLeaderBearUnitCap = nHowlofthePackLeaderValues[7]
 
+        aBetterTogether = wan.traitData.BetterTogether
+        nBetterTogether = wan.GetTraitDescriptionNumbers(aBetterTogether.entryid, { 1 }) * 0.01
+
         nPackMentality = wan.GetTraitDescriptionNumbers(wan.traitData.PackMentality.entryid, { 1 }) * 0.01
 
         nLeadFromtheFront = wan.GetTraitDescriptionNumbers(wan.traitData.LeadFromtheFront.entryid, { 2 }) * 0.01
 
         nPiercingFangs = wan.GetTraitDescriptionNumbers(wan.traitData.PiercingFangs.entryid, { 1 })
-
-        nBloodshed = wan.GetTraitDescriptionNumbers(wan.traitData.Bloodshed.entryid, { 3 }) * 0.01
-
-        nShowerOfBloodUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.ShowerofBlood.entryid, { 1 })
-
-        nVenomousBite = wan.GetTraitDescriptionNumbers(wan.traitData.VenomousBite.entryid, { 1 }) * 0.01
 
         nPhantomPain = wan.GetTraitDescriptionNumbers(wan.traitData.PhantomPain.entryid, { 1 }) * 0.01
 

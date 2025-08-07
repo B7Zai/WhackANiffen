@@ -12,7 +12,6 @@ local nShieldChargeDmg, nShieldChargeDmgAoE = 0, 0
 -- Init trait data
 local nMartialExpertCritDamage = 0
 local nDominanceoftheColossus = 0
-local nBatteringRamCritValues = 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -55,11 +54,6 @@ local function CheckAbilityValue()
     end
 
     ---- PROTECTION TRAITS ----
-
-    if wan.traitData.BatteringRam.known then
-        critChanceMod = critChanceMod + nBatteringRamCritValues
-        critDamageMod = critDamageMod + nBatteringRamCritValues
-    end
 
     ---- COLOSSUS TRAITS ----
 
@@ -144,8 +138,6 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nMartialExpertCritDamage = wan.GetTraitDescriptionNumbers(wan.traitData.MartialExpert.entryid, { 1 })
 
         nDominanceoftheColossus = wan.GetTraitDescriptionNumbers(wan.traitData.DominanceoftheColossus.entryid, { 3 }) * 0.001
-
-        nBatteringRamCritValues = wan.GetTraitDescriptionNumbers(wan.traitData.BatteringRam.entryid, { 1 })
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

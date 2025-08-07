@@ -9,16 +9,17 @@ local nKillShotInstantDmg, nKillShotDotDmg, nKillShotCritDamage = 0, 0, 0
 
 -- Init trait data
 local nPenetratingShots = 0
-local nHuntersPrey = 0
 local nAMurderOfCrows = 0
 local nBansheesMarkProcChance = 0
 local nImprovedDeathblow = 0
 local nKillerAccuracy = 0
 local nRazonFragments, nRazorFragmentsUnitCap, nRazorFragmentsAoE = 0, 0, 0
 local nUnerringVision = 0
+local aCulltheHerd, nCulltheHerd = {}, 0
 local nSicEmUnitCap = 0
-local nBorntoKill = 0
-local nWitheringFire, nWitheringFireHitCap = 0, 0
+local aBleakPowder, bBleakPowder, nBleakPowder, nBleakPowderSoftCap = {}, false, 0, 0
+local aUmbralReach, bUmbralReach = {}, false
+local aWitheringFire, nWitheringFire, nWitheringFireHitCap = {}, 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -30,7 +31,7 @@ local function CheckAbilityValue()
     end
 
     -- Check for valid unit
-    local isValidUnit, _, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.KillShot.id)
+    local isValidUnit, counValidUnit, idValidUnit = wan.ValidUnitBoolCounter(wan.spellData.KillShot.id)
     if not isValidUnit then
         wan.UpdateAbilityData(wan.spellData.KillShot.basename)
         return
@@ -51,42 +52,6 @@ local function CheckAbilityValue()
     local targetGUID = wan.UnitState.GUID[wan.TargetUnitID]
 
     ---- BEAST MASTERY TRAITS ----
-
-    -- hunter's prey trait layer
-    local cHuntersPrey = 1
-    local cHuntersPreyInstantDmgAoE = 0
-    local cHuntersPreyDotDmgAoE = 0
-    if wan.traitData.HuntersPrey.known then
-
-        local cHuntersPreyUnitCap = (wan.IsPetUsable() and 1 or 0) * (wan.traitData.AnimalCompanion.known and 2 or 1)
-        cHuntersPrey = cHuntersPrey + (nHuntersPrey * cHuntersPreyUnitCap)
-
-        local countHuntersPreyUnit = 0
-        local bBlackArrow = wan.traitData.BlackArrow.known 
-        local formattedDebuffName = wan.traitData.BlackArrow.traitkey
-        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
-
-            if nameplateGUID ~= targetGUID then
-
-                local checkUnitPhysicalDR = bBlackArrow and 1 or wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
-
-                cHuntersPreyInstantDmgAoE = cHuntersPreyInstantDmgAoE + (nKillShotInstantDmg * checkUnitPhysicalDR)
-
-                if bBlackArrow then
-                    local checkUnitBlackArrowDebuff = wan.CheckUnitDebuff(nameplateUnitToken, formattedDebuffName)
-                    if not checkUnitBlackArrowDebuff then
-                        local dotPotency = wan.CheckDotPotency(nKillShotInstantDmg, nameplateUnitToken)
-
-                        cHuntersPreyDotDmgAoE = cHuntersPreyDotDmgAoE + (nKillShotDotDmg * dotPotency)
-                    end
-                end
-
-                countHuntersPreyUnit = countHuntersPreyUnit + 1
-
-                if countHuntersPreyUnit > cHuntersPreyUnitCap then break end
-            end
-        end
-    end
 
     ---- MARKSMAN TRAITS ----
 
@@ -144,6 +109,11 @@ local function CheckAbilityValue()
 
     ---- SURVIVAL TRAITS ----
 
+    local cCulltheHerd = 0
+    if aCulltheHerd.known then
+        cCulltheHerd = cCulltheHerd + (nKillShotInstantDmg * nCulltheHerd)
+    end
+
     -- sic 'em trait layer
     local cSicEmInstantDmgAoE = 0
     if wan.traitData.SicEm.known then
@@ -164,14 +134,6 @@ local function CheckAbilityValue()
         end
     end
 
-    local cBorntoKill = 1
-    if wan.traitData.BorntoKill.known then
-        local checkCulltheHerdDebuff = wan.CheckUnitDebuff(nil, wan.traitData.CulltheHerd.traitkey)
-        if checkCulltheHerdDebuff then
-            cBorntoKill = cBorntoKill + nBorntoKill
-        end
-    end
-
     ---- PACKLEADER TRAITS ----
 
     local cNoMercy = 0
@@ -184,11 +146,29 @@ local function CheckAbilityValue()
     -- black arrow trait layer
     local cBlackArrowDotDmg = 0
     if wan.traitData.BlackArrow.known then
-        local checkBlackArrowDebuff = wan.CheckUnitDebuff(nil, wan.traitData.BlackArrow.traitkey)
+        local dotPotency = wan.CheckDotPotency(nKillShotInstantDmg, targetUnitToken)
 
-        if not checkBlackArrowDebuff then
-            local dotPotency = wan.CheckDotPotency(nKillShotInstantDmg, targetUnitToken)
-            cBlackArrowDotDmg = cBlackArrowDotDmg + (nKillShotDotDmg * dotPotency)
+        cBlackArrowDotDmg = cBlackArrowDotDmg + (nKillShotDotDmg * dotPotency)
+    end
+
+
+    local cBleakPowderInstantDmgAoE = 0
+    if aBleakPowder.known then
+        local cBleakPowderUnitOverflow = wan.AdjustSoftCapUnitOverflow(nBleakPowderSoftCap, counValidUnit)
+
+        cBleakPowderInstantDmgAoE = cBleakPowderInstantDmgAoE + (nBleakPowder * cBleakPowderUnitOverflow)
+    end
+
+    local cUmbralReachDotDmgAoE = 0
+    if aUmbralReach.known then
+
+        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+            if nameplateGUID ~= targetGUID then
+                local dotPotency = wan.CheckDotPotency(nBleakPowder, nameplateUnitToken)
+
+                cUmbralReachDotDmgAoE = cUmbralReachDotDmgAoE + (nKillShotDotDmg * dotPotency)
+            end
         end
     end
 
@@ -199,8 +179,8 @@ local function CheckAbilityValue()
     end
 
     local cWitheringFireInstantDmg = 0
-    if wan.traitData.WitheringFire.known then
-        local checkWitheringFireBuff = wan.CheckUnitBuff(nil, wan.traitData.WitheringFire.traitkey)
+    if aWitheringFire.known then
+        local checkWitheringFireBuff = wan.CheckUnitBuff(nil, aWitheringFire.traitkey)
         if checkWitheringFireBuff then
             cWitheringFireInstantDmg = cWitheringFireInstantDmg + (nKillShotInstantDmg * nWitheringFire * nWitheringFireHitCap)
         end
@@ -211,21 +191,22 @@ local function CheckAbilityValue()
     local cKillShitCritValueBase = wan.ValueFromCritical(wan.CritChance, critChanceModBase, critDamageModBase)
 
     cKillShotInstantDmg = cKillShotInstantDmg
-        + (nKillShotInstantDmg * cHuntersPrey * checkPhysicalDR * cKillShotCritValue * cRazorFragments * cBorntoKill)
+        + (nKillShotInstantDmg * checkPhysicalDR * cKillShotCritValue * cRazorFragments)
         + (cNoMercy * cKillShitCritValueBase)
         + (cWitheringFireInstantDmg * cKillShotCritValue * cRazorFragments)
 
     cKillShotDotDmg = cKillShotDotDmg
+        + (cCulltheHerd * checkPhysicalDR * cKillShotCritValue)
         + (cBlackArrowDotDmg * cKillShitCritValueBase * cRazorFragments)
         + (cBansheesMark * cKillShitCritValueBase)
 
     cKillShotInstantDmgAoE = cKillShotInstantDmgAoE
-        + (cHuntersPreyInstantDmgAoE * cHuntersPrey * cKillShotCritValue)
         + (cSicEmInstantDmgAoE * cKillShotCritValue)
+        + (cBleakPowderInstantDmgAoE * cKillShitCritValueBase)
 
     cKillShotDotDmgAoE = cKillShotDotDmgAoE
-        + (cHuntersPreyDotDmgAoE * cKillShitCritValueBase)
         + (cRazorFragmentDotDmgAoE * checkPhysicalDR * cKillShotCritValue * cRazorFragments)
+        + (cUmbralReachDotDmgAoE * cKillShitCritValueBase)
 
     local cKillShotDmg = cKillShotInstantDmg + cKillShotDotDmg + cKillShotInstantDmgAoE + cKillShotDotDmgAoE
 
@@ -267,8 +248,6 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
 
         nBansheesMarkProcChance = wan.GetTraitDescriptionNumbers(wan.traitData.BansheesMark.entryid, { 1 }) * 0.01
 
-        nHuntersPrey = wan.GetTraitDescriptionNumbers(wan.traitData.HuntersPrey.entryid, { 2 }) * 0.01
-
         nImprovedDeathblow = wan.GetTraitDescriptionNumbers(wan.traitData.ImprovedDeathblow.entryid, { 3 })
 
         nKillerAccuracy = wan.GetTraitDescriptionNumbers(wan.traitData.KillerAccuracy.entryid, { 1 })
@@ -278,15 +257,28 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nRazorFragmentsUnitCap = nRazorFragmentsValues[2]
         nRazorFragmentsAoE = nRazorFragmentsValues[3] * 0.01
 
-        nSicEmUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.SicEm.entryid, { 2 })
+        aCulltheHerd = wan.traitData.CulltheHerd
+        nCulltheHerd = wan.GetTraitDescriptionNumbers(aCulltheHerd.entryid, { 1 }) * 0.01
 
-        nBorntoKill = wan.GetTraitDescriptionNumbers(wan.traitData.BorntoKill.entryid, { 3 }) * 0.01
+        nSicEmUnitCap = wan.GetTraitDescriptionNumbers(wan.traitData.SicEm.entryid, { 2 })
 
         nUnerringVision = wan.GetTraitDescriptionNumbers(wan.traitData.UnerringVision.entryid, { 2 })
 
-        local nWitheringFireValues = wan.GetTraitDescriptionNumbers(wan.traitData.WitheringFire.entryid, { 2, 3 })
-        nWitheringFireHitCap = nWitheringFireValues[1]
-        nWitheringFire = nWitheringFireValues[2] * 0.01
+        aBleakPowder = wan.traitData.BleakPowder
+        local nBleakPowderValues = wan.GetTraitDescriptionNumbers(aBleakPowder.entryid, { 1, 2 }, aBleakPowder.rank)
+        nBleakPowder = nBleakPowderValues[1]
+        nBleakPowderSoftCap = nBleakPowderValues[2]
+
+        aUmbralReach = wan.traitData.UmbralReach
+
+        aWitheringFire = wan.traitData.WitheringFire
+        local nWitheringFireValues = wan.GetTraitDescriptionNumbers(aWitheringFire.entryid, { 2, 3, 4, 5 })
+        local nWitheringFireHitCapBeastMaster = nWitheringFireValues[3]
+        local nWitheringFireBeastMaster = nWitheringFireValues[4] * 0.01
+        local nWitheringFireHitCapMarksmanship = nWitheringFireValues[2]
+        local nWitheringFireMarksmanship = nWitheringFireValues[3] * 0.01
+        nWitheringFireHitCap = wan.PlayerState.SpecializationNumber == 1 and nWitheringFireHitCapBeastMaster or wan.PlayerState.SpecializationNumber == 2 and nWitheringFireHitCapMarksmanship or 0
+        nWitheringFire = wan.PlayerState.SpecializationNumber == 1 and nWitheringFireBeastMaster or  wan.PlayerState.SpecializationNumber == 2 and nWitheringFireMarksmanship or 0
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

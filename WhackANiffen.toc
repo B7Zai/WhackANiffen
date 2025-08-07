@@ -2,7 +2,7 @@
 ## Title: Whack-A-Niffen
 ## Notes: Not much yet.
 ## Author: 7Banzai
-## Version: 0.7.6
+## Version: 0.7.7
 ## SavedVariables: WhackANiffenDB
 ## SavedVariablesPerCharacter:
 ## X-Curse-Project-ID: 1143530
@@ -125,15 +125,12 @@ Druid\WAN_Wrath.lua
 Hunter\WAN_AimedShot.lua
 Hunter\WAN_ArcaneShot.lua
 Hunter\WAN_AspectoftheTurtle.lua
-Hunter\WAN_BarbedShot.lua
-Hunter\WAN_Barrage.lua
 Hunter\WAN_BestialWrath.lua
 Hunter\WAN_Bloodshed.lua
 Hunter\WAN_Butchery.lua
 Hunter\WAN_CallOfTheWild.lua
 Hunter\WAN_CallPet.lua
 Hunter\WAN_CoordinatedAssault.lua
-Hunter\WAN_DireBeast.lua
 Hunter\WAN_Exhilaration.lua
 Hunter\WAN_ExplosiveShot.lua
 Hunter\WAN_FlankingStrike.lua

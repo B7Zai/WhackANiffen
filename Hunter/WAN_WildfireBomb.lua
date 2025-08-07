@@ -10,7 +10,6 @@ local nWildfireBombInstantDmg, nWildfireBombDotDmg, nWildfireBombSoftCap, nWildf
 -- Init trait data
 local nLunarStormDuration, nLunarStormDmg, nLunarStormTickRate, nLunarStorm = 0, 0, 0, 0
 
-
 -- Ability value calculation
 local function CheckAbilityValue()
     -- Early exits

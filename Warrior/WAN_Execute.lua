@@ -33,6 +33,7 @@ local nRecklessnessCritChance = 0
 local nLightningStrikesProcChance, nLightningStrikesDmg, nLightningStrikesProcModAvatar = 0, 0, 0
 local nGroundCurrentDmg, nGroundCurrentSoftCap = 0, 0
 local nGatheringCloudsProcMod = 0
+local aHeavyHanded, nHeavyHandedUnitCap, nHeavyHanded = {}, 0, 0
 
 -- Ability value calculation
 local function CheckAbilityValue()
@@ -291,6 +292,26 @@ local function CheckAbilityValue()
         end
     end
 
+    ---- PROTECTION TRAITS ----
+
+    local cHeavyHandedInstantDmgAoE = 0
+    if aHeavyHanded.known then
+        local countHeavyHandedUnit = 0
+
+        for nameplateUnitToken, nameplateGUID in pairs(idValidUnit) do
+
+            if nameplateGUID ~= targetGUID then
+                local checkUnitPhysicalDR = wan.CheckUnitPhysicalDamageReduction(nameplateUnitToken)
+
+                cHeavyHandedInstantDmgAoE = cHeavyHandedInstantDmgAoE + (nExecuteDmg * nHeavyHanded * checkUnitPhysicalDR)
+
+                countHeavyHandedUnit = countHeavyHandedUnit + 1
+
+                if countHeavyHandedUnit >= nHeavyHandedUnitCap then break end
+            end
+        end
+    end
+
     ---- COLOSSUS TRAITS ----
 
     if wan.traitData.MartialExpert.known then
@@ -501,6 +522,7 @@ local function CheckAbilityValue()
         + (cFatalityInstantDmgAoE * cExecuteRageMod * cColossusSmashAoE * cDominanceoftheColossusAoE * cOverwhelmingBladesAoE)
         + (cImprovedWhirlwindInstantDmgAoE * cExecuteRageMod * cExecuteCritValue * cSlayersDominanceAoE * cOverwhelmingBladesAoE)
         + (cLightningStrikesInstantDmgAoE * cExecuteCritValueBase)
+        + (cHeavyHandedInstantDmgAoE * cExecuteRageMod * cExecuteCritValue * cDominanceoftheColossusAoE)
 
     cExecuteDotDmgAoE = cExecuteDotDmgAoE
 
@@ -606,8 +628,13 @@ wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
         nGatheringCloudsProcMod = wan.GetTraitDescriptionNumbers(wan.traitData.GatheringClouds.entryid, { 1 }) * 0.01 + 1
 
         nExecuteMaxRange = (wan.spellData.SweepingStrikes.known and nSweepingStrikesMaxRange)
-        or (wan.traitData.ImprovedWhirlwind.known and 11)
-        or 0
+            or (wan.traitData.ImprovedWhirlwind.known and 11)
+            or 0
+
+        aHeavyHanded = wan.traitData.HeavyHanded
+        local aHeavyHandedValues = wan.GetTraitDescriptionNumbers(aHeavyHanded.entryid, { 1, 2 }, aHeavyHanded.rank)
+        nHeavyHandedUnitCap = aHeavyHandedValues[1]
+        nHeavyHanded = aHeavyHandedValues[2] * 0.01
     end
 
     if event == "CUSTOM_UPDATE_RATE_TOGGLE" or event == "CUSTOM_UPDATE_RATE_SLIDER" then

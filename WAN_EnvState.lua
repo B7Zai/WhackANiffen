@@ -21,6 +21,7 @@ wan.PlayerState.Mounted = false
 wan.PlayerState.Resting = false
 wan.PlayerState.Role = "DAMAGER"
 wan.PlayerState.SpecializationName = "specName"
+wan.PlayerState.SpecializationNumber = 0
 wan.PlayerState.Status = false
 wan.CritChance = GetCritChance() or 0
 wan.Haste = GetHaste() or 0
@@ -340,8 +341,9 @@ end
 
 wan.EventFrame:HookScript("OnEvent", function(self, event, ...)
     if event == "TRAIT_DATA_READY" or event == "HEALERMODE_FRAME_TOGGLE" then
-        local _, name, _, _, role = wan.GetTraitInfo()
+        local _, name, _, _, role, _, specNum = wan.GetTraitInfo()
         wan.PlayerState.SpecializationName = name
+        wan.PlayerState.SpecializationNumber = specNum
         wan.PlayerState.Role = role
         wan.PlayerState.InHealerMode = role == "HEALER" or wan.Options.HealerMode.Toggle
     end

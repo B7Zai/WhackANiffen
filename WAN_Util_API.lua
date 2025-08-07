@@ -564,7 +564,7 @@ function wan.GetTraitInfo()
     local currentSpec = C_SpecializationInfo.GetSpecialization()
     if currentSpec then
         local id, name, description, icon, role, primaryStat = C_SpecializationInfo.GetSpecializationInfo(currentSpec)
-        return id, name, description, icon, role, primaryStat
+        return id, name, description, icon, role, primaryStat, currentSpec
     end
 end
 
